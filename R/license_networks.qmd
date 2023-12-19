@@ -16,9 +16,11 @@ editor: visual
 # Install & load the libraries
 library(tidyverse)
 library(tidygraph)
+library(patchwork)
 library(ggraph)
 library(igraph)
 library(here)
+library(gmRi)
 library(gt)
 
 # Read in gomfish package from Joshua and Theresa
@@ -61,6 +63,38 @@ license_types %>%
   cols_label(
     code        = md("**License Code**"),
     description = md("**Description**"))
+
+```
+
+# Time series of license holdings 
+```{r}
+#| label:   time series of license types
+#| echo:    false
+#| message: false
+ind_lic_portfolio %>% 
+  select(license_year, license_types$code) %>%
+  pivot_longer(cols = al:sws, names_to = "code", values_to = "count") %>%
+  group_by(license_year, code) %>%
+  summarise(total = sum(count)) %>%
+  group_by(code) %>%
+  nest() %>%
+  left_join(license_types %>% select(code, description)) %>% 
+  relocate(description, .after = code) -> license_time_series
+
+license_time_series %>% 
+  mutate(time_series = map2(data, code, function(x,y){
+    out <- ggplot(data = x)+
+      geom_line(aes(x = license_year, y = total)) +
+      geom_point(aes(x = license_year, y = total)) +
+      ylim(c(0, NA)) +
+      theme_gmri() +
+      xlab("Year") +
+      ylab("Total Licenses Issued") +
+      ggtitle(paste(code, description, sep = " - "))
+    return(out)
+  })) -> license_time_series
+
+wrap_plots(license_time_series$time_series[c(1:15)], ncol = 3, nrow = 5)
 
 ```
 
