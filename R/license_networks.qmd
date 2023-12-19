@@ -16,7 +16,6 @@ editor: visual
 # Install & load the libraries
 library(tidyverse)
 library(tidygraph)
-library(patchwork)
 library(ggraph)
 library(igraph)
 library(here)
@@ -98,13 +97,14 @@ license_time_series %>%
     return(out)
   })) -> license_time_series
 
-wrap_plots(license_time_series$time_series[c(1:15)], ncol = 3, nrow = 5)
-wrap_plots(license_time_series$time_series[c(16:30)], ncol = 3, nrow = 5)
-wrap_plots(license_time_series$time_series[c(31:45)], ncol = 3, nrow = 5)
-wrap_plots(license_time_series$time_series[c(46:60)], ncol = 3, nrow = 5)
-wrap_plots(license_time_series$time_series[c(61:74)], ncol = 3, nrow = 5)
+patchwork::wrap_plots(license_time_series$time_series[c(1:15)], ncol = 3, nrow = 5)
+#wrap_plots(license_time_series$time_series[c(16:30)], ncol = 3, nrow = 5)
+#wrap_plots(license_time_series$time_series[c(31:45)], ncol = 3, nrow = 5)
+#wrap_plots(license_time_series$time_series[c(46:60)], ncol = 3, nrow = 5)
+#wrap_plots(license_time_series$time_series[c(61:74)], ncol = 3, nrow = 5)
 
 ```
+
 ### Co-occurence matrix
 
 ```{r}
@@ -188,5 +188,5 @@ metrics_series <- metrics_series %>%
     return(out)
   }))
 
-#patchwork::wrap_plots(metrics_series$time_series[c(1:74)], ncol = 5, nrow = 15, heights = 3000, widths = 1000)
+#patchwork::wrap_plots(metrics_series$time_series[c(1:74)], ncol = 5, nrow = 3, heights = 3000, widths = 1000)
 ```
