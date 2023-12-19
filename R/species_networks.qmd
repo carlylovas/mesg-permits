@@ -1,0 +1,278 @@
+---
+title: "Species Networks"
+author: "cslovas"
+format: 
+  html:
+    toc: true
+    self-contained: true
+editor: visual
+---
+
+```{r, message = FALSE}
+#| label: load packages & data
+#| echo: false
+#| warning: false
+library(tidyverse)
+library(janitor)
+library(tidygraph)
+library(ggraph)
+library(igraph)
+library(patchwork)
+library(gmRi)
+library(here)
+
+path <- here()
+license_types <- 
+  read.csv(paste0(path, "/Data/updated_license_codes.csv")) %>% rename("license_type" = "code")
+me_all_lics_1990_2022_tidy <-
+  read_csv((paste0(path, "/Data/me_all_lics_1990_2022_tidy.csv")))
+```
+
+## Species Grouping
+
+To correlate species distribution changes with changes in license holdings in Maine, license types have been grouped by target species as described by Maine State Legislation.
+
+```{r}
+#| label: license types
+#| echo: false
+
+# filtering out indigenous and post-harvest license types 
+license_types %>% 
+  filter(!(str_starts(license_type, "ma"))) %>%
+  filter(!(str_starts(license_type, "mi"))) %>%
+  filter(!(str_starts(license_type, "nb"))) %>%
+  filter(!(str_starts(license_type, "p")))  %>% 
+  filter(!license_type %in% c("car", "dl", "r", "re", "sdt", "suwt", "swr", "swrs", "swro", 
+            "ten", "w", "wl", "wls", "ws", "lpl", "lpto", "lt", "lts",
+            "ed", "eds", "lmp", "mw", "mws", "st","sts", "sut", "vh")) %>%
+  filter(!group %in% c("Demo", "Post-Harvest"))-> license_types
+  
+library(gt)
+license_types %>% 
+  gt() %>% 
+  cols_label(
+    license_type = md("**License Code**"),
+    description   = md("**Description**"),
+    group        = md("**Target Species**")
+  )
+```
+
+## License Portfolio by Species
+
+Using Theresa Burnham's code for building the individual license portfolio, license types were grouped by target species. A binary matrix was created, whereas 1 denotes an individual license holding for a corresponding year and 0 denotes no license held. With this co-occurrence matrix, we can quantify which license types were held together over the past 30 years and how those holdings have changed.
+
+```{r, message=FALSE}
+#| label: license portfolio
+#| echo: false
+license_types_by_species <- me_all_lics_1990_2022_tidy %>%
+  filter(license_type %in% license_types$license_type) %>%
+  full_join(license_types) %>%
+  relocate(group, .after = license_type)
+
+grouped_license_portfolio <- license_types_by_species %>%
+  mutate(licensed=1, 
+         row=row_number())%>% 
+  select(landings_number,license_year,group,licensed,row)%>% 
+  pivot_wider(names_from=group,values_from=licensed,names_expand=TRUE,values_fill = list(licensed=0))%>%
+  select(-row)%>%
+  group_by(landings_number,license_year)%>%
+  summarise(across(everything(),sum))
+
+license_types_by_species %>%
+  select(landings_number, license_type, group, license_year) %>% 
+  mutate(decade = 10*license_year %/% 10) %>%
+  group_by(license_year) %>%
+  nest() %>%
+  mutate(total_licenses = map(data, function(x){nrow(x)}),
+         total_licenses = as.numeric(total_licenses)) %>%
+  unnest(data) %>%
+  group_by(license_year, group, total_licenses, decade) %>% 
+  nest() %>% 
+  mutate(license_count = map(data, function(x){nrow(x)}),
+         license_count = as.numeric(license_count)) %>%
+  mutate(proportion    = license_count/total_licenses) %>%
+  drop_na() -> license_proportions
+```
+
+### Species Proportions
+
+```{r, fig.width = 12}
+#| label: species proportion
+#| echo: false
+ggplot(data = license_proportions, aes(x = license_year, y = proportion, fill = group)) +
+  geom_area(linewidth = 0.25, color = "white") +
+  facet_wrap(~decade, nrow = 1, scales = "free_x") +
+  scale_x_continuous(breaks = c(1990, 1995, 1999, 2000, 2005, 2009, 2010, 2015, 2019, 2020, 2022)) +
+  theme_gmri(strip.background = element_rect("transparent"),
+             strip.text = element_text(color = "black"),
+             panel.spacing.x = unit(1, "lines"))  +
+  scale_fill_viridis_d() +
+  guides(fill = guide_legend(nrow=2))
+```
+
+### Species Matrix
+
+```{r, message = FALSE, warning = FALSE}
+#| label: view matrix
+#| echo: false
+species_matrix <- grouped_license_portfolio %>%
+  ungroup(landings_number) %>%
+  select(!c(landings_number, license_year))
+species_matrix <- crossprod(as.matrix(species_matrix))
+diag(species_matrix) <- 0
+
+as_tibble(species_matrix) %>%
+  pivot_longer(cols = 1:21, names_to = "Species", values_to = "Count") %>%
+  select(Species) %>%
+  distinct() %>%
+  cbind(as_tibble(species_matrix)) %>%
+  gt() %>%
+  cols_label(Species = md("**Species**"))
+```
+
+## Annual Species Metrics
+
+Degree and betweenness are both ways of measuring centrality.
+
+"The *degree* of a node is the number of other nodes that single node is connected to.
+
+Important nodes tend to have more connections to other nodes. Highly connected nodes are interpreted to have high degree centrality."
+
+"\[*Betweenness*\] ranks the nodes based on the flow of connections through the network. Importance is demonstrated through high frequency of connection with multiple other nodes. Nodes with high levels of betweenness tend to serve as a bridge for multiple sets of other important nodes." [*Source*](https://bookdown.org/jdholster1/idsr/network-analysis.html#advanced-case-study)
+
+```{r, message = FALSE, fig.height = 13, fig.width = 9}
+#| label: species metrics 
+#| echo: false
+#| warning: false
+#| column: page
+annual_species_matrix <- grouped_license_portfolio %>% 
+  arrange(license_year) %>% 
+  ungroup(landings_number) %>% 
+  select(!landings_number) %>%
+  group_by(license_year) %>% 
+  nest() %>% 
+  mutate(co_matrix = map(data, function(df){
+    out <- crossprod(as.matrix(df)) 
+    diag(out) <- 0
+    return(out)
+  })) %>%
+  select(license_year, co_matrix)
+
+annual_species_metrics <- annual_species_matrix %>%
+  mutate(graph_obj     = map(co_matrix, function(x){graph.adjacency(x, mode = "undirected", weighted = TRUE)}),
+         degree        = map(graph_obj, function(x){degree(x)}),
+         betweeness    = map(graph_obj, function(x){betweenness(x)}),
+         evcent        = map(graph_obj, function(x){evcent(x)}))
+species_metrics_series <- annual_species_metrics %>% 
+  select(license_year, degree) %>% 
+  unnest_longer(degree) %>% 
+  group_by(degree_id) %>%
+  rename("id" = "degree_id") %>%
+  full_join(annual_species_metrics %>% 
+              select(license_year, betweeness) %>% 
+              unnest_longer(betweeness) %>% 
+              group_by(betweeness_id) %>%
+              rename("id" = "betweeness_id")) %>% 
+  relocate("id", .after = "license_year") %>%
+  pivot_longer(degree:betweeness, names_to = "metric", values_to = "value") %>%
+  nest()
+
+species_metrics_series <- species_metrics_series %>% 
+  mutate(time_series = map2(data, id, function(x,y){
+    out <- ggplot(data = x)+
+      geom_line(aes(x=license_year, y=value)) +
+      facet_wrap(~metric, ncol = 1) +
+      ylim(c(0, NA)) +
+      ggtitle(id)
+    return(out)
+  }))
+
+patchwork::wrap_plots(species_metrics_series$time_series[c(1:18)], ncol = 3, nrow = 6, heights = 3000, widths = 1000)
+```
+
+Lobster is the most abundant license type held in Maine, its high degree of centrality with relatively low betweenness suggests that while lobster has a lot of connections to other license types, those license types that co-occur with lobster don't co-occur with many other license types.
+
+Eel and quahog have highly variable betweenness with relatively low degree of centrality, suggesting that these license may be held concurrently with more central license types to supplement harvest.
+
+Finfish also has a high degree of centrality and low betweeness.
+
+## Annual Network Plots
+
+Similar to plotting the license holdings as a network over time, we plot the target species pertaining to these permits over time. This makes for a more easily interpretable graph, as well as increased potential for correlating license changes to species distribution changes
+
+```{r, message = FALSE, warning = FALSE, fig.height = 50, fig.width = 20}
+#| label: species networks
+#| echo: false
+
+# Network plots
+annual_species_graphs <- annual_species_metrics %>%
+  mutate(ggraph = map2(graph_obj, license_year, function(x, y){
+    x <- as_tbl_graph(x)
+    x %>% 
+      activate(nodes) %>%
+      mutate(community = as.character(group_louvain())) -> x
+    out <- ggraph(x, layout = "fr") + 
+      geom_node_point(size = 7, alpha = 0.5, show.legend = FALSE) +
+      geom_edge_link(aes(width = weight), alpha = 0.5, show.legend = FALSE) + 
+      scale_edge_width(range = c(0.2, 2)) +
+      ggtitle(license_year) +
+      geom_node_text(aes(label = name), repel = TRUE, color = "black", max.overlaps = 100) +
+      theme_graph()   
+  })) %>%
+  mutate(ggraph_circular = map2(graph_obj, license_year, function(x, y){
+    x <- as_tbl_graph(x)
+    x %>% 
+      activate(nodes) %>%
+      mutate(community = as.character(group_louvain())) -> x
+    out <- ggraph(x, layout = "linear", circular = TRUE) + 
+      geom_node_point(size = 7, alpha = 0.5, show.legend = FALSE) +
+      geom_edge_link(aes(width = weight), alpha = 0.5, show.legend = FALSE) + 
+      scale_edge_width(range = c(0.2, 2)) +
+      ggtitle(license_year) +
+      geom_node_text(aes(label = name), repel = TRUE, color = "black", max.overlaps = 100) +
+      theme_graph()   
+  })) %>%
+  select(license_year, ggraph, ggraph_circular)
+
+wrap_plots(annual_species_graphs$ggraph_circular[c(1:33)], nrow = 9, ncol = 4)
+```
+
+The thickness of lines across the network reflect the frequency of co-occurrence. Strong connections between all lobster license types and commercial finfish appear consistently over the 33 year data set. However, since the mid-90's there have been more and more connections occurring at lesser frequencies. The connection of finfish to lobster stays relatively consistent, suggesting that harvesters are diversifying license holdings rather than exiting entirely.
+
+## Limited Entry Fisheries
+
+According to [Maine State Legislation](http://www.mainelegislature.org/legis/statutes/12/title12ch0sec0.html), there are 6 limited entry species including lobster, which is limited by harvest zone. Most species became limited entry in response to a fishery collapse, while some aim to avoid collapse. The most recent limited entry fishery is menhaden, which was passed by the legislature in 2023.
+
+```{r}
+#| message: false
+#| label: limited entry
+#| echo: false
+
+fishery_entry <- license_types %>% 
+  select(group) %>% 
+  distinct() %>%
+  filter(group %in% c("Scallop", "Sea urchin", "Sea cucumber", "Menhaden", "Elver", 
+                      "Lobster")) %>%
+  mutate(entry      = "limited",
+         entry_year = c("2011", "2015", "2023", "2009", "2005", "2007"))
+
+license_types %>% 
+  select(group) %>%
+  distinct() %>%
+  filter(!group %in% c("Scallop", "Sea urchin", "Sea cucumber", "Menhaden", "Elver", 
+                        "Lobster")) %>%
+  mutate(entry = "open",
+         entry_year = NA) %>% 
+  full_join(fishery_entry) -> fishery_entry
+
+fishery_entry %>% 
+  filter(entry == "limited") %>% 
+  left_join(license_proportions) %>% 
+  mutate(entry_year = as.numeric(entry_year)) %>%
+  ggplot() +
+  geom_line(aes(x  = license_year, y = license_count))  +
+  geom_vline(aes(xintercept = entry_year), color = "#EA4D12", linetype = 2) + 
+  facet_wrap(~group, scales = "free_y") +
+  xlab("Year") + ylab("Number of Licenses Issued") +
+  theme_gmri() 
+```

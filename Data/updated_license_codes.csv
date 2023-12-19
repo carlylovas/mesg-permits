@@ -1,0 +1,157 @@
+﻿code,description,group
+al,Aquaculture License: Established in 2017,Aquaculture
+car,carrier,Post-Harvest
+cfc,Commercial fishing crew,Finfish
+cfs,Commercial fishing single,Finfish
+cpc,Commercial pelagic and anadromous crew,Pelagic/Anadromous
+cps,Commercial pelagic and anadromous single,Pelagic/Anadromous
+cs,Commercial Shellfish,Shellfish
+csc,Commercial shrimp crew,Shrimp
+cso,Commercial shellfish + 70,Shrimp
+css,Commerical Shrimp Single,Shrimp
+csu,Commercial Shellfish Under 18,Shellfish
+csw,Commercial Shrimp Single,Shrimp
+csws,Commercial Shrimp Crew,Shrimp
+dl,Demo lobster,Demo
+ds,Demo Scuba,Demo
+e0,Elver Dip Net,Elver
+e0c,Elver Dip Net Crew,Elver
+e1,Elver 1 Fyke Net,Elver
+e1c,Elver 1 Fyke Net Crew,Elver
+e2,Elver 2 Fyke Net,Elver
+e29,Elver Non Resident,Elver
+e2c,Elver 2 Fyke Net with Crew,Elver
+e6,Elver Dip Net 1 Fyke Net,Elver
+e6c,Elver Dip Net 1 Fyke Net Crew,Elver
+ed,Elver Dealer,Elver
+eds,Elver Dealer Supplemental ,Elver
+eel,Eel license - changed to Eel Pot,Eel
+eex,Elver Exporter,Elver
+elv,Elver ,Elver
+ep,eel pot/hoop net,Eel
+fhc,federal halibut crew,Halibut
+gc,Green crab,Green crab
+gcn,green crab non resident,Green crab
+la,Lobster Crab Apprentice,Lobster
+lao,Lobster Crab Apprentice + 70,Lobster
+lau,lobster crab apprentace under 18,Lobster
+lc1,Lobster crab class I,Lobster
+lc2,Lobster crab class II,Lobster
+lc2o,Lobster crab class II + 70,Lobster
+lc3,Lobster crab class III,Lobster
+lc3o,Lobster crab class III + 70,Lobster
+lco,Lobster Crab + 70,Lobster
+lcs,Lobster Crab Student - policy change in 2016,Lobster
+lcu,Lobster Crab Under 18,Lobster
+lmp,Lobster Meat Permit,Lobster
+lnc,Lobster crab non commerical,Lobster
+lpl,Lobster Processor,Lobster
+lpto,Lobster Processor Tails Only,Lobster
+lt,Lobter Transportation,Lobster
+lts,Lobster Transportation Supplemental,Lobster
+madf,Maliseet Elver Dip License ,Elver
+maed,Mal Elver Dip,Elver
+maef,Mal Elver 1 Fyke (Mal Elver Fyke),Elver
+mb,Mussel Boat,Mussel
+md,Mussel Dragger,Mussel
+menc,menhaden commercial,Menhaden
+mennr,menhaden commercial non-res,Menhaden
+menr,menhaden non commercial,Menhaden
+mh,Mussel Hand,Mussel
+mics,mic comm shellfish,Shellfish
+midf,mic elv dip 1 fyke,Elver
+midfc,Mic Elver Dip 1 Fyke Crew,Elver
+mief,Mic Elver (1) Fyke,Elver
+milc1,Mic Lob/Crab class 1,Lobster
+mimwd,Mic Marine Worm,Marine worm
+misd,Mic Scallop Dragger,Scallop
+misdt,Mic Scallop diver with tender,Scallop
+mw,Marine Worm Dealer,Marine worm
+mwd,Marine Worm Digging,Marine worm
+mws,Marine Worm Dealer Supplemental,Marine worm
+nbal,Penob Appr Lobster,Lobster
+nbcf,Penob Commercial Fishing,Finfish
+nbcfs,Penob Comm Fish Single,Finfish
+nbcs,Penob Comm Shellfish,Shellfish
+nbed,Penob Elver Dip,Elver
+nbedf,Penob Elver Dip 1 Fyke,Elver
+nbef,Penob Elver (1) Fyke,Elver
+nbef2,Penob Elver 2 Fyke,Elver
+nbef2c,penob elver 2 fyke crew,Elver
+nblc,Penob lobster crab,Lobster
+nbmd,Penob Mussel Dragger,Mussel
+nbmh,Penob Mussel Hand,Mussel
+nbsc,penob sust scallop,Scallop
+nbsd,Penob Scallop Dragger,Scallop
+nbsf,penob sust fish,Finfish
+nbsl,Penob Sust Lobster,Lobster
+nbss,Penob Sust Shellfish,Shellfish
+ncf,commercial fishing non resident,Finfish
+ncp,non-resident pelagic and anadromous,Pelagic/Anadromous
+ncs,Scallop non commericial,Scallop
+nfhc,non federal halibut crew,Halibut
+nfhs,non federal halibut single,Halibut
+nla,Non-res lobster apprentice,Lobster
+nlc1,Non-res lobster class 1,Lobster
+nrlp,Non-res lob crab landing,Lobster
+nrs,Seaweed non resident,Seaweed
+nrss,seaweed non resident supp,Seaweed
+ntp,non-resident tuna permit,Tuna
+pal,Pass Apprentice Lobster,Lobster
+pcf,pass com fish,Finfish
+pcfc,pass comm fish crew,Finfish
+pcfs,Pass Comm Fish Single,Finfish
+pcps,Pass Comm Fish Single,Finfish
+pcs,Pass Comm Shellfish,Sh
+pefd,Pass Elver Fyke Dip,Elver
+peld,Pass Elver Dip,Elver
+peldc,Pass Elver Dip Crew,Elver
+pelf,Pass Elver (1) Fyke,Elver
+pelfc,Pass Elver (1) Fyke Crew,Elver
+plc,pass lobster crab,Lobster
+plc1,Pass Lob Crab Class I,Lobster
+plc2,Pass Lob Crab class II,Lobster
+plc3,Pass Lob Crab Class III,Lobster
+pscf,Pass Sust Comm Fish,Finfish
+psd,Pass Scallop Dragger,Scallop
+psdi,Pass Scallop Dive,Scallop
+pssh,pass sust shellfish,Shellfish
+pssu,pass sust sea urchin,Sea urchin
+psub,Pass Urchin Dragger,Sea urchin
+psuh,Pass Urchin Diver,Sea urchin
+psul,Pass Sust Lobster,Lobster
+psus,pass sust scallop,Scallop
+psw,pass seaweed,Seaweed
+pten,Pass Urchin/Scallop Tender,Scallop
+push,Pass Sea urch sustenance,Sea urchin
+qm,Quahog (Mahogany),Quahog clam
+r,Retail Seafood,Post-Harvest
+re,Enhanced Retail,Post-Harvest
+sb,Scallop boat - from 1990 to 1993 - then went to SB,Scallop
+scd,Sea Cucumber Drag,Sea cucumber
+sd,Scallop Dragger,Scallop
+sdi,Scallop diver,Scallop
+sdt,Scallop with tender,Scallop
+sh,Scallop Hand - now SDI changed in 1994,Scallop
+spt,spat,Spat
+st,Shellfish Trans Out-of-State,Shellfish
+sts,Shellfish Trans Supp,Shellfish
+sub,Sea Urchin Dragger,Sea urchin
+suh,Sea urchin diver,Sea urchin
+sur,Sea Urchin Raking,Sea urchin
+surf,Surf Clam Boat,Surf clam
+sut,NA,NA
+suwt,Sea Urchin with Tender,Sea urchin
+sw,Seaweed,Seaweed
+swb,Sea urchin tender - changed to TEN,Post-Harvest
+swbn,Nonresident Seaweed Buyer,Seaweed
+swr,Recreational Saltwater Registry,Recreational
+swro,Recreational Saltwater Fishing Operater,Recreational
+swrs,recreational saltwater fishing sup,Recreational
+sws,seaweed supplemental,Seaweed
+ten,tender,Post-Harvest
+vh,vibrio harvester,Vibrio
+w,Wholesale no lobster,Post-Harvest
+wl,Wholesale with lobster,Post-Harvest
+wls,Wholesale with lobster supplemental,Post-Harvest
+ws,Wholesale no lobster supplemental,Post-Harvest
