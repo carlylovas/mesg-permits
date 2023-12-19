@@ -34,6 +34,7 @@ license_codes <- read.csv(here("Data", "updated_license_codes.csv"))
 ```
 
 ## Harvester licenses in Maine
+
 To focus on fishery access and harvester adaptability, we've removed indigenous licenses and post-harvest (i.e., processors, wholesalers, etc) from the data set.
 
 ```{r}
@@ -66,11 +67,14 @@ license_types %>%
 
 ```
 
-# Time series of license holdings 
+## Time series of license holdings
+
 ```{r}
 #| label:   time series of license types
 #| echo:    false
 #| message: false
+#| column:  page
+
 ind_lic_portfolio %>% 
   select(license_year, license_types$code) %>%
   pivot_longer(cols = al:sws, names_to = "code", values_to = "count") %>%
@@ -95,10 +99,14 @@ license_time_series %>%
   })) -> license_time_series
 
 wrap_plots(license_time_series$time_series[c(1:15)], ncol = 3, nrow = 5)
+wrap_plots(license_time_series$time_series[c(16:30)], ncol = 3, nrow = 5)
+wrap_plots(license_time_series$time_series[c(31:45)], ncol = 3, nrow = 5)
+wrap_plots(license_time_series$time_series[c(46:60)], ncol = 3, nrow = 5)
+wrap_plots(license_time_series$time_series[c(61:74)], ncol = 3, nrow = 5)
 
 ```
-
 ### Co-occurence matrix
+
 ```{r}
 #| label:   view co-matrix
 #| echo:    false
@@ -180,6 +188,5 @@ metrics_series <- metrics_series %>%
     return(out)
   }))
 
-patchwork::wrap_plots(metrics_series$time_series[c(1:74)], ncol = 5, nrow = 15, heights = 3000, widths = 1000)
+#patchwork::wrap_plots(metrics_series$time_series[c(1:74)], ncol = 5, nrow = 15, heights = 3000, widths = 1000)
 ```
-
