@@ -1,0 +1,151 @@
+---
+title: "License Networks"
+author: "cslovas"
+format: 
+  html:
+    toc: true
+    self-contained: true
+editor: visual
+---
+
+```{r}
+#| label:   load libraries & data
+#| echo:    false
+#| message: false
+
+# Install & load the libraries
+library(tidyverse)
+library(tidygraph)
+library(ggraph)
+library(igraph)
+library(here)
+library(gt)
+
+# Read in gomfish package from Joshua and Theresa
+devtools::install_github("Social-Oceans-Lab/gomfish")
+library(gomfish)
+
+data(ind_lic_portfolio)
+
+# Read in updated license information from DMR
+license_codes <- read.csv(here("Data", "updated_license_codes.csv"))
+```
+
+## Harvester licenses in Maine
+To focus on fishery access and harvester adaptability, we've removed indigenous licenses and post-harvest (i.e., processors, wholesalers, etc) from the data set.
+
+```{r}
+#| label:   cleaning data
+#| echo:    false
+#| message: false
+
+# Remove indigenous and non-harvester licenses
+license_types <- names(ind_lic_portfolio
+                      %>% select(!c(landings_number, license_year)))
+license_types <- as_tibble(license_types) %>%
+  rename("code" = "value")
+
+license_types %>% 
+  filter(!(str_starts(code, "ma"))) %>%
+  filter(!(str_starts(code, "mi"))) %>%
+  filter(!(str_starts(code, "nb"))) %>%
+  filter(!(str_starts(code, "p")))  %>%
+  filter(!code %in% c("car", "dl", "r", "re", "sdt", "suwt", "swr", "swrs", "swro", 
+            "ten", "w", "wl", "wls", "ws", "lpl", "lpto", "lt", "lts",
+            "ed", "eds", "lmp", "mw", "mws", "st","sts", "sut", "vh")) %>%
+  left_join(license_codes) -> license_types
+
+license_types %>% 
+  gt() %>% 
+  cols_hide(group) %>%
+  cols_label(
+    code        = md("**License Code**"),
+    description = md("**Description**"))
+
+```
+
+### Co-occurence matrix
+```{r}
+#| label:   view co-matrix
+#| echo:    false
+#| message: false
+
+co_matrix <- ind_lic_portfolio %>%
+  arrange(license_year) %>%
+  select((license_types$code))
+co_matrix <- crossprod(as.matrix(co_matrix))
+diag(co_matrix) <- 0
+
+as_tibble(co_matrix) %>%
+  pivot_longer(cols = 1:74, names_to = "license_code", values_to = "Count") %>%
+  select(license_code) %>%
+  distinct() %>%
+  cbind(as_tibble(co_matrix)) %>%
+  gt() %>%
+  cols_label(license_code = md("**License Code**"))
+```
+
+## Annual License Holdings Metrics
+
+Degree and betweenness are both ways of measuring centrality.
+
+"The *degree* of a node is the number of other nodes that single node is connected to.
+
+Important nodes tend to have more connections to other nodes. Highly connected nodes are interpreted to have high degree centrality."
+
+"\[*Betweenness*\] ranks the nodes based on the flow of connections through the network. Importance is demonstrated through high frequency of connection with multiple other nodes. Nodes with high levels of betweenness tend to serve as a bridge for multiple sets of other important nodes." [*Source*](https://bookdown.org/jdholster1/idsr/network-analysis.html#advanced-case-study)
+
+```{r}
+#| label:      annual co-matrix
+#| echo:       false
+#| warning:    false
+#| column:     page
+#| fig-width:  9
+#| fig-height: 13
+
+annual_co_matrix <- ind_lic_portfolio %>%
+  arrange(license_year) %>%
+  select((license_types$code), license_year) %>%
+  group_by(license_year) %>%
+  nest() %>%
+  mutate(co_matrix = map(data, function(df){
+    out <- crossprod(as.matrix(df)) 
+    diag(out) <- 0
+    return(out)
+  })) %>%
+  select(license_year, co_matrix)
+
+annual_metrics <- annual_co_matrix %>%
+  mutate(graph_obj     = map(co_matrix, function(x){graph.adjacency(x, mode = "undirected", weighted = TRUE)}),
+         degree        = map(graph_obj, function(x){degree(x)}),
+         betweeness    = map(graph_obj, function(x){betweenness(x)}),
+         evcent        = map(graph_obj, function(x){evcent(x)}))
+
+
+metrics_series <- annual_metrics %>% 
+  select(license_year, degree) %>% 
+  unnest_longer(degree) %>% 
+  group_by(degree_id) %>%
+  rename("id" = "degree_id") %>%
+  full_join(annual_metrics %>% 
+              select(license_year, betweeness) %>% 
+              unnest_longer(betweeness) %>% 
+              group_by(betweeness_id) %>%
+              rename("id" = "betweeness_id")) %>% 
+  relocate("id", .after = "license_year") %>%
+  pivot_longer(degree:betweeness, names_to = "metric", values_to = "value") %>%
+  nest()
+
+metrics_series <- metrics_series %>% 
+  mutate(time_series = map2(data, id, function(x,y){
+    out <- ggplot(data = x)+
+      geom_line(aes(x=license_year, y=value)) +
+      facet_wrap(~metric, ncol = 1) +
+      ylim(c(0, NA)) +
+      ggtitle(id)
+    return(out)
+  }))
+
+patchwork::wrap_plots(metrics_series$time_series[c(1:74)], ncol = 5, nrow = 15, heights = 3000, widths = 1000)
+```
+

@@ -5,4 +5,5 @@ This is the public repository containing the necessary data and code for network
 ## Reports
 
 1.  [Species-level network analysis](https://carlylovas.github.io/mesg-permits/R/species_networks.html)
-2.  [License-holding network analysis]()
+2.  [License network analysis]()
+
