@@ -42,9 +42,8 @@ license_types %>%
   filter(!(str_starts(license_type, "mi"))) %>%
   filter(!(str_starts(license_type, "nb"))) %>%
   filter(!(str_starts(license_type, "p")))  %>% 
-  filter(!license_type %in% c("car", "dl", "r", "re", "sdt", "suwt", "swr", "swrs", "swro", 
-            "ten", "w", "wl", "wls", "ws", "lpl", "lpto", "lt", "lts",
-            "ed", "eds", "lmp", "mw", "mws", "st","sts", "sut", "vh")) %>%
+   filter(!license_type %in% c("car", "dl", "r", "re", "sdt", "suwt", "swr", "swrs",    "swro","ten", "w", "wl", "wls", "ws", "lpl", "lpto", "lt", "lts", "ed", "eds", 
+   "lmp", "mw", "mws", "st","sts", "sut", "vh")) %>%
   filter(!group %in% c("Demo", "Post-Harvest"))-> license_types
   
 library(gt)

@@ -30,6 +30,9 @@ data(ind_lic_portfolio)
 
 # Read in updated license information from DMR
 license_codes <- read.csv(here("Data", "updated_license_codes.csv"))
+
+# use data cleaned previously [clean_license_data.R] in order to combine new/overlapping license codes 
+clean_portfolio <- read_rds(here("Data", "portfolio_by_lic_description.rds"))
 ```
 
 ## Harvester licenses in Maine
@@ -42,28 +45,27 @@ To focus on fishery access and harvester adaptability, we've removed indigenous 
 #| message: false
 
 # Remove indigenous and non-harvester licenses
-license_types <- names(ind_lic_portfolio
-                      %>% select(!c(landings_number, license_year)))
+license_types <- names(clean_portfolio %>% ungroup(landings_number) %>% select(!c(landings_number, license_year)))
 license_types <- as_tibble(license_types) %>%
-  rename("code" = "value")
+  rename("license" = "value")
 
-license_types %>% 
-  filter(!(str_starts(code, "ma"))) %>%
-  filter(!(str_starts(code, "mi"))) %>%
-  filter(!(str_starts(code, "nb"))) %>%
-  filter(!(str_starts(code, "p")))  %>%
-  filter(!code %in% c("car", "dl", "r", "re", "sdt", "suwt", "swr", "swrs", "swro", 
-            "ten", "w", "wl", "wls", "ws", "lpl", "lpto", "lt", "lts",
-            "ed", "eds", "lmp", "mw", "mws", "st","sts", "sut", "vh")) %>%
-  left_join(license_codes) %>%
-  filter(!group %in% c("Post-Harvest", "Non-resident", "Demo")) -> license_types
+# license_types %>% 
+#   filter(!(str_starts(code, "ma"))) %>%
+#   filter(!(str_starts(code, "mi"))) %>%
+#   filter(!(str_starts(code, "nb"))) %>%
+#   filter(!(str_starts(code, "p")))  %>%
+#   filter(!code %in% c("car", "dl", "r", "re", "sdt", "suwt", "swr", "swrs", "swro", 
+#             "ten", "w", "wl", "wls", "ws", "lpl", "lpto", "lt", "lts",
+#             "ed", "eds", "lmp", "mw", "mws", "st","sts", "sut", "vh")) %>%
+#   left_join(license_codes) %>%
+#   filter(!group %in% c("Post-Harvest", "Non-resident", "Demo")) -> license_types
 
 license_types %>% 
   gt() %>% 
-  cols_hide(group) %>%
+  #cols_hide(group) %>%
   cols_label(
-    code        = md("**License Code**"),
-    description = md("**Description**"))
+    #code   = md("**License Code**"),
+    license = md("**License Type**"))
 
 ```
 
@@ -77,27 +79,28 @@ license_types %>%
 #| fig-width:  9
 #| fig-height: 13
 
-ind_lic_portfolio %>% 
-  select(license_year, license_types$code) %>%
-  pivot_longer(cols = al:sws, names_to = "code", values_to = "count") %>%
-  left_join(license_types %>% select(code, description)) %>%
-  mutate(description = tolower(description)) %>%
-  group_by(license_year, description) %>%
+clean_portfolio %>% 
+  ungroup(landings_number) %>%
+  select(license_year, license_types$license) %>%
+  pivot_longer(cols = 2:60, names_to = "license", values_to = "count") %>%
+  #left_join(license_types %>% select(code, description)) %>%
+  #mutate(description = tolower(description)) %>%
+  group_by(license_year, license) %>%
   summarise(total = sum(count)) %>%
-  group_by(description) %>%
+  group_by(license) %>%
   nest() -> license_time_series
 
 # plot
 license_time_series %>% 
-  mutate(description = str_to_title(description)) %>%
-  mutate(time_series = map2(data, description, function(x,y){
+  mutate(license = str_to_title(license)) %>%
+  mutate(time_series = map2(data, license, function(x,y){
     out <- ggplot(data = x)+
       geom_line(aes(x = license_year, y = total)) +
       ylim(c(0, NA)) +
       theme_gmri(plot.title = element_text(size = 8),
                  axis.text  = element_text(size = 6),
                  axis.title = element_blank()) + 
-      ggtitle(description)
+      ggtitle(license)
     return(out)
   })) -> license_time_series
 
@@ -145,9 +148,10 @@ Important nodes tend to have more connections to other nodes. Highly connected n
 #| fig-width:  9
 #| fig-height: 13
 
-annual_co_matrix <- ind_lic_portfolio %>%
+annual_co_matrix <- clean_portfolio %>%
+  ungroup(landings_number) %>%
   arrange(license_year) %>%
-  select((license_types$code), license_year) %>%
+  select(license_types$license, license_year) %>%
   group_by(license_year) %>%
   nest() %>%
   mutate(co_matrix = map(data, function(df){
@@ -167,19 +171,19 @@ metrics_series <- annual_metrics %>%
   select(license_year, degree) %>% 
   unnest_longer(degree) %>% 
   group_by(degree_id) %>%
-  rename(code = "degree_id") %>%
+  rename("license" = "degree_id") %>%
   full_join(annual_metrics %>% 
               select(license_year, betweeness) %>% 
               unnest_longer(betweeness) %>% 
               group_by(betweeness_id) %>%
-              rename("code" = "betweeness_id")) %>% 
-  relocate("code", .after = "license_year") %>%
+              rename("license" = "betweeness_id")) %>% 
+  relocate("license", .after = "license_year") %>%
   pivot_longer(degree:betweeness, names_to = "metric", values_to = "value") %>%
   nest() %>%
-  left_join(license_types %>% select(code, description))
+  left_join(license_types %>% select(license))
 
 metrics_series <- metrics_series %>% 
-  mutate(time_series = map2(data, description, function(x,y){
+  mutate(time_series = map2(data, license, function(x,y){
     out <- ggplot(data = x)+
       geom_line(aes(x=license_year, y=value)) +
       facet_wrap(~metric, ncol = 1) +
@@ -189,11 +193,12 @@ metrics_series <- metrics_series %>%
                  axis.title = element_blank(),
                  strip.text = element_text(size = 8, color = "black"),
                  strip.background = element_blank()) +
-      ggtitle(description)
+      ggtitle(license)
     return(out)
   }))
 
-gridExtra::marrangeGrob(metrics_series$time_series, layout_matrix = matrix(1:15, ncol = 3, nrow = 5), top = NULL)
+gridExtra::marrangeGrob(metrics_series$time_series, layout_matrix = matrix(1:15, ncol = 3, nrow = 5, byrow= TRUE), top = NULL)
 ```
 
 ## Annual Network Plots
+### tbd
