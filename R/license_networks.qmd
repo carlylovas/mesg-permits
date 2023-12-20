@@ -90,18 +90,14 @@ license_time_series %>%
       geom_line(aes(x = license_year, y = total)) +
       geom_point(aes(x = license_year, y = total)) +
       ylim(c(0, NA)) +
-      theme_gmri() +
-      xlab("Year") +
-      ylab("Total Licenses Issued") +
+      theme_gmri(plot.title = element_text(size = 8),
+                 axis.text  = element_text(size = 6),
+                 axis.title = element_blank()) + 
       ggtitle(paste(code, description, sep = " - "))
     return(out)
   })) -> license_time_series
 
-gridExtra::marrangeGrob(license_time_series$time_series, layout_matrix = matrix(1:12, ncol = 3, nrow = 4))
-#wrap_plots(license_time_series$time_series[c(16:30)], ncol = 3, nrow = 5)
-#wrap_plots(license_time_series$time_series[c(31:45)], ncol = 3, nrow = 5)
-#wrap_plots(license_time_series$time_series[c(46:60)], ncol = 3, nrow = 5)
-#wrap_plots(license_time_series$time_series[c(61:74)], ncol = 3, nrow = 5)
+gridExtra::marrangeGrob(license_time_series$time_series, layout_matrix = matrix(1:12, ncol = 3, nrow = 4), top = NULL)
 
 ```
 
@@ -163,7 +159,6 @@ annual_metrics <- annual_co_matrix %>%
          betweeness    = map(graph_obj, function(x){betweenness(x)}),
          evcent        = map(graph_obj, function(x){evcent(x)}))
 
-
 metrics_series <- annual_metrics %>% 
   select(license_year, degree) %>% 
   unnest_longer(degree) %>% 
@@ -184,9 +179,16 @@ metrics_series <- metrics_series %>%
       geom_line(aes(x=license_year, y=value)) +
       facet_wrap(~metric, ncol = 1) +
       ylim(c(0, NA)) +
+      theme_gmri(plot.title = element_text(size = 8),
+                 axis.text  = element_text(size = 6),
+                 axis.title = element_blank(),
+                 strip.text = element_text(size = 8, color = "black"),
+                 strip.background = element_blank()) +
       ggtitle(id)
     return(out)
   }))
 
-#patchwork::wrap_plots(metrics_series$time_series[c(1:74)], ncol = 5, nrow = 3, heights = 3000, widths = 1000)
+gridExtra::marrangeGrob(metrics_series$time_series, layout_matrix = matrix(1:12, ncol = 3, nrow = 4), top = NULL)
 ```
+
+## Annual Network Plots
