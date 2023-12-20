@@ -75,6 +75,7 @@ license_types %>%
 #| label:   time series of license types
 #| echo:    false
 #| message: false
+#| warning: false
 #| column:  page
 #| fig-width:  9
 #| fig-height: 13
@@ -82,7 +83,7 @@ license_types %>%
 clean_portfolio %>% 
   ungroup(landings_number) %>%
   select(license_year, license_types$license) %>%
-  pivot_longer(cols = 2:60, names_to = "license", values_to = "count") %>%
+  pivot_longer(cols = 2:58, names_to = "license", values_to = "count") %>%
   #left_join(license_types %>% select(code, description)) %>%
   #mutate(description = tolower(description)) %>%
   group_by(license_year, license) %>%
@@ -112,14 +113,15 @@ gridExtra::marrangeGrob(license_time_series$time_series, layout_matrix = matrix(
 #| label:   view co-matrix
 #| echo:    false
 #| message: false
+#| warning: false
 
 ### Either remove this or change to annual - not necessary to show this 
-
-co_matrix <- ind_lic_portfolio %>%
-  arrange(license_year) %>%
-  select((license_types$code))
-co_matrix <- crossprod(as.matrix(co_matrix))
-diag(co_matrix) <- 0
+# 
+# co_matrix <- ind_lic_portfolio %>%
+#   arrange(license_year) %>%
+#   select((license_types$code))
+# co_matrix <- crossprod(as.matrix(co_matrix))
+# diag(co_matrix) <- 0
 # 
 # as_tibble(co_matrix) %>%
 #   pivot_longer(cols = 1:74, names_to = "license_code", values_to = "Count") %>%
@@ -180,7 +182,8 @@ metrics_series <- annual_metrics %>%
   relocate("license", .after = "license_year") %>%
   pivot_longer(degree:betweeness, names_to = "metric", values_to = "value") %>%
   nest() %>%
-  left_join(license_types %>% select(license))
+  left_join(license_types %>% select(license)) %>%
+  mutate(license = str_to_title(license))
 
 metrics_series <- metrics_series %>% 
   mutate(time_series = map2(data, license, function(x,y){

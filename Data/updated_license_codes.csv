@@ -45,10 +45,10 @@ lcs,Lobster Crab Student ,Lobster
 lcu,Lobster Crab Under 18,Lobster
 lmp,Lobster Meat Permit,Post-Harvest
 lnc,Lobster crab non commerical,Lobster
-lpl,Lobster Processor,Lobster
-lpto,Lobster Processor Tails Only,Lobster
-lt,Lobter Transportation,Lobster
-lts,Lobster Transportation Supplemental,Lobster
+lpl,Lobster Processor,Post-Harvest
+lpto,Lobster Processor Tails Only,Post-Harvest
+lt,Lobster Transportation,Post-Harvest
+lts,Lobster Transportation Supplemental,Post-Harvest
 madf,Maliseet Elver Dip License ,Elver
 maed,Mal Elver Dip,Elver
 maef,Mal Elver 1 Fyke (Mal Elver Fyke),Elver
