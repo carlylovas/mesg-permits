@@ -8,7 +8,7 @@ cps,Commercial pelagic and anadromous single,Pelagic/Anadromous
 cs,Commercial Shellfish,Shellfish
 csc,Commercial shrimp crew,Shrimp
 cso,Commercial shellfish + 70,Shrimp
-css,Commerical Shrimp Single,Shrimp
+css,Commercial Shrimp Single,Shrimp
 csu,Commercial Shellfish Under 18,Shellfish
 csw,Commercial Shrimp Single,Shrimp
 csws,Commercial Shrimp Crew,Shrimp
@@ -19,19 +19,19 @@ e0c,Elver Dip Net Crew,Elver
 e1,Elver 1 Fyke Net,Elver
 e1c,Elver 1 Fyke Net Crew,Elver
 e2,Elver 2 Fyke Net,Elver
-e29,Elver Non Resident,Elver
+e29,Elver Non Resident,Non-resident
 e2c,Elver 2 Fyke Net with Crew,Elver
 e6,Elver Dip Net 1 Fyke Net,Elver
 e6c,Elver Dip Net 1 Fyke Net Crew,Elver
-ed,Elver Dealer,Elver
-eds,Elver Dealer Supplemental ,Elver
-eel,Eel license - changed to Eel Pot,Eel
-eex,Elver Exporter,Elver
+ed,Elver Dealer,Post-Harvest
+eds,Elver Dealer Supplemental ,Post-Harvest
+eel,Eel pot,Eel
+eex,Elver Exporter,Post-Harvest
 elv,Elver ,Elver
-ep,eel pot/hoop net,Eel
+ep,Eel pot,Eel
 fhc,federal halibut crew,Halibut
 gc,Green crab,Green crab
-gcn,green crab non resident,Green crab
+gcn,green crab non resident,Non-resident
 la,Lobster Crab Apprentice,Lobster
 lao,Lobster Crab Apprentice + 70,Lobster
 lau,lobster crab apprentace under 18,Lobster
@@ -43,7 +43,7 @@ lc3o,Lobster crab class III + 70,Lobster
 lco,Lobster Crab + 70,Lobster
 lcs,Lobster Crab Student - policy change in 2016,Lobster
 lcu,Lobster Crab Under 18,Lobster
-lmp,Lobster Meat Permit,Lobster
+lmp,Lobster Meat Permit,Post-Harvest
 lnc,Lobster crab non commerical,Lobster
 lpl,Lobster Processor,Lobster
 lpto,Lobster Processor Tails Only,Lobster
@@ -55,7 +55,7 @@ maef,Mal Elver 1 Fyke (Mal Elver Fyke),Elver
 mb,Mussel Boat,Mussel
 md,Mussel Dragger,Mussel
 menc,menhaden commercial,Menhaden
-mennr,menhaden commercial non-res,Menhaden
+mennr,menhaden commercial non-res,Non-resident
 menr,menhaden non commercial,Menhaden
 mh,Mussel Hand,Mussel
 mics,mic comm shellfish,Shellfish
@@ -86,23 +86,23 @@ nbsd,Penob Scallop Dragger,Scallop
 nbsf,penob sust fish,Finfish
 nbsl,Penob Sust Lobster,Lobster
 nbss,Penob Sust Shellfish,Shellfish
-ncf,commercial fishing non resident,Finfish
-ncp,non-resident pelagic and anadromous,Pelagic/Anadromous
+ncf,commercial fishing non resident,Non-resident
+ncp,non-resident pelagic and anadromous,Non-resident
 ncs,Scallop non commericial,Scallop
 nfhc,non federal halibut crew,Halibut
 nfhs,non federal halibut single,Halibut
-nla,Non-res lobster apprentice,Lobster
-nlc1,Non-res lobster class 1,Lobster
-nrlp,Non-res lob crab landing,Lobster
-nrs,Seaweed non resident,Seaweed
-nrss,seaweed non resident supp,Seaweed
-ntp,non-resident tuna permit,Tuna
+nla,Non-res lobster apprentice,Non-resident
+nlc1,Non-res lobster class 1,Non-resident
+nrlp,Non-res lob crab landing,Non-resident
+nrs,Seaweed non resident,Non-resident
+nrss,seaweed non resident supp,Non-resident
+ntp,non-resident tuna permit,Non-resident
 pal,Pass Apprentice Lobster,Lobster
 pcf,pass com fish,Finfish
 pcfc,pass comm fish crew,Finfish
 pcfs,Pass Comm Fish Single,Finfish
 pcps,Pass Comm Fish Single,Finfish
-pcs,Pass Comm Shellfish,Sh
+pcs,Pass Comm Shellfish,Shellfish
 pefd,Pass Elver Fyke Dip,Elver
 peld,Pass Elver Dip,Elver
 peldc,Pass Elver Dip Crew,Elver
@@ -127,12 +127,12 @@ push,Pass Sea urch sustenance,Sea urchin
 qm,Quahog (Mahogany),Quahog clam
 r,Retail Seafood,Post-Harvest
 re,Enhanced Retail,Post-Harvest
-sb,Scallop boat - from 1990 to 1993 - then went to SB,Scallop
+sb,Scallop dragger,Scallop
 scd,Sea Cucumber Drag,Sea cucumber
-sd,Scallop Dragger,Scallop
+sd,Scallop dragger,Scallop
 sdi,Scallop diver,Scallop
 sdt,Scallop with tender,Scallop
-sh,Scallop Hand - now SDI changed in 1994,Scallop
+sh,Scallop diver,Scallop
 spt,spat,Spat
 st,Shellfish Trans Out-of-State,Shellfish
 sts,Shellfish Trans Supp,Shellfish
@@ -143,8 +143,8 @@ surf,Surf Clam Boat,Surf clam
 sut,NA,NA
 suwt,Sea Urchin with Tender,Sea urchin
 sw,Seaweed,Seaweed
-swb,Sea urchin tender - changed to TEN,Post-Harvest
-swbn,Nonresident Seaweed Buyer,Seaweed
+swb,Tender,Post-Harvest
+swbn,Nonresident Seaweed Buyer,Non-resident
 swr,Recreational Saltwater Registry,Recreational
 swro,Recreational Saltwater Fishing Operater,Recreational
 swrs,recreational saltwater fishing sup,Recreational
