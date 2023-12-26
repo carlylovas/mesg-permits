@@ -210,7 +210,7 @@ gridExtra::marrangeGrob(metrics_series$time_series, layout_matrix = matrix(1:15,
 ```
 
 ## Annual Network Plots
-
+Plots will need to live in a different markdown, as the file size is too large for github
 ```{r}
 #| label: network plots
 #| echo: false
@@ -248,6 +248,6 @@ annual_graphs <- annual_metrics %>%
   })) %>%
   select(license_year, ggraph, ggraph_circular)
 
-annual_graphs$ggraph_circular[c(1:33)]
+# make different markdown for network plots; too big for github
 ```
 
