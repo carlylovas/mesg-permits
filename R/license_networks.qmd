@@ -211,6 +211,7 @@ gridExtra::marrangeGrob(metrics_series$time_series, layout_matrix = matrix(1:15,
 ```
 
 ## Annual Network Plots
+
 Plots are available [here](https://carlylovas.github.io/mesg-permits/R/license_network_plots.html)
 
 ```{r}
@@ -255,4 +256,3 @@ write_rds(annual_graphs, here("Data", "network_graphs.rds"))
 
 # make different markdown for network plots; too big for github
 ```
-
