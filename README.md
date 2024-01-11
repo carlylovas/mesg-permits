@@ -6,3 +6,8 @@ This is the public repository containing the necessary data and code for network
 
 1.  [Species-level network analysis](https://carlylovas.github.io/mesg-permits/R/species_networks.html)
 2.  [License network analysis](https://carlylovas.github.io/mesg-permits/R/license_networks.html)
+3.  [License network plots](https://carlylovas.github.io/mesg-permits/R/license_network_plots.html)
+
+## Replication
+
+As of *January 11, 2024*, the non-confidential data needed to recreate these three reports is contained within this repository. `Data` contains the files necessary to rerun the scripts contained in `R`. The order of species and network level scripts does not matter but **network analysis must be run prior to network plots** as it outputs an .rds file required for plotting.
