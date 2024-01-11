@@ -29,11 +29,15 @@ library(gomfish)
 
 data(ind_lic_portfolio)
 
+# Read in updated license codes 
+updated_license_codes <- read.csv(here("Data", "updated_license_codes.csv")) %>%
+  rename("license_type" = "code")
+
 # Read in cleaned license information from [clean_license_data.R]
-clean_license_codes <- read.csv(here("Data", "cleaned_data_labels.csv"))
+# clean_license_codes <- read.csv(here("Data", "cleaned_data_labels.csv"))
 
 # use data cleaned previously [clean_license_data.R] in order to combine new/overlapping license codes 
-clean_portfolio <- read_rds(here("Data", "portfolio_by_lic_description.rds"))
+#clean_portfolio <- read_rds(here("Data", "portfolio_by_lic_description.rds"))
 ```
 
 ## Harvester licenses in Maine
@@ -47,27 +51,26 @@ To focus on fishery access and harvester adaptability, we've removed indigenous 
 
 
 # Remove indigenous and non-harvester licenses
-license_types <- names(clean_portfolio %>% ungroup(landings_number) %>%
+license_types <- names(ind_lic_portfolio %>%
                          select(!c(landings_number, license_year)))
 license_types <- as_tibble(license_types) %>%
   rename("license_type" = "value") %>%
-  left_join(clean_license_codes) %>%
+  left_join(updated_license_codes) %>%
   mutate(description = str_to_sentence(description))
 
-# license_types %>% 
-#   filter(!(str_starts(code, "ma"))) %>%
-#   filter(!(str_starts(code, "mi"))) %>%
-#   filter(!(str_starts(code, "nb"))) %>%
-#   filter(!(str_starts(code, "p")))  %>%
-#   filter(!code %in% c("car", "dl", "r", "re", "sdt", "suwt", "swr", "swrs", "swro", 
-#             "ten", "w", "wl", "wls", "ws", "lpl", "lpto", "lt", "lts",
-#             "ed", "eds", "lmp", "mw", "mws", "st","sts", "sut", "vh")) %>%
-#   left_join(license_codes) %>%
-#   filter(!group %in% c("Post-Harvest", "Non-resident", "Demo")) -> license_types
+license_types %>%
+  filter(!group %in% c("Demo","Post-Harvest", "Non-resident", "Recreational")) %>%
+  filter(!(str_starts(license_type, "ma"))) %>%
+  filter(!(str_starts(license_type, "mi"))) %>%
+  filter(!(str_starts(license_type, "nb"))) %>%
+  filter(!(str_starts(license_type, "p")))  %>%
+  filter(!license_type == "st") %>%
+  drop_na() -> license_types # the one NA here is sut 
+  # filter(!license_type %in% c("car", "dl", "ds","ntp", "r", "re", "sdt", "suwt",      "swbn", "swr", "swrs", "swro","ten", "w", "wl", "wls", "ws", "lpl", "lpto", "lt",     "lts", "ed", "eds", "lmp", "mw", "mws", "st","sts", "sut")) 
 
 license_types %>% 
   gt() %>% 
-  #cols_hide(group) %>%
+  cols_hide(group) %>%
   cols_label(
     license_type   = md("**License Code**"),
     description = md("**License Type**"))
@@ -85,10 +88,9 @@ license_types %>%
 #| fig-width:  9
 #| fig-height: 13
 
-clean_portfolio %>% 
-  ungroup(landings_number) %>%
+ind_lic_portfolio %>% 
   select(license_year, license_types$license_type) %>%
-  pivot_longer(cols = 2:58, names_to = "license_type", values_to = "count") %>%
+  pivot_longer(cols = 2:61, names_to = "license_type", values_to = "count") %>%
   left_join(license_types) %>%
   #mutate(description = tolower(description)) %>%
   group_by(license_year, license_type, description) %>%
@@ -156,8 +158,7 @@ Important nodes tend to have more connections to other nodes. Highly connected n
 #| fig-width:  9
 #| fig-height: 13
 
-annual_co_matrix <- clean_portfolio %>%
-  ungroup(landings_number) %>%
+annual_co_matrix <- ind_lic_portfolio %>%
   arrange(license_year) %>%
   select(license_types$license_type, license_year) %>%
   group_by(license_year) %>%
@@ -210,7 +211,8 @@ gridExtra::marrangeGrob(metrics_series$time_series, layout_matrix = matrix(1:15,
 ```
 
 ## Annual Network Plots
-Plots will need to live in a different markdown, as the file size is too large for github
+Plots are available [here](https://carlylovas.github.io/mesg-permits/R/license_network_plots.html)
+
 ```{r}
 #| label: network plots
 #| echo: false
@@ -247,6 +249,9 @@ annual_graphs <- annual_metrics %>%
       theme_graph()   
   })) %>%
   select(license_year, ggraph, ggraph_circular)
+
+
+write_rds(annual_graphs, here("Data", "network_graphs.rds"))
 
 # make different markdown for network plots; too big for github
 ```
