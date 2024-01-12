@@ -12,6 +12,7 @@ editor: visual
 #| label:   load libraries & data
 #| echo:    false
 #| message: false
+#| warning: false
 
 # Install & load the libraries
 library(tidyverse)
@@ -33,11 +34,6 @@ data(ind_lic_portfolio)
 updated_license_codes <- read.csv(here("Data", "updated_license_codes.csv")) %>%
   rename("license_type" = "code")
 
-# Read in cleaned license information from [clean_license_data.R]
-# clean_license_codes <- read.csv(here("Data", "cleaned_data_labels.csv"))
-
-# use data cleaned previously [clean_license_data.R] in order to combine new/overlapping license codes 
-#clean_portfolio <- read_rds(here("Data", "portfolio_by_lic_description.rds"))
 ```
 
 ## Harvester licenses in Maine
@@ -64,9 +60,8 @@ license_types %>%
   filter(!(str_starts(license_type, "mi"))) %>%
   filter(!(str_starts(license_type, "nb"))) %>%
   filter(!(str_starts(license_type, "p")))  %>%
-  filter(!license_type == "st") %>%
+  filter(!license_type %in% c("st", "sts", "csw", "csws")) %>%
   drop_na() -> license_types # the one NA here is sut 
-  # filter(!license_type %in% c("car", "dl", "ds","ntp", "r", "re", "sdt", "suwt",      "swbn", "swr", "swrs", "swro","ten", "w", "wl", "wls", "ws", "lpl", "lpto", "lt",     "lts", "ed", "eds", "lmp", "mw", "mws", "st","sts", "sut")) 
 
 license_types %>% 
   gt() %>% 
@@ -90,7 +85,7 @@ license_types %>%
 
 ind_lic_portfolio %>% 
   select(license_year, license_types$license_type) %>%
-  pivot_longer(cols = 2:61, names_to = "license_type", values_to = "count") %>%
+  pivot_longer(cols = 2:59, names_to = "license_type", values_to = "count") %>%
   left_join(license_types) %>%
   #mutate(description = tolower(description)) %>%
   group_by(license_year, license_type, description) %>%
@@ -117,41 +112,15 @@ gridExtra::marrangeGrob(license_time_series$time_series, layout_matrix = matrix(
 
 ```
 
-```{r}
-#| label:   view co-matrix
-#| echo:    false
-#| message: false
-#| warning: false
-
-### Either remove this or change to annual - not necessary to show this 
-# 
-# co_matrix <- ind_lic_portfolio %>%
-#   arrange(license_year) %>%
-#   select((license_types$code))
-# co_matrix <- crossprod(as.matrix(co_matrix))
-# diag(co_matrix) <- 0
-# 
-# as_tibble(co_matrix) %>%
-#   pivot_longer(cols = 1:74, names_to = "license_code", values_to = "Count") %>%
-#   select(license_code) %>%
-#   distinct() %>%
-#   cbind(as_tibble(co_matrix)) %>%
-#   gt() %>%
-#   cols_label(license_code = md("**License Code**"))
-```
-
 ## Annual License Network Metrics
-
-Degree and betweenness are both ways of measuring centrality.
+### Degree Centrality
 
 "The *degree* of a node is the number of other nodes that single node is connected to.
 
 Important nodes tend to have more connections to other nodes. Highly connected nodes are interpreted to have high degree centrality."
 
-"\[*Betweenness*\] ranks the nodes based on the flow of connections through the network. Importance is demonstrated through high frequency of connection with multiple other nodes. Nodes with high levels of betweenness tend to serve as a bridge for multiple sets of other important nodes." [*Source*](https://bookdown.org/jdholster1/idsr/network-analysis.html#advanced-case-study)
-
 ```{r}
-#| label:      annual co-matrix
+#| label:      annual metrics
 #| echo:       false
 #| warning:    false
 #| column:     page
@@ -174,6 +143,7 @@ annual_metrics <- annual_co_matrix %>%
   mutate(graph_obj     = map(co_matrix, function(x){graph.adjacency(x, mode = "undirected", weighted = TRUE)}),
          degree        = map(graph_obj, function(x){degree(x)}),
          betweeness    = map(graph_obj, function(x){betweenness(x)}),
+         density       = map(graph_obj, function(x){edge_density(x, loops = FALSE)}),
          evcent        = map(graph_obj, function(x){evcent(x)}))
 
 metrics_series <- annual_metrics %>% 
@@ -187,16 +157,14 @@ metrics_series <- annual_metrics %>%
               group_by(betweeness_id) %>%
               rename("license_type" = "betweeness_id")) %>% 
   relocate("license_type", .after = "license_year") %>%
-  pivot_longer(degree:betweeness, names_to = "metric", values_to = "value") %>%
   nest() %>%
   left_join(license_types)
 
-metrics_series <- metrics_series %>% 
-  mutate(time_series = map2(data, description, function(x,y){
+degree_plots <- metrics_series %>% 
+  mutate(time_series = map2(data, description, function(x, description){
     out <- ggplot(data = x)+
-      geom_line(aes(x=license_year, y=value)) +
-      facet_wrap(~metric, ncol = 1) +
-      ylim(c(0, 150)) +
+      geom_line(aes(x=license_year, y=degree)) +
+      ylim(c(0, 50)) + 
       theme_gmri(plot.title = element_text(size = 8),
                  axis.text  = element_text(size = 6),
                  axis.title = element_blank(),
@@ -204,15 +172,45 @@ metrics_series <- metrics_series %>%
                  strip.background = element_blank()) +
       ggtitle(description)
     return(out)
-  }))
+  })) 
 
-gridExtra::marrangeGrob(metrics_series$time_series, layout_matrix = matrix(1:15, ncol = 3, nrow = 5, byrow= TRUE), top = NULL, left = textGrob(
+gridExtra::marrangeGrob(degree_plots$time_series, layout_matrix = matrix(1:15, ncol = 3, nrow = 5, byrow= TRUE), top = NULL, left = textGrob(
   expression(bold("Degree")), rot = 90, gp = gpar(col = "black", fontsize = 8)))
 ```
 
+### Betweeness 
+"\[*Betweenness*\] ranks the nodes based on the flow of connections through the network. Importance is demonstrated through high frequency of connection with multiple other nodes. Nodes with high levels of betweenness tend to serve as a bridge for multiple sets of other important nodes." [*Source*](https://bookdown.org/jdholster1/idsr/network-analysis.html#advanced-case-study)
+
+```{r}
+#| label:      betweeness
+#| echo:       false
+#| warning:    false
+#| column:     page
+#| fig-width:  9
+#| fig-height: 13
+
+betweeness_plots <- metrics_series %>% 
+  mutate(time_series = map2(data, description, function(x, description){
+    out <- ggplot(data = x)+
+      geom_line(aes(x=license_year, y=betweeness)) +
+      ylim(c(0, 150)) + 
+      theme_gmri(plot.title = element_text(size = 8),
+                 axis.text  = element_text(size = 6),
+                 axis.title = element_blank(),
+                 strip.text = element_text(size = 8, color = "black"),
+                 strip.background = element_blank()) +
+      ggtitle(description)
+    return(out)
+  })) 
+
+gridExtra::marrangeGrob(betweeness_plots$time_series, layout_matrix = matrix(1:15, ncol = 3, nrow = 5, byrow= TRUE), top = NULL, left = textGrob(
+  expression(bold("Degree")), rot = 90, gp = gpar(col = "black", fontsize = 8)))
+```
+
+
 ## Annual Network Plots
 
-Plots are available [here](https://carlylovas.github.io/mesg-permits/R/license_network_plots.html)
+Density time series and network plots are available [here](https://carlylovas.github.io/mesg-permits/R/license_network_plots.html)
 
 ```{r}
 #| label: network plots
@@ -249,7 +247,7 @@ annual_graphs <- annual_metrics %>%
       geom_node_text(aes(label = name), repel = TRUE, color = "black", max.overlaps = 100) +
       theme_graph()   
   })) %>%
-  select(license_year, ggraph, ggraph_circular)
+  select(license_year, density, ggraph, ggraph_circular)
 
 
 write_rds(annual_graphs, here("Data", "network_graphs.rds"))
