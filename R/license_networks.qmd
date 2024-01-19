@@ -60,7 +60,7 @@ license_types %>%
   filter(!(str_starts(license_type, "mi"))) %>%
   filter(!(str_starts(license_type, "nb"))) %>%
   filter(!(str_starts(license_type, "p")))  %>%
-  filter(!license_type %in% c("st", "sts", "csw", "csws")) %>%
+  filter(!license_type %in% c("st", "sts", "csw", "csws", "mws")) %>%
   drop_na() -> license_types # the one NA here is sut 
 
 license_types %>% 
@@ -70,6 +70,66 @@ license_types %>%
     license_type   = md("**License Code**"),
     description = md("**License Type**"))
 
+```
+
+## Licenses Issued 
+Below are two plots depicting the total number of licenses issued per year and the number of unique license types issued per year
+
+```{r}
+#| label:   total licenses issued
+#| echo:    false
+#| message: false
+#| warning: false
+#| column:  page
+#| fig-width:  7
+#| fig-height: 5
+
+ind_lic_portfolio %>% 
+  select(license_year, license_types$license_type) %>%
+  pivot_longer(cols = 2:55, names_to = "license_type", values_to = "count") %>%
+  left_join(license_types) %>%
+  group_by(license_year) %>%
+  summarise(total = sum(count)) -> total_licenses
+
+ggplot(data = total_licenses)+
+  geom_line(aes(x = license_year, y = total)) +
+  ggtitle("Total Licenses Issued") +
+  xlab("Total") + ylab("Year") +
+  ylim(c(10000,20000)) +
+  theme_gmri(plot.title = element_text(size = 8),
+             axis.text  = element_text(size = 8),
+             axis.title = element_text(size = 8))
+
+```
+
+
+```{r}
+#| label:   unique license types each year 
+#| echo:    false
+#| message: false
+#| warning: false
+#| column:  page
+#| fig-width:  7
+#| fig-height: 5
+
+ind_lic_portfolio %>% 
+  select(license_year, license_types$license_type) %>%
+  pivot_longer(cols = 2:55, names_to = "license_type", values_to = "count") %>%
+  filter(!count == 0) %>% 
+  select(license_year, license_type) %>% 
+  distinct() %>%
+  group_by(license_year) %>%
+  nest() %>% 
+  arrange(license_year) %>%
+  mutate(unique_license_types = map_dbl(data, function(x){nrow(x)})) -> unique_licenses
+
+ggplot(unique_licenses)+
+  geom_line(aes(x = license_year, y = unique_license_types), 
+           position = "stack") +
+  ggtitle("Unique License Types") +
+  theme_gmri(plot.title = element_text(size = 8),
+             axis.text  = element_text(size = 6),
+             axis.title = element_blank())
 ```
 
 ## Time series of license holdings
@@ -85,7 +145,7 @@ license_types %>%
 
 ind_lic_portfolio %>% 
   select(license_year, license_types$license_type) %>%
-  pivot_longer(cols = 2:59, names_to = "license_type", values_to = "count") %>%
+  pivot_longer(cols = 2:55, names_to = "license_type", values_to = "count") %>%
   left_join(license_types) %>%
   #mutate(description = tolower(description)) %>%
   group_by(license_year, license_type, description) %>%
