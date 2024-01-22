@@ -11,14 +11,10 @@ editor: visual
 Please review to the [License Networks](https://carlylovas.github.io/mesg-permits/R/license_networks.html) to understand which license code corresponds with which license type
 
 ```{r}
-#| label:   load libraries & data
+#| label:   load libraries & data 
 #| echo:    false
 #| message: false
 #| warning: false
-#| column:  page
-#| fig-width:  6
-#| fig-height: 6
-
 
 library(tidyverse)
 library(tidygraph)
@@ -30,6 +26,45 @@ library(grid)
 
 annual_graphs <- read_rds(here("Data", "network_graphs.rds"))
 
+```
+
+## Annual network plots 
+These plots include *all* data points, including years in which certain licenses may not have been issued
+
+```{r}
+#| label: annual graphs
+#| echo: false
+#| message: false
+#| warning: false
+#| column:  page
+#| fig-width:  6
+#| fig-height: 6
+
+
 gridExtra::marrangeGrob(annual_graphs$ggraph_circular, layout_matrix = matrix(1:1, ncol = 1, nrow = 1, byrow= TRUE), top = NULL)
 
 ```
+
+## Edge density 
+Below is the time series of network edge density. 
+```{r}
+#| label: edge density
+#| echo: false
+#| message: false
+#| warning: false
+#| column:  page
+#| fig-width:  7
+#| fig-height: 5
+
+annual_graphs %>%
+  select(license_year, density) %>% 
+  mutate(density = as.numeric(density)) %>%
+  ggplot() +
+  geom_line(aes(x = license_year, y = density)) +
+  ggtitle("Edge density") +
+  theme_gmri(plot.title = element_text(size = 8),
+             axis.text  = element_text(size = 6),
+             axis.title = element_blank())
+              
+```
+

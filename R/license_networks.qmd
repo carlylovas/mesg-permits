@@ -28,7 +28,9 @@ library(gt)
 devtools::install_github("Social-Oceans-Lab/gomfish")
 library(gomfish)
 
-data(ind_lic_portfolio)
+data(ind_lic_portfolio) 
+
+ind_lic_portfolio <- ind_lic_portfolio %>% filter(!license_year == "2022") # unreliable
 
 # Read in updated license codes 
 updated_license_codes <- read.csv(here("Data", "updated_license_codes.csv")) %>%
