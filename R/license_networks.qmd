@@ -63,7 +63,7 @@ license_types %>%
   filter(!(str_starts(license_type, "mi"))) %>%
   filter(!(str_starts(license_type, "nb"))) %>%
   filter(!(str_starts(license_type, "p")))  %>%
-  filter(!license_type %in% c("st", "sts", "csw", "csws", "mws", "mw")) %>%
+  filter(!license_type %in% c("st", "sts", "csw", "csws", "fhc", "mws", "mw", "nfhc", "nfhs")) %>%
   drop_na() -> license_types # the one NA here is sut 
 
 license_types %>% 
@@ -91,7 +91,7 @@ Below is a time series depicting the total number of licenses issued per year (l
 
 ind_lic_portfolio %>% 
   select(license_year, license_types$license_type) %>% # landings_number) %>%
-  pivot_longer(cols = 2:56, names_to = "license_type", values_to = "count") %>%
+  pivot_longer(cols = 2:53, names_to = "license_type", values_to = "count") %>%
   left_join(license_types) %>%
   group_by(license_year) %>%
   summarise(total = sum(count)) -> total_licenses
@@ -133,7 +133,7 @@ Available licenses types change over time as new opportunities and management pr
 
 ind_lic_portfolio %>% 
   select(license_year, license_types$license_type) %>%
-  pivot_longer(cols = 2:56, names_to = "license_type", values_to = "count") %>%
+  pivot_longer(cols = 2:53, names_to = "license_type", values_to = "count") %>%
   filter(!count == 0) %>% 
   select(license_year, license_type) %>% 
   distinct() %>%
@@ -143,14 +143,12 @@ ind_lic_portfolio %>%
   mutate(unique_license_types = map_dbl(data, function(x){nrow(x)})) -> unique_licenses
 
 ggplot(unique_licenses)+
-  geom_line(aes(x = license_year, y = unique_license_types), 
-           position = "stack") +
+  geom_line(aes(x = license_year, y = unique_license_types)) +
   ggtitle("Unique License Types") +
   theme_gmri(plot.title = element_text(size = 10),
              axis.text  = element_text(size = 10),
              axis.title = element_blank())
 ```
-
 ## Time series of license holdings
 
 The total amount of licenses issued per year.
@@ -167,11 +165,12 @@ The total amount of licenses issued per year.
 
 ind_lic_portfolio %>% 
   select(license_year, license_types$license_type) %>%
-  pivot_longer(cols = 2:55, names_to = "license_type", values_to = "count") %>%
+  pivot_longer(cols = 2:53, names_to = "license_type", values_to = "count") %>%
   left_join(license_types) %>% 
   #mutate(description = tolower(description)) %>%
   group_by(license_year, license_type, description) %>%
   summarise(total = sum(count)) %>%
+  #filter(!total == 0) %>% 
   group_by(description) %>%
   nest() -> license_time_series
 
@@ -182,6 +181,7 @@ license_time_series %>%
     out <- ggplot(data = x)+
       geom_line(aes(x = license_year, y = total)) +
       ylim(c(0, NA)) +
+      xlim(c(1990, NA)) +
       theme_gmri(plot.title = element_text(size = 8),
                  axis.text  = element_text(size = 8),
                  axis.title = element_blank()) + 
@@ -213,7 +213,7 @@ Below are the summary statisitcs of the average number of licenses held by an in
 
 ind_lic_portfolio %>% 
   select(license_year, license_types$license_type, landings_number) %>%
-  pivot_longer(cols = 2:56, names_to = "license_type", values_to = "count") %>%
+  pivot_longer(cols = 2:53, names_to = "license_type", values_to = "count") %>%
   filter(!count == 0) %>%
   filter(!is.na(landings_number)) %>%
   left_join(license_types) %>%
