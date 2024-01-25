@@ -37,7 +37,6 @@ updated_license_codes <- read.csv(here("Data", "updated_license_codes.csv")) %>%
   rename("license_type" = "code")
 
 ```
-
 ## Harvester licenses in Maine
 
 To focus on fishery access and harvester adaptability, we've removed indigenous licenses, non-residential, and post-harvest (i.e., processors, wholesalers, etc) from the data set.
@@ -73,11 +72,9 @@ license_types %>%
     description = md("**License Type**"))
 
 ```
-
 ## Licenses Issued
 
 Below is a time series depicting the total number of licenses issued per year (line) and the number of licensed individuals per year (column)
-
 ```{r}
 #| label:   total licenses issued
 #| echo:    false
@@ -117,9 +114,7 @@ ggplot(data = total_licenses) +
              axis.title = element_text(size = 10))
 
 ```
-
-Available licenses types change over time as new opportunities and management practices take shape and fishery expand or close. Below is a time series depicting the amount of unique license types available in a given year.
-
+Available licenses types change over time as new opportunities and management practices take shape and fisheries expand or close. Below is a time series depicting the amount of unique license types available in a given year.
 ```{r}
 #| label:   unique license types each year 
 #| echo:    false
@@ -152,7 +147,6 @@ ggplot(unique_licenses)+
 ## Time series of license holdings
 
 The total amount of licenses issued per year.
-
 ```{r}
 #| label:   time series of license types
 #| echo:    false
@@ -192,10 +186,9 @@ license_time_series %>%
 gridExtra::marrangeGrob(license_time_series$time_series, layout_matrix = matrix(1:12, ncol = 4, nrow = 3, byrow = TRUE), top = NULL,  left = textGrob(
   expression(bold("Total Annual")), rot = 90, gp = gpar(col = "black", fontsize = 10)))
 ```
-
 ## Average license holdings
 
-Below are the summary statisitcs of the average number of licenses held by an individual per year. Individuals who were not assigned a landings number (NA) were removed from the dataset before averages were calculated.
+Below is the average number of licenses held by an individual per year. Individuals who were not assigned a landings number (NA) were removed from the dataset before averages were calculated.
 
 ```{r}
 #| label:   average license holdings
@@ -247,7 +240,6 @@ average_licenses %>%
              axis.text  = element_text(size = 10),
              axis.title = element_blank())
 ```
-
 ## Annual License Network Metrics
 
 ### Degree Centrality
