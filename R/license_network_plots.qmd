@@ -30,7 +30,7 @@ annual_graphs <- read_rds(here("Data", "network_graphs.rds"))
 
 ## Annual network plots
 
-These plots include *all* data points, including years in which certain licenses may not have been issued
+Each network features only the licenses available in that given year.
 
 ```{r}
 #| label: annual graphs
@@ -49,7 +49,9 @@ gridExtra::marrangeGrob(annual_graphs$ggraph_circular, layout_matrix = matrix(1:
 
 ## Edge density
 
-Below is the time series of network edge density. The density of a graph is the ratio of the actual number of edges and the largest possible number of edges in the graph, assuming that no multi-edges are present. A network with higher density suggests more connections within the network. In the case of license networks, a more dense network would suggest more accesibility across fisheries and a less dense network would have less accessibility across fisheries. 
+Below is the time series of network edge density. The density of a graph is the ratio of the actual number of edges and the largest possible number of edges in the graph, assuming that no multi-edges are present. A network with higher density suggests more connections within the network. In the case of these license networks, a more dense network would suggest less access to alternate fisheries and a less dense network would have more accessibility across fisheries, therefore improving the adaptive capacity of harvesters. 
+
+> High modularity and low density have different subgroups of the target species that alternate over the time period, while high density implies species are being caught simultaneously (Nomura et. al, 2021)
 
 ```{r}
 #| label: edge density
