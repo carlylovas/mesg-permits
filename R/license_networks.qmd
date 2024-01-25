@@ -48,7 +48,6 @@ To focus on fishery access and harvester adaptability, we've removed indigenous 
 #| message: false
 #| fig-height: 9
 
-
 # Remove indigenous and non-harvester licenses
 license_types <- names(ind_lic_portfolio %>%
                          select(!c(landings_number, license_year)))
@@ -140,7 +139,8 @@ ind_lic_portfolio %>%
   group_by(license_year) %>%
   nest() %>% 
   arrange(license_year) %>%
-  mutate(unique_license_types = map_dbl(data, function(x){nrow(x)})) -> unique_licenses
+  mutate(unique_license_types = map_dbl(data, function(x){nrow(x)})) %>%
+  rename("licenses" = "data")-> unique_licenses
 
 ggplot(unique_licenses)+
   geom_line(aes(x = license_year, y = unique_license_types)) +
@@ -270,13 +270,16 @@ annual_co_matrix <- ind_lic_portfolio %>%
   arrange(license_year) %>%
   select(license_types$license_type, license_year) %>%
   group_by(license_year) %>%
-  nest() %>%
-  mutate(co_matrix = map(data, function(df){
+  nest() %>% 
+  left_join(unique_licenses) %>%
+  select(license_year, data, licenses) %>% 
+  mutate(co_matrix = map2(data, licenses, function(x, y){
+    df <- x %>% select(y$license_type) # this filters the portfolio to feature only licenses issued in that year. If you want to run with all licenses, command out this line. 
     out <- crossprod(as.matrix(df)) 
     diag(out) <- 0
     return(out)
   })) %>%
-  select(license_year, co_matrix)
+  select(license_year, co_matrix) 
 
 annual_metrics <- annual_co_matrix %>%
   mutate(graph_obj     = map(co_matrix, function(x){graph.adjacency(x, mode = "undirected", weighted = TRUE)}),
@@ -297,13 +300,15 @@ metrics_series <- annual_metrics %>%
               rename("license_type" = "betweeness_id")) %>% 
   relocate("license_type", .after = "license_year") %>%
   nest() %>%
-  left_join(license_types)
+  left_join(license_types) %>%
+  arrange(description)
 
 degree_plots <- metrics_series %>% 
   mutate(time_series = map2(data, description, function(x, description){
     out <- ggplot(data = x)+
       geom_line(aes(x=license_year, y=degree)) +
       ylim(c(0, 50)) + 
+      xlim(c(1990, 2021)) +
       theme_gmri(plot.title = element_text(size = 8),
                  axis.text  = element_text(size = 6),
                  axis.title = element_blank(),
@@ -321,6 +326,8 @@ gridExtra::marrangeGrob(degree_plots$time_series, layout_matrix = matrix(1:15, n
 
 "\[*Betweenness*\] ranks the nodes based on the flow of connections through the network. Importance is demonstrated through high frequency of connection with multiple other nodes. Nodes with high levels of betweenness tend to serve as a bridge for multiple sets of other important nodes." [*Source*](https://bookdown.org/jdholster1/idsr/network-analysis.html#advanced-case-study)
 
+License times with high and/or increasing betweeness values may represent important "fringe" fisheries; fisheries that have a low cost of entry, use existing equipment and/or are harvested by hand. These "fringe" fisheries may serve as additional or supplemental means of income. 
+
 ```{r}
 #| label:      betweeness
 #| echo:       false
@@ -335,6 +342,7 @@ betweeness_plots <- metrics_series %>%
     out <- ggplot(data = x)+
       geom_line(aes(x=license_year, y=betweeness)) +
       ylim(c(0, 150)) + 
+      xlim(c(1990, 2021)) +
       theme_gmri(plot.title = element_text(size = 8),
                  axis.text  = element_text(size = 6),
                  axis.title = element_blank(),
