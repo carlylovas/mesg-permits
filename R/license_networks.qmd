@@ -74,7 +74,7 @@ license_types %>%
 ```
 ## Licenses Issued
 
-Below is a time series depicting the total number of licenses issued per year (line) and the number of licensed individuals per year (column)
+Below is a time series depicting the total number of harvester licenses issued per year (line) and the number of licensed individuals per year (column)
 ```{r}
 #| label:   total licenses issued
 #| echo:    false
@@ -85,9 +85,10 @@ Below is a time series depicting the total number of licenses issued per year (l
 #| fig-height: 6
 #| fig-align: center
 
-ind_lic_portfolio %>% 
+ind_lic_portfolio %>%
   select(license_year, license_types$license_type) %>% # landings_number) %>%
   pivot_longer(cols = 2:53, names_to = "license_type", values_to = "count") %>%
+  # pivot_longer(cols = 3:147, names_to = "license_type", values_to = "count") %>%
   left_join(license_types) %>%
   group_by(license_year) %>%
   summarise(total = sum(count)) -> total_licenses
@@ -114,7 +115,7 @@ ggplot(data = total_licenses) +
              axis.title = element_text(size = 10))
 
 ```
-Available licenses types change over time as new opportunities and management practices take shape and fisheries expand or close. Below is a time series depicting the amount of unique license types available in a given year.
+Available licenses types change over time as new opportunities and management practices take shape and fisheries expand or close. Below is a time series depicting the amount of unique harvester license types available in a given year.
 ```{r}
 #| label:   unique license types each year 
 #| echo:    false
