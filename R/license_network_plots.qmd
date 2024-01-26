@@ -46,9 +46,10 @@ Each network features only the licenses available in that given year.
 gridExtra::marrangeGrob(annual_graphs$ggraph_circular, layout_matrix = matrix(1:1, ncol = 1, nrow = 1, byrow= TRUE), top = NULL)
 
 ```
+
 ## Edge density
 
-Below is the time series of network edge density. The density of a graph is the ratio of the actual number of edges and the largest possible number of edges in the graph, assuming that no multi-edges are present. A network with higher density suggests more connections within the network. In the case of these license networks, a more dense network would suggest less access to alternate fisheries and a less dense network would have more accessibility across fisheries, therefore improving the adaptive capacity of harvesters. 
+Below is the time series of network edge density. The density of a graph is the ratio of the actual number of edges and the largest possible number of edges in the graph, assuming that no multi-edges are present. A network with higher density suggests more connections within the network. In the case of these license networks, a more dense network would suggest less access to alternate fisheries and a less dense network would have more accessibility across fisheries, therefore improving the adaptive capacity of harvesters.
 
 > High modularity and low density have different subgroups of the target species that alternate over the time period, while high density implies species are being caught simultaneously (Nomura et. al, 2021)
 
