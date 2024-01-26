@@ -85,7 +85,7 @@ Using Theresa Burnham's code for building the individual license portfolio, lice
 ind_lic_portfolio %>%
   select(license_year,landings_number, license_types$license_type) %>%
   pivot_longer(cols = 3:52, names_to = "license_type", values_to = "licensed") %>%
-  filter(licensed == 1) %>%
+  filter(!licensed == 0) %>%
   left_join(license_types) %>%
   mutate(row = row_number()) %>%
   select(license_year, landings_number, licensed, group, row) %>%
@@ -109,7 +109,7 @@ ind_lic_portfolio %>%
 
 species_portfolio %>% 
   pivot_longer(cols = 3:21, names_to = "species", values_to = "count") %>%
-  filter(count == 1) %>%
+  filter(!count == 0) %>%
   ungroup(landings_number) %>%
   select(license_year, species) %>%
   distinct() %>%
@@ -172,7 +172,7 @@ ggplot(data = species_proportions, aes(x = license_year, y = proportion, fill = 
 
 species_portfolio %>% 
   pivot_longer(cols = 3:21, names_to = "species", values_to = "count") %>%
-  filter(count == 1) %>%
+  filter(!count == 0) %>%
   group_by(license_year, landings_number) %>% 
   nest() %>%
   mutate(num_spp = map_dbl(data, function(x){nrow(x)})) %>% 
@@ -205,16 +205,15 @@ The plots below show the total number of licenses issued per year for a particul
 #| fig-height: 9
 #| fig-align: center
 
-ind_lic_portfolio %>% 
-  select(license_year, license_types$license_type) %>%
-  pivot_longer(cols = 2:51, names_to = "license_type", values_to = "count") %>%
-  left_join(license_types) %>%
-  select(license_year, group, count) %>%
-  group_by(license_year, group) %>%
+species_portfolio %>% 
+  pivot_longer(cols = 3:21, names_to = "species", values_to = "count") %>%
+  filter(!count == 0) %>%
+  select(license_year, species, count) %>%
+  group_by(license_year, species) %>%
   summarise(count = sum(count)) %>%
-  group_by(group) %>% 
+  group_by(species) %>% 
   nest() %>%
-  mutate(time_series = map2(data, group, function(x,y){
+  mutate(time_series = map2(data, species, function(x,y){
     out <- ggplot(data = x)+
       geom_line(aes(x = license_year, y = count)) +
       ylim(c(0, NA)) +
@@ -222,7 +221,7 @@ ind_lic_portfolio %>%
       theme_gmri(plot.title = element_text(size = 8),
                  axis.text  = element_text(size = 8),
                  axis.title = element_blank()) + 
-      ggtitle(group)
+      ggtitle(species)
     return(out)
   })) -> time_series
 
@@ -251,8 +250,10 @@ Important nodes tend to have more connections to other nodes. Highly connected n
 
 annual_co_matrix <- species_portfolio %>%
   arrange(license_year) %>%
+  filter(!is.na(landings_number)) %>%
+  ungroup(landings_number) %>%
   select(!landings_number) %>%
-  group_by(license_year) %>%
+  group_by(license_year)%>%
   nest() %>% 
   left_join(targeted_species) %>%
   select(license_year, data, species) %>% 
@@ -419,3 +420,30 @@ According to [Maine State Legislation](http://www.mainelegislature.org/legis/sta
 #   xlab("Year") + ylab("Number of Licenses Issued") +
 #   theme_gmri() 
 ```
+
+## Anomalies 
+
+```{r}
+#| label: anomalies
+#| echo: false
+#| message: false
+
+ind_lic_portfolio %>% 
+  select(license_year, landings_number, cfc, cfs, cpc, cps) %>%
+  pivot_longer(col = cfc:cps, names_to = "license", values_to = "count") %>%
+  filter(!count == 0) %>%
+  group_by(license_year, license) %>%
+  nest() %>% 
+  mutate(total       = map_dbl(data, function(x){sum(x$count)}),
+         individuals = map_dbl(data, function(x){nrow(x)})) -> anomalies
+  
+ggplot(anomalies) +
+  geom_col(aes(x = license_year, y = individuals, fill = license)) +
+  theme_gmri(plot.title = element_text(size = 10),
+             axis.text  = element_text(size = 8),
+             axis.title = element_text(size = 8)) +
+  scale_fill_gmri() +
+  xlab("Year") + ylab("Total Number of Individuals") + ggtitle("Total number of individual license holders")
+
+```
+
