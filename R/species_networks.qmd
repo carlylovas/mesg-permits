@@ -45,6 +45,8 @@ To correlate species distribution changes with changes in license holdings in Ma
 #| label: license types
 #| echo: false
 #| message: false
+#| warning: false
+#| column: page
 
 # Remove indigenous and non-harvester licenses
 license_types <- names(ind_lic_portfolio %>%
@@ -105,18 +107,17 @@ ind_lic_portfolio %>%
 #| fig-height: 6
 #| fig-align: center
 
-ind_lic_portfolio %>% 
-  select(license_year, license_types$license_type) %>%
-  pivot_longer(cols = 2:51, names_to = "license_type", values_to = "count") %>%
-  left_join(license_types) %>%
+species_portfolio %>% 
+  pivot_longer(cols = 3:21, names_to = "species", values_to = "count") %>%
   filter(count == 1) %>%
-  select(license_year, group) %>%
+  ungroup(landings_number) %>%
+  select(license_year, species) %>%
   distinct() %>%
   group_by(license_year) %>%
-  nest() %>% 
+  nest() %>%
   arrange(license_year) %>%
   mutate(num_targeted_spp = map_dbl(data, function(x){nrow(x)})) %>%
-  rename("species" = "data")-> targeted_species
+  rename("species" = "data") -> targeted_species
 
 ggplot(targeted_species)+
   geom_line(aes(x = license_year, y = num_targeted_spp)) +
@@ -136,22 +137,19 @@ ggplot(targeted_species)+
 #| fig-height: 6
 #| fig-width: 8
 
-ind_lic_portfolio %>% 
-  select(license_year, license_types$license_type) %>%
-  pivot_longer(cols = 2:51, names_to = "license_type", values_to = "count") %>%
-  left_join(license_types) %>%
-  select(license_year, group, count) %>%
-  group_by(license_year, group) %>%
+species_portfolio %>% 
+  pivot_longer(cols = 3:21, names_to = "species", values_to = "count") %>%
+  group_by(license_year, species) %>%
   summarise(count = sum(count)) %>%
   group_by(license_year) %>%
   nest() %>%
   mutate(total = map_dbl(data, function(x){sum(x$count)})) %>%
   unnest(data) %>%
-  group_by(license_year, group) %>%
+  group_by(license_year, species) %>%
   summarise(proportion = count/total) -> species_proportions
 
 
-ggplot(data = species_proportions, aes(x = license_year, y = proportion, fill = group)) +
+ggplot(data = species_proportions, aes(x = license_year, y = proportion, fill = species)) +
   geom_col(position = "stack") +
   theme_gmri(plot.title = element_text(size = 10),
              axis.text  = element_text(size = 10),
@@ -161,6 +159,39 @@ ggplot(data = species_proportions, aes(x = license_year, y = proportion, fill = 
   guides(fill = guide_legend(nrow=2))
 ```
 
+```{r}
+#| label: average number of species targeted
+#| echo: false
+#| message: false
+#| warning: false
+#| column: page
+#| fig-align: center
+#| fig-height: 6
+#| fig-width: 8
+
+
+species_portfolio %>% 
+  pivot_longer(cols = 3:21, names_to = "species", values_to = "count") %>%
+  filter(count == 1) %>%
+  group_by(license_year, landings_number) %>% 
+  nest() %>%
+  mutate(num_spp = map_dbl(data, function(x){nrow(x)})) %>% 
+  select(landings_number, license_year, num_spp) %>%
+  group_by(license_year) %>%
+  summarise(average_num_spp = mean(num_spp)) -> avg_targeted_spp
+
+ggplot(avg_targeted_spp) +
+  geom_point(aes(x = license_year, y = average_num_spp)) +
+  geom_line(aes(x = license_year, y = average_num_spp), linewidth = 0.5) +
+  stat_smooth(aes(x = license_year, y = average_num_spp), method = "lm") +
+  ylim(c(1,2)) +
+  ggtitle("Average number of targeted/harvested species per individual") +
+  theme_gmri(plot.title = element_text(size = 10),
+             axis.text  = element_text(size = 10),
+             axis.title = element_blank())
+
+
+```
 ## Time Series of Targeted Species
 The plots below show the total number of licenses issued per year for a particular target species.
 
@@ -226,7 +257,7 @@ annual_co_matrix <- species_portfolio %>%
   left_join(targeted_species) %>%
   select(license_year, data, species) %>% 
   mutate(co_matrix = map2(data, species, function(x, y){
-    df <- x %>% select(y$group) # this filters the portfolio to feature only species harvested in that year. If you want to run with all species, command out this line. 
+    df <- x %>% select(y$species) # this filters the portfolio to feature only species harvested in that year. If you want to run with all species, command out this line
     out <- crossprod(as.matrix(df)) 
     diag(out) <- 0
     return(out)
@@ -258,7 +289,7 @@ degree_plots <- metrics_series %>%
   mutate(time_series = map2(data, species, function(x, description){
     out <- ggplot(data = x)+
       geom_line(aes(x=license_year, y=degree)) +
-      ylim(c(0, 50)) + 
+      ylim(c(0, 40)) + 
       xlim(c(1990, 2021)) +
       theme_gmri(plot.title = element_text(size = 8),
                  axis.text  = element_text(size = 6),
