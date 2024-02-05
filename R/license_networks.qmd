@@ -153,6 +153,7 @@ ggplot(unique_licenses)+
 
  ggsave(file = here("unique_plot.png"), unique_plot, height = 3, width = 7, units = "in", bg = "white")
 ```
+
 ## Time series of license holdings
 
 The total amount of licenses issued per year.
