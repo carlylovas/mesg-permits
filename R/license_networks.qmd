@@ -30,7 +30,7 @@ library(gomfish)
 
 data(ind_lic_portfolio) 
 
-ind_lic_portfolio <- ind_lic_portfolio %>% filter(!license_year == "2022") # unreliable
+ind_lic_portfolio <- ind_lic_portfolio %>% filter(!license_year == 2022) # unreliable
 
 # Read in updated license codes 
 updated_license_codes <- read.csv(here("Data", "updated_license_codes.csv")) %>%
@@ -62,7 +62,7 @@ license_types %>%
   filter(!(str_starts(license_type, "mi"))) %>%
   filter(!(str_starts(license_type, "nb"))) %>%
   filter(!(str_starts(license_type, "p")))  %>%
-  filter(!license_type %in% c("st", "sts", "csw", "csws", "fhc", "lnc", "mws", "mw", "nfhc", "nfhs", "vh")) %>%
+  filter(!license_type %in% c("st", "sts", "csw", "csws", "fhc", "lnc", "mws", "mw", "ncs", "nfhc", "nfhs", "vh")) %>%
   drop_na() -> license_types # the one NA here is sut 
 
 license_types %>% 
@@ -90,7 +90,7 @@ Below is a time series depicting the total number of harvester licenses issued p
 
 ind_lic_portfolio %>%
   select(license_year, license_types$license_type) %>% # landings_number) %>%
-  pivot_longer(cols = 2:53, names_to = "license_type", values_to = "count") %>%
+  pivot_longer(cols = 2:50, names_to = "license_type", values_to = "count") %>%
   # pivot_longer(cols = 3:147, names_to = "license_type", values_to = "count") %>%
   left_join(license_types) %>%
   group_by(license_year) %>%
@@ -133,7 +133,7 @@ Available licenses types change over time as new opportunities and management pr
 
 ind_lic_portfolio %>% 
   select(license_year, license_types$license_type) %>%
-  pivot_longer(cols = 2:53, names_to = "license_type", values_to = "count") %>%
+  pivot_longer(cols = 2:50, names_to = "license_type", values_to = "count") %>%
   filter(!count == 0) %>% 
   select(license_year, license_type) %>% 
   distinct() %>%
@@ -145,12 +145,14 @@ ind_lic_portfolio %>%
 
 ggplot(unique_licenses)+
   geom_line(aes(x = license_year, y = unique_license_types)) +
-  ggtitle("Unique License Types") +
+  ggtitle("Unique Commercial Harvester License Types") +
+  ylim(c(10, 50)) +
   theme_gmri(plot.title = element_text(size = 10),
              axis.text  = element_text(size = 10),
-             axis.title = element_blank())
-```
+             axis.title = element_blank()) -> unique_plot
 
+ ggsave(file = here("unique_plot.png"), unique_plot, height = 3, width = 7, units = "in", bg = "white")
+```
 ## Time series of license holdings
 
 The total amount of licenses issued per year.
@@ -167,7 +169,7 @@ The total amount of licenses issued per year.
 
 ind_lic_portfolio %>% 
   select(license_year, license_types$license_type) %>%
-  pivot_longer(cols = 2:53, names_to = "license_type", values_to = "count") %>%
+  pivot_longer(cols = 2:50, names_to = "license_type", values_to = "count") %>%
   left_join(license_types) %>% 
   #mutate(description = tolower(description)) %>%
   group_by(license_year, license_type, description) %>%
@@ -197,7 +199,7 @@ gridExtra::marrangeGrob(license_time_series$time_series, layout_matrix = matrix(
 
 ## Average license holdings
 
-Below is the average number of licenses held by an individual per year. Individuals who were not assigned a landings number (NA) were removed from the dataset before averages were calculated.
+Below is the average number of licenses held by an individual per year. Individuals who were not assigned a landings number (NA) were included from the dataset before averages were calculated.
 
 ```{r}
 #| label:   average license holdings
@@ -215,7 +217,7 @@ Below is the average number of licenses held by an individual per year. Individu
 
 ind_lic_portfolio %>% 
   select(license_year, license_types$license_type, landings_number) %>%
-  pivot_longer(cols = 2:53, names_to = "license_type", values_to = "count") %>%
+  pivot_longer(cols = 2:50, names_to = "license_type", values_to = "count") %>%
   filter(!count == 0) %>%
   #filter(!is.na(landings_number)) %>%
   left_join(license_types) %>%
@@ -230,7 +232,8 @@ average_licenses %>%
   nest() %>%
   mutate(average   = map_dbl(data, function(x){mean(x$total)})) %>%
          #total_ind = map_dbl(data, function(x){nrow(x)})) %>%
-  select(!data) -> average_licenses
+  select(!data) %>%
+  arrange(license_year) -> average_licenses
 
 # (summary(average_licenses))
 
@@ -238,8 +241,7 @@ average_licenses %>%
 
 # gt(broom::glance(lm(average ~ license_year, data = average_licenses)))
 
-average_licenses %>% 
-  ggplot() +
+ggplot(average_licenses) +
   geom_point(aes(x = license_year, y = average)) +
   geom_line(aes(x = license_year, y = average), linewidth = 0.5) +
   stat_smooth(aes(x = license_year, y = average), method = "lm") +
@@ -318,6 +320,9 @@ degree_plots <- metrics_series %>%
                  strip.text = element_text(size = 8, color = "black"),
                  strip.background = element_blank()) +
       ggtitle(description)
+    
+    # filename = paste0(description, "_degree")
+    # ggsave(out, file =paste(here("Outputs", "Degree plots/"), filename, ".png", sep=""), width=4, height =3, units = "in")
     return(out)
   })) 
 
@@ -352,6 +357,9 @@ betweeness_plots <- metrics_series %>%
                  strip.text = element_text(size = 8, color = "black"),
                  strip.background = element_blank()) +
       ggtitle(description)
+    
+    # filename = paste0(description, "_betwenness")
+    # ggsave(out, file =paste(here("Outputs", "betweeness plots/"), filename, ".png", sep=""), width=4, height =3, units = "in")
     return(out)
   })) 
 
@@ -398,6 +406,9 @@ annual_graphs <- annual_metrics %>%
       ggtitle(license_year) +
       geom_node_text(aes(label = name), repel = TRUE, color = "black", max.overlaps = 100) +
       theme_graph()   
+    
+    # filename = paste0("network_plot", license_year)
+    # ggsave(out, file =paste(here("Outputs", "network plots", "licenses/"), filename, ".png", sep=""), width= 5, height = 5, units = "in")
   })) %>%
   select(license_year, density, ggraph, ggraph_circular)
 

@@ -420,30 +420,3 @@ According to [Maine State Legislation](http://www.mainelegislature.org/legis/sta
 #   xlab("Year") + ylab("Number of Licenses Issued") +
 #   theme_gmri() 
 ```
-
-## Anomalies 
-
-```{r}
-#| label: anomalies
-#| echo: false
-#| message: false
-
-ind_lic_portfolio %>% 
-  select(license_year, landings_number, cfc, cfs, cpc, cps) %>%
-  pivot_longer(col = cfc:cps, names_to = "license", values_to = "count") %>%
-  filter(!count == 0) %>%
-  group_by(license_year, license) %>%
-  nest() %>% 
-  mutate(total       = map_dbl(data, function(x){sum(x$count)}),
-         individuals = map_dbl(data, function(x){nrow(x)})) -> anomalies
-  
-ggplot(anomalies) +
-  geom_col(aes(x = license_year, y = individuals, fill = license)) +
-  theme_gmri(plot.title = element_text(size = 10),
-             axis.text  = element_text(size = 8),
-             axis.title = element_text(size = 8)) +
-  scale_fill_gmri() +
-  xlab("Year") + ylab("Total Number of Individuals") + ggtitle("Total number of individual license holders")
-
-```
-

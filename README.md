@@ -7,6 +7,7 @@ This is the public repository containing the necessary data and code for network
 1.  [Species-level network analysis](https://carlylovas.github.io/mesg-permits/R/species_networks.html)
 2.  [License network analysis](https://carlylovas.github.io/mesg-permits/R/license_networks.html)
 3.  [License network plots](https://carlylovas.github.io/mesg-permits/R/license_network_plots.html)
+4.  [Anomalies](https://carlylovas.github.io/mesg-permits/R/anomalies.html)
 
 ## Replication
 
