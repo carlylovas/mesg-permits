@@ -30,7 +30,7 @@ library(gomfish)
 
 data(ind_lic_portfolio) 
 
-ind_lic_portfolio <- ind_lic_portfolio %>% filter(!license_year == 2022) # unreliable
+# ind_lic_portfolio <- ind_lic_portfolio %>% filter(!license_year == 2022) # including all possible data
 
 # Read in updated license codes 
 updated_license_codes <- read.csv(here("Data", "updated_license_codes.csv")) %>%
@@ -86,7 +86,11 @@ ggplot(anomalies) +
   xlab("Year") + ylab("Total Number of Individuals") + ggtitle("Total number of individual license holders")
 
 ```
-There's a spike in *cfs* in 1995. Let's examine that. 
+The drop in 2016-2020 is due to an issue with the data in which there are no individual landings numbers associated with these licenses in these years and the number of licenses is totaled across a single "NA" individual.
+
+There's a spike in *cfs* in 1995. Let's examine that.
+
+### cfs - Commercial Fisheries Single
 ```{r}
 #| label: 1995 commercial finfish
 #| echo: false
@@ -102,6 +106,7 @@ cfs_1995 %>%
   ggplot() +
   geom_line(aes(x = license_year, y = count)) +
   xlab("Year") + ylab("Count") +
+  geom_text(aes(x = 1995, y = 2500), label = "2404") +
   ggtitle("Commercial Fisheries Single") +
   theme_gmri()
 
@@ -139,3 +144,115 @@ ggplot(cfs_portfolio) +
 ```
 I'm not convinced that this is an issue with data, at least on our end. Was this reactive or proactive to a policy change? Someone who knows this better might be able to answer. 
 
+### cps/cpc - Commercial Pelagic/Anadroumous Single and Crew 
+```{r}
+#| label: commercial pelagic & anadromous
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 6
+#| fig-width: 8
+#| fig-align: center
+
+ind_lic_portfolio %>%
+  select(license_year, landings_number, cpc, cps) -> cp_anomalies
+
+cp_anomalies %>%
+  pivot_longer(cols = cpc:cps, names_to = "license_type", values_to = "count") %>%
+  group_by(license_year, license_type) %>%
+  summarise(total = sum(count)) -> cp_anomalies
+
+# summary(cp_anomalies)
+
+ggplot(cp_anomalies) +
+  geom_col(aes(x = license_year, y = total, fill = license_type), position = "dodge") +
+  facet_wrap(~license_type, ncol = 1) +
+  xlim(c(1990, 2022)) + 
+  scale_fill_gmri() +
+  #geom_text(aes(x = license_year, y = total, label = total)) +
+  xlab("Year") + ylab("Total Licenses Issued") + ggtitle("Commercial Pelagic/Anadromous Crew & Single") +
+  guides(fill = guide_legend(title = "License Type")) +
+  theme_gmri()
+```
+I wonder if this boom in cpc coincides with the introduction of the menhaden license. 
+
+### Pelagics and Menhaden
+```{r}
+#| label: menhaden
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 6
+#| fig-width: 8
+#| fig-align: center
+
+ind_lic_portfolio %>%
+  select(landings_number, license_year, cpc, cps, menc, menr) %>%
+  pivot_longer(cols = cpc:menr, names_to = "license_type", values_to = "count") %>% 
+  group_by(license_year, license_type) %>%
+  summarise(total = sum(count)) -> men_anomalies
+
+ggplot(men_anomalies) +
+  geom_col(aes(x = license_year, y = total, fill = license_type), position = "dodge") +
+  #facet_wrap(~license_type, ncol = 1) +
+  xlim(c(2015, 2022)) + 
+  scale_fill_gmri() +
+  #geom_text(aes(x = license_year, y = total, label = total)) +
+  xlab("Year") + ylab("Total Licenses Issued") + ggtitle("Pelagic vs. Menhaden licenses") +
+  guides(fill = guide_legend(title = "License Type")) +
+  theme_gmri()
+
+```
+Perhaps the boom in pelagic crew in 2020 was due to more folks going after menhaden (for bait?). In the following year, we see the creation of the menhaden licenses. The distinction between commercial and non-commercial may be menhaden caught to be sold (as bait or other) versus non-commercial being caught for personal use as bait. We will need to confirm that this is the result of a policy change. 
+
+## Green crabs 
+There's a massive uptick in green crab licenses in 2014. It drops back down and levels out in the following years but still remains higher than the years prior to 2014. So what happened in 2013 to push more folks to getting green crab licenses? Was it the heatwave? Was it a legislative change? 
+
+```{r}
+#| label: green crab
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 6
+#| fig-width: 8
+#| fig-align: center
+
+ind_lic_portfolio %>%
+  select(landings_number, license_year, gc) %>%
+  pivot_longer(cols = gc, names_to = "license_type", values_to = "count") %>% 
+  group_by(license_year, license_type) %>%
+  summarise(total = sum(count)) -> green_crab
+
+ggplot(green_crab) +
+  geom_line(aes(x = license_year, y = total)) +
+  geom_text(aes(x = 2014, y = 255), label = "243") +
+  xlab("Year") + ylab("Count") +
+  ggtitle("Green Crab") +
+  theme_gmri()
+
+```
+## Eel pots
+```{r}
+#| label: eel
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 6
+#| fig-width: 8
+#| fig-align: center
+
+eel <- ind_lic_portfolio %>%
+  select(landings_number, license_year, ep) %>%
+  pivot_longer(cols = ep, names_to = "license_type", values_to = "count") %>% 
+  #filter(!count == 0 & license_year == 2012)
+  group_by(license_year, license_type) %>%
+  summarise(total = sum(count)) 
+
+ggplot(eel) +
+  geom_line(aes(x = license_year, y = total)) +
+  geom_text(aes(x = 2012, y = 85), label = "81") +
+  xlab("Year") + ylab("Count") +
+  ggtitle("Eel pot") +
+  theme_gmri()
+```
+Eel pot seems to have two booms; one at its beginning and another in 2012 and 2013. When are licenses renewed each year? Could the 2012/2013 boom also been a consequence of the heatwave? There isn't anything that immediately jumps out at me as an issue with the data, persay. 
