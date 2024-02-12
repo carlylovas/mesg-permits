@@ -57,6 +57,7 @@ license_types %>%
 # Assessing Data Anomalies
 
 ## Commercial finfish licenses
+
 *cfs, cfc, cps, cpc*
 
 ```{r}
@@ -86,11 +87,13 @@ ggplot(anomalies) +
   xlab("Year") + ylab("Total Number of Individuals") + ggtitle("Total number of individual license holders")
 
 ```
+
 The drop in 2016-2020 is due to an issue with the data in which there are no individual landings numbers associated with these licenses in these years and the number of licenses is totaled across a single "NA" individual.
 
 There's a spike in *cfs* in 1995. Let's examine that.
 
 ### cfs - Commercial Fisheries Single
+
 ```{r}
 #| label: 1995 commercial finfish
 #| echo: false
@@ -142,9 +145,11 @@ ggplot(cfs_portfolio) +
   ggtitle("Portfolios of one-time cfs license holders")
 
 ```
-I'm not convinced that this is an issue with data, at least on our end. Was this reactive or proactive to a policy change? Someone who knows this better might be able to answer. 
 
-### cps/cpc - Commercial Pelagic/Anadroumous Single and Crew 
+I'm not convinced that this is an issue with data, at least on our end. Was this reactive or proactive to a policy change? Someone who knows this better might be able to answer.
+
+### cps/cpc - Commercial Pelagic/Anadroumous Single and Crew
+
 ```{r}
 #| label: commercial pelagic & anadromous
 #| echo: false
@@ -174,9 +179,11 @@ ggplot(cp_anomalies) +
   guides(fill = guide_legend(title = "License Type")) +
   theme_gmri()
 ```
-I wonder if this boom in cpc coincides with the introduction of the menhaden license. 
+
+I wonder if this boom in cpc coincides with the introduction of the menhaden license.
 
 ### Pelagics and Menhaden
+
 ```{r}
 #| label: menhaden
 #| echo: false
@@ -195,7 +202,7 @@ ind_lic_portfolio %>%
 ggplot(men_anomalies) +
   geom_col(aes(x = license_year, y = total, fill = license_type), position = "dodge") +
   #facet_wrap(~license_type, ncol = 1) +
-  xlim(c(2015, 2022)) + 
+  xlim(c(2015, 2023)) + 
   scale_fill_gmri() +
   #geom_text(aes(x = license_year, y = total, label = total)) +
   xlab("Year") + ylab("Total Licenses Issued") + ggtitle("Pelagic vs. Menhaden licenses") +
@@ -203,10 +210,12 @@ ggplot(men_anomalies) +
   theme_gmri()
 
 ```
-Perhaps the boom in pelagic crew in 2020 was due to more folks going after menhaden (for bait?). In the following year, we see the creation of the menhaden licenses. The distinction between commercial and non-commercial may be menhaden caught to be sold (as bait or other) versus non-commercial being caught for personal use as bait. We will need to confirm that this is the result of a policy change. 
 
-## Green crabs 
-There's a massive uptick in green crab licenses in 2014. It drops back down and levels out in the following years but still remains higher than the years prior to 2014. So what happened in 2013 to push more folks to getting green crab licenses? Was it the heatwave? Was it a legislative change? 
+Perhaps the boom in pelagic crew in 2020 was due to more folks going after menhaden (for bait?). In the following year, we see the creation of the menhaden licenses. The distinction between commercial and non-commercial may be menhaden caught to be sold (as bait or other) versus non-commercial being caught for personal use as bait. We will need to confirm that this is the result of a policy change.
+
+## Green crabs
+
+There's a massive uptick in green crab licenses in 2014. It drops back down and levels out in the following years but still remains higher than the years prior to 2014. So what happened in 2013 to push more folks to getting green crab licenses? Was it the heatwave? Was it a legislative change?
 
 ```{r}
 #| label: green crab
@@ -231,7 +240,9 @@ ggplot(green_crab) +
   theme_gmri()
 
 ```
+
 ## Eel pots
+
 ```{r}
 #| label: eel
 #| echo: false
@@ -255,4 +266,5 @@ ggplot(eel) +
   ggtitle("Eel pot") +
   theme_gmri()
 ```
-Eel pot seems to have two booms; one at its beginning and another in 2012 and 2013. When are licenses renewed each year? Could the 2012/2013 boom also been a consequence of the heatwave? There isn't anything that immediately jumps out at me as an issue with the data, persay. 
+
+Eel pot seems to have two booms; one at its beginning and another in 2012 and 2013. When are licenses renewed each year? Could the 2012/2013 boom also been a consequence of the heatwave? There isn't anything that immediately jumps out at me as an issue with the data, persay.
