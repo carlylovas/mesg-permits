@@ -63,12 +63,41 @@ Below is the time series of network edge density. The density of a graph is the 
 #| fig-height: 7
 #| fig-align: center
 
-annual_graphs %>%
-  select(license_year, density) %>% 
-  mutate(density = as.numeric(density)) %>%
-  ggplot() +
+density <- annual_graphs %>%
+  select(license_year, density) %>%
+  mutate(density = as.numeric(density))
+
+write.csv(density, here("Outputs/", "density.csv"))
+
+ggplot(density) +
   geom_line(aes(x = license_year, y = density)) +
   ggtitle("Edge density") +
+  theme_gmri(plot.title = element_text(size = 10),
+             axis.text  = element_text(size = 8),
+             axis.title = element_blank())
+              
+```
+## Modularity 
+The data anomalies of 2016-2020 are skewing results 
+```{r}
+#| label: modularity
+#| echo: false
+#| message: false
+#| warning: false
+#| column:  page
+#| fig-width:  9
+#| fig-height: 7
+#| fig-align: center
+
+modularity <- annual_graphs %>%
+  select(license_year, modularity) %>%
+  mutate(modularity = as.numeric(modularity))
+
+# write.csv(density, here("Outputs/", "density.csv"))
+
+ggplot(modularity) +
+  geom_line(aes(x = license_year, y = modularity)) +
+  ggtitle("Modularity") +
   theme_gmri(plot.title = element_text(size = 10),
              axis.text  = element_text(size = 8),
              axis.title = element_blank())

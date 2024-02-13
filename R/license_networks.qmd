@@ -292,7 +292,11 @@ annual_metrics <- annual_co_matrix %>%
          degree        = map(graph_obj, function(x){degree(x)}),
          betweeness    = map(graph_obj, function(x){betweenness(x)}),
          density       = map(graph_obj, function(x){edge_density(x, loops = FALSE)}),
+         community     = map(graph_obj, function(x){cluster_louvain(x)}),
+         modularity    = map(community, function(x){modularity(x)}),
+         membership    = map(community, function(x){membership(x)}),
          evcent        = map(graph_obj, function(x){evcent(x)}))
+
 
 metrics_series <- annual_metrics %>% 
   select(license_year, degree) %>% 
@@ -387,8 +391,8 @@ annual_graphs <- annual_metrics %>%
     x %>% 
       activate(nodes) %>%
       mutate(community = as.character(group_louvain())) -> x
-    out <- ggraph(x, layout = "fr") + 
-      geom_node_point(size = 7, alpha = 0.5, show.legend = FALSE) +
+    out <- ggraph(x, layout = "igraph", algorithm = "kk") + 
+      geom_node_point(aes(color = community), size = 7, alpha = 0.5, show.legend = FALSE) +
       geom_edge_link(aes(width = weight), alpha = 0.5, show.legend = FALSE) + 
       scale_edge_width(range = c(0.2, 2)) +
       ggtitle(license_year) +
@@ -401,7 +405,7 @@ annual_graphs <- annual_metrics %>%
       activate(nodes) %>%
       mutate(community = as.character(group_louvain())) -> x
     out <- ggraph(x, layout = "linear", circular = TRUE) + 
-      geom_node_point(size = 7, alpha = 0.5, show.legend = FALSE) +
+      geom_node_point(aes(color = community), size = 7, alpha = 0.5, show.legend = FALSE) +
       geom_edge_link(aes(width = weight), alpha = 0.5, show.legend = FALSE) + 
       scale_edge_width(range = c(0.2, 2)) +
       ggtitle(license_year) +
@@ -411,7 +415,7 @@ annual_graphs <- annual_metrics %>%
     # filename = paste0("network_plot", license_year)
     # ggsave(out, file =paste(here("Outputs", "network plots", "licenses/"), filename, ".png", sep=""), width= 5, height = 5, units = "in")
   })) %>%
-  select(license_year, density, ggraph, ggraph_circular)
+  select(license_year, density, modularity, ggraph, ggraph_circular)
 
 
 write_rds(annual_graphs, here("Data", "network_graphs.rds"))
