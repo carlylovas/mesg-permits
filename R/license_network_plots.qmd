@@ -43,7 +43,7 @@ Each network features only the licenses available in that given year.
 #| fig-align: center
 
 
-gridExtra::marrangeGrob(annual_graphs$ggraph_circular, layout_matrix = matrix(1:1, ncol = 1, nrow = 1, byrow= TRUE), top = NULL)
+gridExtra::marrangeGrob(annual_graphs$ggraph, layout_matrix = matrix(1:1, ncol = 1, nrow = 1, byrow= TRUE), top = NULL)
 
 ```
 

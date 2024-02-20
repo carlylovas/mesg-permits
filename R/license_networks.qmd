@@ -391,10 +391,13 @@ annual_graphs <- annual_metrics %>%
     x %>% 
       activate(nodes) %>%
       mutate(community = as.character(group_louvain())) -> x
-    out <- ggraph(x, layout = "igraph", algorithm = "kk") + 
-      geom_node_point(aes(color = community), size = 7, alpha = 0.5, show.legend = FALSE) +
+    out <- ggraph(x, 'kk') + 
+      geom_node_point(aes(color = community), size = 7, alpha = 1, show.legend = FALSE) +
       geom_edge_link(aes(width = weight), alpha = 0.5, show.legend = FALSE) + 
+      coord_fixed() +
       scale_edge_width(range = c(0.2, 2)) +
+      # scale_color_discrete() +
+      scale_color_gmri() +
       ggtitle(license_year) +
       geom_node_text(aes(label = name), repel = TRUE, color = "black", max.overlaps = 100) +
       theme_graph()   
@@ -405,12 +408,14 @@ annual_graphs <- annual_metrics %>%
       activate(nodes) %>%
       mutate(community = as.character(group_louvain())) -> x
     out <- ggraph(x, layout = "linear", circular = TRUE) + 
-      geom_node_point(aes(color = community), size = 7, alpha = 0.5, show.legend = FALSE) +
+      geom_node_point(aes(color = community), size = 7, alpha = 1, show.legend = FALSE) +
       geom_edge_link(aes(width = weight), alpha = 0.5, show.legend = FALSE) + 
       scale_edge_width(range = c(0.2, 2)) +
+      scale_color_gmri() +
+      coord_fixed() +
       ggtitle(license_year) +
       geom_node_text(aes(label = name), repel = TRUE, color = "black", max.overlaps = 100) +
-      theme_graph()   
+      theme_graph() 
     
     # filename = paste0("network_plot", license_year)
     # ggsave(out, file =paste(here("Outputs", "network plots", "licenses/"), filename, ".png", sep=""), width= 5, height = 5, units = "in")
