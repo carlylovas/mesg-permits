@@ -213,8 +213,9 @@ species_portfolio %>%
   select(license_year, species, count) %>%
   group_by(license_year, species) %>%
   summarise(count = sum(count)) %>%
-  group_by(species) %>% 
+  group_by(species) %>%
   nest() %>%
+  arrange(species) %>%
   mutate(time_series = map2(data, species, function(x,y){
     out <- ggplot(data = x)+
       geom_line(aes(x = license_year, y = count)) +
@@ -277,7 +278,8 @@ annual_metrics <- annual_co_matrix %>%
          community     = map(graph_obj, function(x){cluster_louvain(x)}),
          modularity    = map_dbl(community, function(x){modularity(x)}),
          membership    = map(community, function(x){membership(x)}),
-         evcent        = map(graph_obj, function(x){evcent(x)}))
+         evcent        = map(graph_obj, function(x){evcent(x)})) %>%
+  arrange(license_year)
 
 metrics_series <- annual_metrics %>% 
   select(license_year, degree) %>% 
@@ -414,7 +416,7 @@ ggplot(annual_metrics) +
   geom_line(aes(x = license_year, y = modularity)) +
   xlab("Year") + ylab("Modularity") + ggtitle("Modularity") +
   theme_gmri() +
-  ylim(c(0,0.1))
+  ylim(c(0,0.15))
 
 ```
 
@@ -435,21 +437,22 @@ fishery_entry <- license_types %>%
   mutate(entry      = "limited",
          entry_year = c("2011", "2015", "2023", "2009", "2005", "2007"))
 
-license_types %>%
-  select(group) %>%
-  distinct() %>%
-  filter(!group %in% c("Scallop", "Sea urchin", "Sea cucumber", "Menhaden", "Elver",
-                        "Lobster")) %>%
-  mutate(entry = "open",
-         entry_year = NA) %>%
-  full_join(fishery_entry) -> fishery_entry
+# license_types %>%
+#   select(group) %>%
+#   distinct() %>%
+#   filter(!group %in% c("Scallop", "Sea urchin", "Sea cucumber", "Menhaden", "Elver",
+#                         "Lobster")) %>%
+#   mutate(entry = "open",
+#          entry_year = NA) %>%
+#   full_join(fishery_entry) -> fishery_entry
 
 # fishery_entry %>%
-#   filter(entry == "limited") %>%
-#   left_join(species_proportions) %>%
+#   # filter(entry == "limited") %>%
+#   left_join(time_series %>% rename("group" = "species")) %>%
 #   mutate(entry_year = as.numeric(entry_year)) %>%
+#   unnest(data) %>%
 #   ggplot() +
-#   geom_line(aes(x  = license_year, y = license_count))  +
+#   geom_line(aes(x  = license_year, y = count))  +
 #   geom_vline(aes(xintercept = entry_year), color = "#EA4D12", linetype = 2) +
 #   facet_wrap(~group, scales = "free_y") +
 #   xlab("Year") + ylab("Number of Licenses Issued") +
