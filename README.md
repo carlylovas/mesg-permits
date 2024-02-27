@@ -11,4 +11,4 @@ This is the public repository containing the necessary data and code for network
 
 ## Replication
 
-As of *January 11, 2024*, the non-confidential data needed to recreate these three reports is contained within this repository. `Data` contains the files necessary to rerun the scripts contained in `R`. The order of species and network level scripts does not matter but **network analysis must be run prior to network plots** as it outputs an .rds file required for plotting.
+The non-confidential data needed to recreate these three reports is contained within this repository. `Data` contains the files necessary to rerun the scripts contained in `R`. The order of species and network level scripts does not matter but **network analysis must be run prior to network plots** as it outputs an .rds file required for plotting.
