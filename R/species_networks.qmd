@@ -366,7 +366,7 @@ annual_species_graphs <- annual_metrics %>%
       activate(nodes) %>%
       mutate(community = as.character(group_louvain())) -> x
     out <- ggraph(x, layout = "fr") + 
-      geom_node_point(size = 7, alpha = 0.5, show.legend = FALSE) +
+      geom_node_point(aes(color = community), size = 7, alpha = 1, show.legend = FALSE) +
       geom_edge_link(aes(width = weight), alpha = 0.5, show.legend = FALSE) + 
       scale_edge_width(range = c(0.2, 2)) +
       ggtitle(license_year) +
@@ -379,7 +379,7 @@ annual_species_graphs <- annual_metrics %>%
       activate(nodes) %>%
       mutate(community = as.character(group_louvain())) -> x
     out <- ggraph(x, layout = "linear", circular = TRUE) + 
-      geom_node_point(size = 7, alpha = 0.5, show.legend = FALSE) +
+      geom_node_point(aes(color = community), size = 7, alpha = 1, show.legend = FALSE) +
       geom_edge_link(aes(width = weight), alpha = 0.5, show.legend = FALSE) + 
       scale_edge_width(range = c(0.2, 2)) +
       ggtitle(license_year) +
@@ -388,10 +388,11 @@ annual_species_graphs <- annual_metrics %>%
   })) %>%
   select(license_year, ggraph, ggraph_circular)
 
-gridExtra::marrangeGrob(annual_species_graphs$ggraph_circular, layout_matrix = matrix(1:2, ncol = 2, nrow = 1, byrow= TRUE), top = NULL)
+gridExtra::marrangeGrob(annual_species_graphs$ggraph, layout_matrix = matrix(1:2, ncol = 2, nrow = 1, byrow= TRUE), top = NULL)
 ```
 
 ## Edge Density and Modularity
+
 ```{r}
 #| label: edge density and modularity
 #| echo: false
@@ -406,15 +407,16 @@ gridExtra::marrangeGrob(annual_species_graphs$ggraph_circular, layout_matrix = m
 ggplot(annual_metrics) +
   geom_line(aes(x = license_year, y = density)) +
   xlab("Year") + ylab("Density") + ggtitle("Edge Density") +
-  theme_gmri()
+  theme_gmri() +
+  ylim(c(0.5,1.5))
 
 ggplot(annual_metrics) +
   geom_line(aes(x = license_year, y = modularity)) +
   xlab("Year") + ylab("Modularity") + ggtitle("Modularity") +
-  theme_gmri()
+  theme_gmri() +
+  ylim(c(0,0.1))
 
 ```
-
 
 ## Limited Entry Fisheries
 

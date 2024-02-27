@@ -38,12 +38,12 @@ Each network features only the licenses available in that given year.
 #| message: false
 #| warning: false
 #| column:  page
-#| fig-width:  6
-#| fig-height: 6
+#| fig-width:  9
+#| fig-height: 5
 #| fig-align: center
 
 
-gridExtra::marrangeGrob(annual_graphs$ggraph, layout_matrix = matrix(1:1, ncol = 1, nrow = 1, byrow= TRUE), top = NULL)
+gridExtra::marrangeGrob(annual_graphs$ggraph, layout_matrix = matrix(1:2, ncol = 2, nrow = 1, byrow= TRUE), top = NULL)
 
 ```
 
@@ -77,8 +77,11 @@ ggplot(density) +
              axis.title = element_blank())
               
 ```
-## Modularity 
-The data anomalies of 2016-2020 are skewing results 
+
+## Modularity
+
+The data anomalies of 2016-2020 are skewing results
+
 ```{r}
 #| label: modularity
 #| echo: false
