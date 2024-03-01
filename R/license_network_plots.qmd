@@ -69,17 +69,26 @@ density <- annual_graphs %>%
 
 write.csv(density, here("Outputs/", "density.csv"))
 
-ggplot(density) +
-  geom_line(aes(x = license_year, y = density)) +
+mod <- lm(density ~ license_year, data = density)
+adj.r.squared <- broom::glance(mod)[[2]]
+p.value       <- broom::glance(mod)[[5]]
+adj.r.squared <- round(adj.r.squared, 4)
+p.value       <- signif(p.value, 4)
+ggplot(data = density, aes(x = license_year, y = density)) +
+geom_line() +
+  geom_smooth(method = "lm", se = FALSE, linetype = 2, linewidth = 1) + 
+  geom_label(aes(x = 2018, y = 0.65, label = paste("Adj. R =",  adj.r.squared))) +
+  geom_label(aes(x = 2018, y = 0.62, label = paste("p-value =", p.value))) +
   ggtitle("Edge density") +
   theme_gmri(plot.title = element_text(size = 10),
              axis.text  = element_text(size = 8),
              axis.title = element_blank())
+
+
               
 ```
 
 ## Modularity
-
 
 ```{r}
 #| label: modularity
@@ -97,8 +106,17 @@ modularity <- annual_graphs %>%
 
 # write.csv(density, here("Outputs/", "density.csv"))
 
+mod <- lm(modularity ~ license_year, data = modularity)
+adj.r.squared <- broom::glance(mod)[[2]]
+p.value       <- broom::glance(mod)[[5]]
+adj.r.squared <- round(adj.r.squared, 4)
+p.value       <- signif(p.value, 4)
+
 ggplot(modularity) +
   geom_line(aes(x = license_year, y = modularity)) +
+  geom_smooth(aes(x = license_year, y = modularity), method = "lm", se = FALSE, linetype = 2) +
+  geom_label(aes(x = 2018, y = 0.13, label = paste("Adj. R =",  adj.r.squared))) +
+  geom_label(aes(x = 2018, y = 0.12, label = paste("p-value =", p.value))) +
   ggtitle("Modularity") +
   theme_gmri(plot.title = element_text(size = 10),
              axis.text  = element_text(size = 8),
