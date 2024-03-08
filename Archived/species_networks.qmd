@@ -1,0 +1,479 @@
+---
+title: "Species Networks"
+author: "cslovas"
+format: 
+  html:
+    toc: true
+    self-contained: true
+editor: visual
+---
+
+```{r, message = FALSE}
+#| label: load packages & data
+#| echo: false
+#| warning: false
+library(tidyverse)
+library(janitor)
+library(tidygraph)
+library(ggraph)
+library(igraph)
+library(patchwork)
+library(gmRi)
+library(grid)
+library(here)
+library(gt)
+library(shiny)
+
+# Read in gomfish package from Joshua and Theresa
+devtools::install_github("Social-Oceans-Lab/gomfish")
+library(gomfish)
+
+data(ind_lic_portfolio) 
+
+ind_lic_portfolio <- ind_lic_portfolio %>% filter(!license_year == "2022") # unreliable
+
+# Read in updated license codes 
+updated_license_codes <- read.csv(here("Data", "updated_license_codes.csv")) %>%
+  rename("license_type" = "code",
+         "target_species" = "group")
+
+# Add Stoll et al 2016 license subdivisions
+license_divisions <- read.csv(here("Data", "stoll_license_divisions.csv")) %>%
+  select(License.Type, Target.Species, Stoll.et.al..2016.Name) %>%
+  rename("description" = "License.Type",
+         "target_species" = "Target.Species",
+         "group" = "Stoll.et.al..2016.Name")
+
+```
+
+## Species Grouping
+
+To correlate species distribution changes with changes in license holdings in Maine, license types have been grouped by target species as described by Maine State Legislation.
+
+```{r}
+#| label: license types
+#| echo: false
+#| message: false
+#| warning: false
+#| column: page
+
+# Remove indigenous and non-harvester licenses
+license_types <- names(ind_lic_portfolio %>%
+                         select(!c(landings_number, license_year)))
+license_types <- as_tibble(license_types) %>%
+  rename("license_type" = "value") %>%
+  left_join(updated_license_codes) %>%
+  mutate(description = str_to_sentence(description))
+
+license_types %>%
+  filter(!target_species %in% c("Demo","Post-Harvest", "Non-resident", "Recreational")) %>%
+  filter(!(str_starts(license_type, "ma"))) %>%
+  filter(!(str_starts(license_type, "mi"))) %>%
+  filter(!(str_starts(license_type, "nb"))) %>%
+  filter(!(str_starts(license_type, "p")))  %>%
+  filter(!license_type %in% c("st", "sts", "csw", "csws", "fhc", "lnc", "mws", "mw", "ncs", "nfhc", "nfhs", "vh")) %>%
+  # full_join(license_divisions) %>% 
+  drop_na() -> license_types # the one NA here is sut 
+
+license_types %>% 
+  gt() %>% 
+  cols_hide(c(license_type)) %>%
+  cols_label(
+    target_species   = md("**Target Species**"),
+    description      = md("**License Type**"))
+    # group            = md("**Stoll 2016 Grouping**"))
+```
+
+## License Portfolio by Species
+
+Using Theresa Burnham's code for building the individual license portfolio, license types were grouped by target species. A binary matrix was created, whereas 1 denotes an individual license holding for a corresponding year and 0 denotes no license held. With this co-occurrence matrix, we can quantify which license types were held together over the past 30 years and how those holdings have changed.
+
+```{r, message=FALSE}
+#| label: license portfolio
+#| echo: false
+#| message: false
+
+ind_lic_portfolio %>%
+  select(license_year,landings_number, license_types$license_type) %>%
+  pivot_longer(cols = 3:51, names_to = "license_type", values_to = "licensed") %>%
+  filter(!licensed == 0) %>%
+  left_join(license_types) %>%
+  mutate(row = row_number()) %>%
+  select(license_year, landings_number, licensed, target_species, row) %>%
+  pivot_wider(names_from=target_species,values_from=licensed,names_expand=TRUE,values_fill = list(licensed=0)) %>%
+  select(-row)%>%
+  group_by(landings_number,license_year)%>%
+  summarise(across(everything(),sum))-> species_portfolio
+
+```
+
+### Targeted Species
+
+```{r}
+#| label:   targeted species
+#| echo:    false
+#| message: false
+#| warning: false
+#| column:  page
+#| fig-width:  8
+#| fig-height: 6
+#| fig-align: center
+
+species_portfolio %>% 
+  pivot_longer(cols = 3:21, names_to = "target_species", values_to = "count") %>%
+  filter(!count == 0) %>%
+  ungroup(landings_number) %>%
+  # left_join(license_divisions) %>%
+  select(license_year, target_species) %>%
+  distinct() %>%
+  group_by(license_year) %>%
+  nest() %>%
+  arrange(license_year) %>%
+  mutate(num_targeted_spp = map_dbl(data, function(x){nrow(x)})) %>%
+  rename("species" = "data") -> targeted_species 
+
+ggplot(targeted_species)+
+  geom_line(aes(x = license_year, y = num_targeted_spp)) +
+  ggtitle("Number of Target Species") +
+  theme_gmri(plot.title = element_text(size = 10),
+             axis.text  = element_text(size = 10),
+             axis.title = element_blank())
+```
+
+```{r}
+#| label: species proportion
+#| echo: false
+#| message: false
+#| warning: false
+#| column: page
+#| fig-align: center
+#| fig-height: 6
+#| fig-width: 8
+
+species_portfolio %>% 
+  pivot_longer(cols = 3:21, names_to = "target_species", values_to = "count") %>%
+  group_by(license_year, target_species) %>%
+  # pivot_longer(cols = 3:21, names_to = "group", values_to = "count") %>%
+  filter(!count == 0) %>%
+  ungroup(landings_number) %>%
+  # left_join(license_divisions) %>%
+  # select(license_year, target_species, count) %>%
+  # distinct() %>%
+  group_by(license_year, target_species) %>%
+  summarise(count = sum(count)) %>%
+  group_by(license_year) %>%
+  nest() %>%
+  mutate(total = map_dbl(data, function(x){sum(x$count)})) %>%
+  unnest(data) %>%
+  group_by(license_year, target_species) %>%
+  summarise(proportion = count/total) -> species_proportions
+
+
+ggplot(data = species_proportions, aes(x = license_year, y = proportion, fill = target_species)) +
+  geom_col(position = "stack") +
+  theme_gmri(plot.title = element_text(size = 10),
+             axis.text  = element_text(size = 10),
+             axis.title = element_text(size = 8)) +
+  xlab("Year") + ylab("Proportion") + ggtitle("Proportion of Targeted Species") +
+  scale_fill_viridis_d() +
+  guides(fill = guide_legend(nrow=2))
+```
+
+```{r}
+#| label: average number of species targeted
+#| echo: false
+#| message: false
+#| warning: false
+#| column: page
+#| fig-align: center
+#| fig-height: 6
+#| fig-width: 8
+
+species_portfolio %>% 
+  pivot_longer(cols = 3:21, names_to = "species", values_to = "count") %>%
+  filter(!count == 0) %>%
+  group_by(license_year, landings_number) %>% 
+  nest() %>%
+  mutate(num_spp = map_dbl(data, function(x){nrow(x)})) %>% 
+  select(landings_number, license_year, num_spp) %>%
+  group_by(license_year) %>%
+  summarise(average_num_spp = mean(num_spp)) -> avg_targeted_spp
+
+ggplot(avg_targeted_spp) +
+  geom_point(aes(x = license_year, y = average_num_spp)) +
+  geom_line(aes(x = license_year, y = average_num_spp), linewidth = 0.5) +
+  stat_smooth(aes(x = license_year, y = average_num_spp), method = "lm") +
+  ylim(c(1,2)) +
+  ggtitle("Average number of targeted/harvested species per individual") +
+  theme_gmri(plot.title = element_text(size = 10),
+             axis.text  = element_text(size = 10),
+             axis.title = element_blank())
+
+
+```
+
+## Time Series of Targeted Species
+
+The plots below show the total number of licenses issued per year for a particular target species.
+
+```{r}
+#| label:   time series of target species
+#| echo:    false
+#| message: false
+#| warning: false
+#| column:  screen
+#| fig-width:  9
+#| fig-height: 9
+#| fig-align: center
+
+species_portfolio %>% 
+  pivot_longer(cols = 3:21, names_to = "species", values_to = "count") %>%
+  filter(!count == 0) %>%
+  # select(license_year, species, count) %>%
+  group_by(license_year, species) %>%
+  summarise(count = sum(count)) %>%
+  group_by(species) %>%
+  nest() %>%
+  arrange(species) %>%
+  mutate(time_series = map2(data, species, function(x,y){
+    out <- ggplot(data = x)+
+      geom_line(aes(x = license_year, y = count)) +
+      ylim(c(0, NA)) +
+      xlim(c(1990, NA)) +
+      theme_gmri(plot.title = element_text(size = 8),
+                 axis.text  = element_text(size = 8),
+                 axis.title = element_blank()) + 
+      ggtitle(species)
+    return(out)
+  })) -> time_series
+
+gridExtra::marrangeGrob(time_series$time_series, layout_matrix = matrix(1:12, ncol = 4, nrow = 3, byrow = TRUE), top = NULL,  left = textGrob(
+  expression(bold("Total Annual")), rot = 90, gp = gpar(col = "black", fontsize = 10)))
+
+
+
+```
+
+## Annual Species Metrics
+
+### Degree centrality
+
+"The *degree* of a node is the number of other nodes that single node is connected to.
+
+Important nodes tend to have more connections to other nodes. Highly connected nodes are interpreted to have high degree centrality."
+
+```{r}
+#| label:      annual metrics
+#| echo:       false
+#| message:    false
+#| warning:    false
+#| column:     page
+#| fig-width:  9
+#| fig-height: 13
+#| fig-align: center
+
+annual_co_matrix <- species_portfolio %>%
+  arrange(license_year) %>%
+  filter(!is.na(landings_number)) %>%
+  ungroup(landings_number) %>%
+  select(!landings_number) %>%
+  group_by(license_year)%>%
+  nest() %>% 
+  left_join(targeted_species) %>%
+  select(license_year, data, species) %>% 
+  mutate(co_matrix = map2(data, species, function(x, y){
+    df <- x %>% select(y$species) # this filters the portfolio to feature only species harvested in that year. If you want to run with all species, command out this line
+    out <- crossprod(as.matrix(df)) 
+    diag(out) <- 0
+    return(out)
+  })) %>%
+  select(license_year, co_matrix) 
+
+annual_metrics <- annual_co_matrix %>%
+  mutate(graph_obj     = map(co_matrix, function(x){graph.adjacency(x, mode = "undirected", weighted = TRUE)}),
+         degree        = map(graph_obj, function(x){degree(x)}),
+         betweeness    = map(graph_obj, function(x){betweenness(x)}),
+         density       = map_dbl(graph_obj, function(x){edge_density(x, loops = FALSE)}),
+         community     = map(graph_obj, function(x){cluster_louvain(x)}),
+         modularity    = map_dbl(community, function(x){modularity(x)}),
+         membership    = map(community, function(x){membership(x)}),
+         evcent        = map(graph_obj, function(x){evcent(x)})) %>%
+  arrange(license_year)
+
+metrics_series <- annual_metrics %>% 
+  select(license_year, degree) %>% 
+  unnest_longer(degree) %>% 
+  group_by(degree_id) %>%
+  rename("species" = "degree_id") %>%
+  full_join(annual_metrics %>% 
+              select(license_year, betweeness) %>% 
+              unnest_longer(betweeness) %>% 
+              group_by(betweeness_id) %>%
+              rename("species" = "betweeness_id")) %>% 
+  relocate("species", .after = "license_year") %>%
+  nest() %>%
+  arrange(species)
+
+degree_plots <- metrics_series %>% 
+  mutate(time_series = map2(data, species, function(x, description){
+    out <- ggplot(data = x)+
+      geom_line(aes(x=license_year, y=degree)) +
+      ylim(c(0, 40)) + 
+      xlim(c(1990, 2021)) +
+      theme_gmri(plot.title = element_text(size = 8),
+                 axis.text  = element_text(size = 6),
+                 axis.title = element_blank(),
+                 strip.text = element_text(size = 8, color = "black"),
+                 strip.background = element_blank()) +
+      ggtitle(species)
+    return(out)
+  })) 
+
+gridExtra::marrangeGrob(degree_plots$time_series, layout_matrix = matrix(1:12, ncol = 3, nrow = 4, byrow= TRUE), top = NULL, left = textGrob(expression(bold("Degree")), rot = 90, gp = gpar(col = "black", fontsize = 8)))
+```
+
+### Betweeness
+
+"\[*Betweenness*\] ranks the nodes based on the flow of connections through the network. Importance is demonstrated through high frequency of connection with multiple other nodes. Nodes with high levels of betweenness tend to serve as a bridge for multiple sets of other important nodes." [*Source*](https://bookdown.org/jdholster1/idsr/network-analysis.html#advanced-case-study)
+
+```{r}
+#| label:      annual metrics pt 2
+#| echo:       false
+#| message:    false
+#| warning:    false
+#| column:     page
+#| fig-width:  9
+#| fig-height: 13
+#| fig-align: center
+
+betweeness_plots <- metrics_series %>% 
+  mutate(time_series = map2(data, species, function(x, description){
+    out <- ggplot(data = x)+
+      geom_line(aes(x=license_year, y=betweeness)) +
+      ylim(c(0, 50)) + 
+      xlim(c(1990, 2021)) +
+      theme_gmri(plot.title = element_text(size = 8),
+                 axis.text  = element_text(size = 6),
+                 axis.title = element_blank(),
+                 strip.text = element_text(size = 8, color = "black"),
+                 strip.background = element_blank()) +
+      ggtitle(species)
+    return(out)
+  })) 
+
+gridExtra::marrangeGrob(betweeness_plots$time_series, layout_matrix = matrix(1:12, ncol = 3, nrow = 4, byrow= TRUE), top = NULL, left = textGrob(expression(bold("Degree")), rot = 90, gp = gpar(col = "black", fontsize = 8)))
+```
+
+## Annual Network Plots
+
+Similar to plotting the license holdings as a network over time, we plot the target species pertaining to these permits over time. This makes for a more easily interpretable graph, as well as increased potential for correlating license changes to species distribution changes
+
+```{r}
+#| label: species networks
+#| echo: false
+#| message:    false
+#| warning:    false
+#| column:     page
+#| fig-width:  9
+#| fig-height: 5
+#| fig-align: center
+
+
+# Network plots
+annual_species_graphs <- annual_metrics %>%
+  mutate(ggraph = map2(graph_obj, license_year, function(x, y){
+    x <- as_tbl_graph(x)
+    x %>% 
+      activate(nodes) %>%
+      mutate(community = as.character(group_louvain())) -> x
+    out <- ggraph(x, layout = "fr") + 
+      geom_node_point(aes(color = community), size = 7, alpha = 1, show.legend = FALSE) +
+      geom_edge_link(aes(width = weight), alpha = 0.5, show.legend = FALSE) + 
+      scale_edge_width(range = c(0.2, 2)) +
+      ggtitle(license_year) +
+      geom_node_text(aes(label = name), repel = TRUE, color = "black", max.overlaps = 100) +
+      theme_graph()   
+  })) %>%
+  mutate(ggraph_circular = map2(graph_obj, license_year, function(x, y){
+    x <- as_tbl_graph(x)
+    x %>% 
+      activate(nodes) %>%
+      mutate(community = as.character(group_louvain())) -> x
+    out <- ggraph(x, layout = "linear", circular = TRUE) + 
+      geom_node_point(aes(color = community), size = 7, alpha = 1, show.legend = FALSE) +
+      geom_edge_link(aes(width = weight), alpha = 0.5, show.legend = FALSE) + 
+      scale_edge_width(range = c(0.2, 2)) +
+      ggtitle(license_year) +
+      geom_node_text(aes(label = name), repel = TRUE, color = "black", max.overlaps = 100) +
+      theme_graph()   
+  })) %>%
+  select(license_year, ggraph, ggraph_circular)
+
+gridExtra::marrangeGrob(annual_species_graphs$ggraph, layout_matrix = matrix(1:2, ncol = 2, nrow = 1, byrow= TRUE), top = NULL)
+```
+
+## Edge Density and Modularity
+
+```{r}
+#| label: edge density and modularity
+#| echo: false
+#| message: false
+#| warning: false
+#| column: page
+#| fig-width: 8
+#| fig-height: 6
+#| fig-align: center
+
+
+ggplot(annual_metrics) +
+  geom_line(aes(x = license_year, y = density)) +
+  xlab("Year") + ylab("Density") + ggtitle("Edge Density") +
+  theme_gmri() +
+  ylim(c(0.5,1.5))
+
+ggplot(annual_metrics) +
+  geom_line(aes(x = license_year, y = modularity)) +
+  xlab("Year") + ylab("Modularity") + ggtitle("Modularity") +
+  theme_gmri() +
+  ylim(c(0,0.15))
+
+```
+
+## Limited Entry Fisheries
+
+According to [Maine State Legislation](http://www.mainelegislature.org/legis/statutes/12/title12ch0sec0.html), there are 6 limited entry species including lobster, which is limited by harvest zone. Most species became limited entry in response to a fishery collapse, while some aim to avoid collapse. The most recent limited entry fishery is menhaden, which was passed by the legislature in 2023.
+
+```{r}
+#| message: false
+#| label: limited entry
+#| echo: false
+
+fishery_entry <- license_types %>%
+  select(group) %>%
+  distinct() %>%
+  filter(group %in% c("Scallop", "Sea urchin", "Sea cucumber", "Menhaden", "Elver",
+                      "Lobster")) %>%
+  mutate(entry      = "limited",
+         entry_year = c("2011", "2015", "2023", "2009", "2005", "2007"))
+
+# license_types %>%
+#   select(group) %>%
+#   distinct() %>%
+#   filter(!group %in% c("Scallop", "Sea urchin", "Sea cucumber", "Menhaden", "Elver",
+#                         "Lobster")) %>%
+#   mutate(entry = "open",
+#          entry_year = NA) %>%
+#   full_join(fishery_entry) -> fishery_entry
+
+# fishery_entry %>%
+#   # filter(entry == "limited") %>%
+#   left_join(time_series %>% rename("group" = "species")) %>%
+#   mutate(entry_year = as.numeric(entry_year)) %>%
+#   unnest(data) %>%
+#   ggplot() +
+#   geom_line(aes(x  = license_year, y = count))  +
+#   geom_vline(aes(xintercept = entry_year), color = "#EA4D12", linetype = 2) +
+#   facet_wrap(~group, scales = "free_y") +
+#   xlab("Year") + ylab("Number of Licenses Issued") +
+#   theme_gmri()
+```

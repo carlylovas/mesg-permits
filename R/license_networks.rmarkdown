@@ -1,0 +1,446 @@
+---
+title: "License Networks"
+author: "cslovas"
+format: 
+  html:
+    toc: true
+    self-contained: true
+editor: visual
+---
+
+```{r}
+#| label:   load libraries & data
+#| echo:    false
+#| message: false
+#| warning: false
+
+# Install & load the libraries
+library(tidyverse)
+library(tidygraph)
+library(ggraph)
+library(igraph)
+library(here)
+library(gmRi)
+library(grid)
+library(gt)
+
+# Read in gomfish package from Joshua and Theresa
+devtools::install_github("Social-Oceans-Lab/gomfish")
+library(gomfish)
+
+data(ind_lic_portfolio) 
+
+ind_lic_portfolio <- ind_lic_portfolio %>% filter(!license_year == 2022) # unreliable
+
+# Read in updated license codes 
+updated_license_codes <- read.csv(here("Data", "updated_license_codes.csv")) %>%
+  rename("license_type" = "code")
+
+```
+
+
+## Harvester licenses in Maine
+
+To focus on fishery access and harvester adaptability, we've removed indigenous licenses, non-residential, and post-harvest (i.e., processors, wholesalers, etc) from the data set.
+
+
+```{r}
+#| label:   cleaning data
+#| echo:    false
+#| message: false
+#| fig-height: 9
+
+# Remove indigenous and non-harvester licenses
+license_types <- names(ind_lic_portfolio %>%
+                         select(!c(landings_number, license_year)))
+license_types <- as_tibble(license_types) %>%
+  rename("license_type" = "value") %>%
+  left_join(updated_license_codes) %>%
+  mutate(description = str_to_sentence(description))
+
+license_types %>%
+  filter(!group %in% c("Demo","Post-Harvest", "Non-resident", "Recreational")) %>%
+  filter(!(str_starts(license_type, "ma"))) %>%
+  filter(!(str_starts(license_type, "mi"))) %>%
+  filter(!(str_starts(license_type, "nb"))) %>%
+  filter(!(str_starts(license_type, "p")))  %>%
+  filter(!license_type %in% c("st", "sts", "csw", "csws", "fhc", "lnc", "mws", "mw", "ncs", "nfhc", "nfhs", "vh")) %>%
+  drop_na() -> license_types # the one NA here is sut 
+
+license_types %>% 
+  gt() %>% 
+  cols_hide(group) %>%
+  cols_label(
+    license_type   = md("**License Code**"),
+    description = md("**License Type**"))
+
+```
+
+
+## Licenses Issued
+
+Below is a time series depicting the total number of harvester licenses issued per year (line) and the number of licensed individuals per year (column)
+
+
+```{r}
+#| label:   total licenses issued
+#| echo:    false
+#| message: false
+#| warning: false
+#| column: page
+#| fig-width:  8
+#| fig-height: 6
+#| fig-align: center
+
+ind_lic_portfolio %>%
+  select(license_year, license_types$license_type) %>% # landings_number) %>%
+  pivot_longer(cols = 2:50, names_to = "license_type", values_to = "count") %>%
+  # pivot_longer(cols = 3:147, names_to = "license_type", values_to = "count") %>%
+  left_join(license_types) %>%
+  group_by(license_year) %>%
+  summarise(total = sum(count)) -> total_licenses
+
+ind_lic_portfolio %>% 
+  select(license_year, landings_number) %>%
+  distinct() %>%
+  group_by(license_year) %>%
+  nest() %>%
+  mutate(total_ind = map_dbl(data, function(x){nrow(x)})) %>%
+  select(!data) %>%
+  full_join(total_licenses) -> total_licenses
+
+
+ggplot(data = total_licenses) +
+  geom_col(aes(x = license_year, y = total_ind, fill = total_ind)) +
+  geom_line(aes(x = license_year, y = total)) +
+  ggtitle("Total Licenses Issued") +
+  ylab("Total") + xlab("Year") +
+  guides(fill = guide_colorbar(title = "Total Individuals", label = F)) +
+  ylim(c(NA,20000)) +
+  theme_gmri(plot.title = element_text(size = 10),
+             axis.text  = element_text(size = 10),
+             axis.title = element_text(size = 10))
+
+```
+
+
+Available licenses types change over time as new opportunities and management practices take shape and fisheries expand or close. Below is a time series depicting the amount of unique harvester license types available in a given year.
+
+
+```{r}
+#| label:   unique license types each year 
+#| echo:    false
+#| message: false
+#| warning: false
+#| column:  page
+#| fig-width:  8
+#| fig-height: 6
+#| fig-align: center
+
+ind_lic_portfolio %>% 
+  select(license_year, license_types$license_type) %>%
+  pivot_longer(cols = 2:50, names_to = "license_type", values_to = "count") %>%
+  filter(!count == 0) %>% 
+  select(license_year, license_type) %>% 
+  distinct() %>%
+  group_by(license_year) %>%
+  nest() %>% 
+  arrange(license_year) %>%
+  mutate(unique_license_types = map_dbl(data, function(x){nrow(x)})) %>%
+  rename("licenses" = "data")-> unique_licenses
+
+ggplot(unique_licenses)+
+  geom_line(aes(x = license_year, y = unique_license_types)) +
+  ggtitle("Unique Commercial Harvester License Types") +
+  ylim(c(10, 50)) +
+  theme_gmri(plot.title = element_text(size = 10),
+             axis.text  = element_text(size = 10),
+             axis.title = element_blank()) -> unique_plot
+
+ ggsave(file = here("unique_plot.png"), unique_plot, height = 3, width = 7, units = "in", bg = "white")
+```
+
+
+## Time series of license holdings
+
+The total amount of licenses issued per year.
+
+
+```{r}
+#| label:   time series of license types
+#| echo:    false
+#| message: false
+#| warning: false
+#| column:  screen
+#| fig-width:  9
+#| fig-height: 9
+#| fig-align: center
+
+ind_lic_portfolio %>% 
+  select(license_year, license_types$license_type) %>%
+  pivot_longer(cols = 2:50, names_to = "license_type", values_to = "count") %>%
+  left_join(license_types) %>% 
+  #mutate(description = tolower(description)) %>%
+  group_by(license_year, license_type, description) %>%
+  summarise(total = sum(count)) %>%
+  #filter(!total == 0) %>% 
+  group_by(description) %>%
+  nest() -> license_time_series
+
+# plot
+license_time_series %>% 
+  #mutate(license = str_to_title(license)) %>%
+  mutate(time_series = map2(data, description, function(x,y){
+    out <- ggplot(data = x)+
+      geom_line(aes(x = license_year, y = total)) +
+      ylim(c(0, NA)) +
+      xlim(c(1990, NA)) +
+      theme_gmri(plot.title = element_text(size = 8),
+                 axis.text  = element_text(size = 8),
+                 axis.title = element_blank()) + 
+      ggtitle(description)
+    return(out)
+  })) -> license_time_series
+
+gridExtra::marrangeGrob(license_time_series$time_series, layout_matrix = matrix(1:12, ncol = 4, nrow = 3, byrow = TRUE), top = NULL,  left = textGrob(
+  expression(bold("Total Annual")), rot = 90, gp = gpar(col = "black", fontsize = 10)))
+```
+
+
+## Average license holdings
+
+Below is the average number of licenses held by an individual per year. Individuals who were not assigned a landings number (NA) were included from the dataset before averages were calculated.
+
+
+```{r}
+#| label:   average license holdings
+#| echo:    false
+#| message: false
+#| warning: false
+#| column:  page
+#| fig-width:  8
+#| fig-height: 6
+#| fig-align: center
+
+# nrow(ind_lic_portfolio %>%
+#   select(landings_number) %>%
+#   distinct())
+
+ind_lic_portfolio %>% 
+  select(license_year, license_types$license_type, landings_number) %>%
+  pivot_longer(cols = 2:50, names_to = "license_type", values_to = "count") %>%
+  filter(!count == 0) %>%
+  #filter(!is.na(landings_number)) %>%
+  left_join(license_types) %>%
+  group_by(license_year, landings_number) %>%
+  distinct() %>%
+  mutate(total = sum(count)) -> average_licenses
+  
+# average_licenses %>% filter(is.na(landings_number))
+
+average_licenses %>%
+  group_by(license_year) %>%
+  nest() %>%
+  mutate(average   = map_dbl(data, function(x){mean(x$total)})) %>%
+         #total_ind = map_dbl(data, function(x){nrow(x)})) %>%
+  select(!data) %>%
+  arrange(license_year) -> average_licenses
+
+# (summary(average_licenses))
+
+# summary(lm(total ~ license_year, data = average_licenses))
+
+# gt(broom::glance(lm(average ~ license_year, data = average_licenses)))
+
+ggplot(average_licenses) +
+  geom_point(aes(x = license_year, y = average)) +
+  geom_line(aes(x = license_year, y = average), linewidth = 0.5) +
+  stat_smooth(aes(x = license_year, y = average), method = "lm") +
+  ylim(c(1,3)) +
+  ggtitle("Average number of licenses held per individual") +
+  theme_gmri(plot.title = element_text(size = 10),
+             axis.text  = element_text(size = 10),
+             axis.title = element_blank())
+```
+
+
+## Annual License Network Metrics
+
+### Degree Centrality
+
+"The *degree* of a node is the number of other nodes that single node is connected to.
+
+Important nodes tend to have more connections to other nodes. Highly connected nodes are interpreted to have high degree centrality."
+
+
+```{r}
+#| label:      annual metrics
+#| echo:       false
+#| message:    false
+#| warning:    false
+#| column:     page
+#| fig-width:  9
+#| fig-height: 13
+#| fig-align: center
+
+annual_co_matrix <- ind_lic_portfolio %>%
+  arrange(license_year) %>%
+  #filter(!is.na(landings_number)) %>% # removing NA landings
+  select(license_types$license_type, license_year) %>%
+  group_by(license_year) %>%
+  nest() %>% 
+  left_join(unique_licenses) %>%
+  select(license_year, data, licenses) %>% 
+  mutate(co_matrix = map2(data, licenses, function(x, y){
+    df <- x %>% select(y$license_type) # this filters the portfolio to feature only licenses issued in that year. If you want to run with all licenses, command out this line. 
+    out <- crossprod(as.matrix(df)) 
+    diag(out) <- 0
+    return(out)
+  })) %>%
+  select(license_year, co_matrix) 
+
+annual_metrics <- annual_co_matrix %>%
+  mutate(graph_obj     = map(co_matrix, function(x){graph.adjacency(x, mode = "undirected", weighted = TRUE)}),
+         degree        = map(graph_obj, function(x){degree(x)}),
+         betweeness    = map(graph_obj, function(x){betweenness(x)}),
+         density       = map(graph_obj, function(x){edge_density(x, loops = FALSE)}),
+         community     = map(graph_obj, function(x){cluster_louvain(x)}),
+         modularity    = map(community, function(x){modularity(x)}),
+         membership    = map(community, function(x){membership(x)}),
+         evcent        = map(graph_obj, function(x){evcent(x)}))
+
+
+metrics_series <- annual_metrics %>% 
+  select(license_year, degree) %>% 
+  unnest_longer(degree) %>% 
+  group_by(degree_id) %>%
+  rename("license_type" = "degree_id") %>%
+  full_join(annual_metrics %>% 
+              select(license_year, betweeness) %>% 
+              unnest_longer(betweeness) %>% 
+              group_by(betweeness_id) %>%
+              rename("license_type" = "betweeness_id")) %>% 
+  relocate("license_type", .after = "license_year") %>%
+  nest() %>%
+  left_join(license_types) %>%
+  arrange(description)
+
+degree_plots <- metrics_series %>% 
+  mutate(time_series = map2(data, description, function(x, description){
+    out <- ggplot(data = x)+
+      geom_line(aes(x=license_year, y=degree)) +
+      ylim(c(0, 50)) + 
+      xlim(c(1990, 2021)) +
+      theme_gmri(plot.title = element_text(size = 8),
+                 axis.text  = element_text(size = 6),
+                 axis.title = element_blank(),
+                 strip.text = element_text(size = 8, color = "black"),
+                 strip.background = element_blank()) +
+      ggtitle(description)
+    
+    # filename = paste0(description, "_degree")
+    # ggsave(out, file =paste(here("Outputs", "Degree plots/"), filename, ".png", sep=""), width=4, height =3, units = "in")
+    return(out)
+  })) 
+
+gridExtra::marrangeGrob(degree_plots$time_series, layout_matrix = matrix(1:15, ncol = 3, nrow = 5, byrow= TRUE), top = NULL, left = textGrob(
+  expression(bold("Degree")), rot = 90, gp = gpar(col = "black", fontsize = 8)))
+```
+
+
+### Betweeness
+
+"\[*Betweenness*\] ranks the nodes based on the flow of connections through the network. Importance is demonstrated through high frequency of connection with multiple other nodes. Nodes with high levels of betweenness tend to serve as a bridge for multiple sets of other important nodes." [*Source*](https://bookdown.org/jdholster1/idsr/network-analysis.html#advanced-case-study)
+
+License times with high and/or increasing betweeness values may represent important "fringe" fisheries; fisheries that have a low cost of entry, use existing equipment and/or are harvested by hand. These "fringe" fisheries may serve as additional or supplemental means of income.
+
+
+```{r}
+#| label:      betweeness
+#| echo:       false
+#| warning:    false
+#| column:     page
+#| fig-width:  9
+#| fig-height: 13
+#| fig-align: center
+
+betweeness_plots <- metrics_series %>% 
+  mutate(time_series = map2(data, description, function(x, description){
+    out <- ggplot(data = x)+
+      geom_line(aes(x=license_year, y=betweeness)) +
+      ylim(c(0, 150)) + 
+      xlim(c(1990, 2021)) +
+      theme_gmri(plot.title = element_text(size = 8),
+                 axis.text  = element_text(size = 6),
+                 axis.title = element_blank(),
+                 strip.text = element_text(size = 8, color = "black"),
+                 strip.background = element_blank()) +
+      ggtitle(description)
+    
+    # filename = paste0(description, "_betwenness")
+    # ggsave(out, file =paste(here("Outputs", "betweeness plots/"), filename, ".png", sep=""), width=4, height =3, units = "in")
+    return(out)
+  })) 
+
+gridExtra::marrangeGrob(betweeness_plots$time_series, layout_matrix = matrix(1:15, ncol = 3, nrow = 5, byrow= TRUE), top = NULL, left = textGrob(
+  expression(bold("Degree")), rot = 90, gp = gpar(col = "black", fontsize = 8)))
+```
+
+
+## Annual Network Plots
+
+Density time series and network plots are available [here](https://carlylovas.github.io/mesg-permits/R/license_network_plots.html)
+
+
+```{r}
+#| label: network plots
+#| echo: false
+#| warning: false
+#| message: false
+#| fig-width: 8
+#| fig-height: 8
+#| fig-align: center
+
+annual_graphs <- annual_metrics %>%
+  mutate(ggraph = map2(graph_obj, license_year, function(x, y){
+    x <- as_tbl_graph(x)
+    x %>% 
+      activate(nodes) %>%
+      mutate(community = as.character(group_louvain())) -> x
+    out <- ggraph(x, 'kk') + 
+      geom_node_point(aes(color = community), size = 7, alpha = 1, show.legend = FALSE) +
+      geom_edge_link(aes(width = weight), alpha = 0.5, show.legend = FALSE) + 
+      coord_fixed() +
+      scale_edge_width(range = c(0.2, 2)) +
+      # scale_color_discrete() +
+      scale_color_gmri() +
+      ggtitle(license_year) +
+      geom_node_text(aes(label = name), repel = TRUE, color = "black", max.overlaps = 100) +
+      theme_graph()   
+  })) %>%
+  mutate(ggraph_circular = map2(graph_obj, license_year, function(x, y){
+    x <- as_tbl_graph(x)
+    x %>% 
+      activate(nodes) %>%
+      mutate(community = as.character(group_louvain())) -> x
+    out <- ggraph(x, layout = "linear", circular = TRUE) + 
+      geom_node_point(aes(color = community), size = 7, alpha = 1, show.legend = FALSE) +
+      geom_edge_link(aes(width = weight), alpha = 0.5, show.legend = FALSE) + 
+      scale_edge_width(range = c(0.2, 2)) +
+      scale_color_gmri() +
+      coord_fixed() +
+      ggtitle(license_year) +
+      geom_node_text(aes(label = name), repel = TRUE, color = "black", max.overlaps = 100) +
+      theme_graph() 
+    
+    # filename = paste0("network_plot", license_year)
+    # ggsave(out, file =paste(here("Outputs", "network plots", "licenses/"), filename, ".png", sep=""), width= 5, height = 5, units = "in")
+  })) %>%
+  select(license_year, density, modularity, ggraph, ggraph_circular)
+
+
+write_rds(annual_graphs, here("Data", "network_graphs.rds"))
+
+# make different markdown for network plots; too big for github
+```
+
