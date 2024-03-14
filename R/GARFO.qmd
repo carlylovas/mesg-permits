@@ -187,7 +187,6 @@ garfo_portfolio_all %>%
   arrange(PPST) %>%
   geocode(., city = PPORT, state = PPST)-> geo_nc
 
-
 geo_codes <- geo_me %>%
   full_join(geo_nh) %>%
   full_join(geo_ma) %>%
@@ -200,7 +199,11 @@ typos <- geo_codes %>%
   filter(is.na(lat)) %>%
   unite(PPORT, PPST, col = "PORT", sep = ", ")
 
-write_csv(geo_codes, file = paste(here("Data/"), "geo_code_v1.csv"))
+write_csv(geo_codes, file = here("Data", "geo_code_v1.csv"))
+
+geo_codes <- read_csv(file = here("Data", "geo_code_v1.csv"))
+
+
 ```
 
 ```{r}
@@ -322,7 +325,7 @@ updated_vessel_geocodes %>%
   select(PPORT, PPST) %>%
   distinct() -> typos_v2
 
-write_csv(typos_v2, file = here("Data", "port_typos.csv"))
+# write_csv(typos_v2, file = here("Data", "port_typos.csv"))
 
 # read back in spell-corrected 
 typos_v3 <- read_csv(file = here("Data", "port_typos.csv"))
@@ -330,7 +333,7 @@ typos_v3 <- read_csv(file = here("Data", "port_typos.csv"))
 ## corrected cities
 typos_v3 %>% 
   filter(is.na(PPST_CORRECTED)) %>%
-  left_join(all_garfo_data) %>% 
+  left_join(garfo_portfolio_all) %>% 
   select(!c(PPORT, PPST_CORRECTED)) %>% 
   relocate(PPORT_CORRECTED, .before = PPST) %>% 
   rename("PPORT" = "PPORT_CORRECTED") -> garfo_corrected  
@@ -368,9 +371,26 @@ geo_codes_corrected %>%
          "LON" = "long") %>%
   relocate("LAT", .before = "LON") %>%
   # drop_na() %>%
-  distinct() -> revised_geocodes 
+  distinct() -> revised_geocodes # all geocodes, no license data
   
 revised_geocodes %>%
-  filter(is.na(LAT))
+  filter(is.na(LAT)) -> final_typos
+
+```
+
+
+```{r}
+#| label: geocoded licenses
+#| echo: false
+#| message: false
+#| warning: false
+
+garfo_corrected %>%
+  full_join(revised_geocodes) %>% 
+  relocate(LAT, .after = PPST) %>% 
+  relocate(LON, .after = LAT) -> corrected_portfolio
+
+corrected_portfolio %>%
+  filter(is.na(LAT)) # probably the same weirdos, correct by vp_num or ap_num?
 
 ```

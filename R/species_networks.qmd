@@ -29,7 +29,7 @@ library(gomfish)
 
 data(ind_lic_portfolio) 
 
-ind_lic_portfolio <- ind_lic_portfolio %>% filter(!license_year == "2022") # unreliable
+# ind_lic_portfolio <- ind_lic_portfolio %>% filter(!license_year == "2022") # unreliable
 
 # Read in updated license codes 
 updated_license_codes <- read.csv(here("Data", "updated_license_codes.csv")) %>%
@@ -367,9 +367,10 @@ annual_species_graphs <- annual_metrics %>%
     x %>% 
       activate(nodes) %>%
       mutate(community = as.character(group_louvain())) -> x
-    out <- ggraph(x, layout = "fr") + 
-      geom_node_point(aes(color = community), size = 7, alpha = 1, show.legend = FALSE) +
-      geom_edge_link(aes(width = weight), alpha = 0.5, show.legend = FALSE) + 
+    out <- ggraph(x, layout = "kk") + 
+      geom_edge_link(aes(width = weight), alpha = 0.25, show.legend = FALSE) + 
+      geom_node_point(aes(color = community), size = 7, alpha = .8, show.legend = FALSE) +
+      scale_color_gmri() +
       scale_edge_width(range = c(0.2, 2)) +
       ggtitle(license_year) +
       geom_node_text(aes(label = name), repel = TRUE, color = "black", max.overlaps = 100) +
@@ -381,16 +382,23 @@ annual_species_graphs <- annual_metrics %>%
       activate(nodes) %>%
       mutate(community = as.character(group_louvain())) -> x
     out <- ggraph(x, layout = "linear", circular = TRUE) + 
+       geom_edge_link(aes(width = weight), alpha = 0.25, show.legend = FALSE) +
       geom_node_point(aes(color = community), size = 7, alpha = 1, show.legend = FALSE) +
-      geom_edge_link(aes(width = weight), alpha = 0.5, show.legend = FALSE) + 
       scale_edge_width(range = c(0.2, 2)) +
       ggtitle(license_year) +
-      geom_node_text(aes(label = name), repel = TRUE, color = "black", max.overlaps = 100) +
+      geom_node_text(aes(label = name), repel = TRUE, color = "black", alpha = 0.5, max.overlaps = 100) +
       theme_graph()   
   })) %>%
   select(license_year, ggraph, ggraph_circular)
 
 gridExtra::marrangeGrob(annual_species_graphs$ggraph, layout_matrix = matrix(1:2, ncol = 2, nrow = 1, byrow= TRUE), top = NULL)
+
+
+# example_plot <- annual_species_graphs$ggraph[c(1,32)]
+# example_plot <- gridExtra::marrangeGrob(example_plot, layout_matrix = matrix(1:2, ncol = 2, nrow = 1, byrow= TRUE), top = NULL)
+# 
+# ggsave(example_plot, file = here("Outputs", "presentation_plot.png"), height = 5, width = 9, units = "in")
+
 ```
 
 ## Edge Density and Modularity
@@ -446,15 +454,15 @@ fishery_entry <- license_types %>%
 #          entry_year = NA) %>%
 #   full_join(fishery_entry) -> fishery_entry
 
-# fishery_entry %>%
-#   # filter(entry == "limited") %>%
-#   left_join(time_series %>% rename("group" = "species")) %>%
-#   mutate(entry_year = as.numeric(entry_year)) %>%
-#   unnest(data) %>%
-#   ggplot() +
-#   geom_line(aes(x  = license_year, y = count))  +
-#   geom_vline(aes(xintercept = entry_year), color = "#EA4D12", linetype = 2) +
-#   facet_wrap(~group, scales = "free_y") +
-#   xlab("Year") + ylab("Number of Licenses Issued") +
-#   theme_gmri()
+fishery_entry %>%
+  # filter(entry == "limited") %>%
+  left_join(time_series %>% rename("group" = "species")) %>%
+  mutate(entry_year = as.numeric(entry_year)) %>%
+  unnest(data) %>%
+  ggplot() +
+  geom_line(aes(x  = license_year, y = count))  +
+  geom_vline(aes(xintercept = entry_year), color = "#EA4D12", linetype = 2) +
+  facet_wrap(~group, scales = "free_y") +
+  xlab("Year") + ylab("Number of Licenses Issued") +
+  theme_gmri()
 ```
