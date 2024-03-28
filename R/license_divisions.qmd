@@ -82,10 +82,7 @@ license_types %>%
     group          = md("**Target Species**")) # add widget here to select target species and spit out license and grouping
 ```
 
-## Portfolio by License Subdivisions
-
-Using Theresa Burnham's code for building the individual license portfolio, license types were grouped license divisions as described in Stoll et al. 2016. A binary matrix was created, whereas 1 denotes an individual license holding for a corresponding year and 0 denotes no license held. With this co-occurrence matrix, we can quantify which license types were held together over the past 30 years and how those holdings have changed.
-
+## Unique license divisions
 ```{r, message=FALSE}
 #| label: license portfolio
 #| echo: false
@@ -135,6 +132,7 @@ ggplot(unique_license_groups) +
              axis.text  = element_text(size = 10),
              axis.title = element_blank())
 ```
+
 ```{r}
 #| label: species proportion
 #| echo: false
@@ -168,6 +166,7 @@ ggplot(data = species_proportions, aes(x = license_year, y = proportion, fill = 
   scale_fill_viridis_d() +
   guides(fill = guide_legend(ncol = 4))
 ```
+
 ```{r}
 #| label: average number of species targeted
 #| echo: false
@@ -200,13 +199,14 @@ ggplot(avg_targeted_spp) +
 
 
 ```
+
 ## Annual Species Metrics
 
 ### Degree centrality
 
-"The *degree* of a node is the number of other nodes that single node is connected to.
+> "The *degree* of a node is the number of other nodes that single node is connected to. Important nodes tend to have more connections to other nodes. Highly connected nodes are interpreted to have high degree centrality."
 
-Important nodes tend to have more connections to other nodes. Highly connected nodes are interpreted to have high degree centrality."
+Commercial fishing and lobster licenses (Class I-III) are the most central license types in the network, with their degree centrality increasing over time. Marine worm, scallop dragger, and seaweed license have also become of increasing centrality over time.
 
 ```{r}
 #| label:      annual metrics
@@ -264,7 +264,7 @@ degree_plots <- metrics_series %>%
   mutate(time_series = map2(data, license_group, function(x, license_group){
     out <- ggplot(data = x)+
       geom_line(aes(x=license_year, y=degree)) +
-      ylim(c(0, 40)) + 
+      ylim(c(0, 30)) + 
       xlim(c(1990, 2021)) +
       theme_gmri(plot.title = element_text(size = 8),
                  axis.text  = element_text(size = 6),
@@ -280,7 +280,11 @@ gridExtra::marrangeGrob(degree_plots$time_series, layout_matrix = matrix(1:9, nc
 
 ### Betweeness
 
-"\[*Betweenness*\] ranks the nodes based on the flow of connections through the network. Importance is demonstrated through high frequency of connection with multiple other nodes. Nodes with high levels of betweenness tend to serve as a bridge for multiple sets of other important nodes." [*Source*](https://bookdown.org/jdholster1/idsr/network-analysis.html#advanced-case-study)
+> "\[*Betweenness*\] ranks the nodes based on the flow of connections through the network. Importance is demonstrated through high frequency of connection with multiple other nodes. Nodes with high levels of betweenness tend to serve as a bridge for multiple sets of other important nodes." [*Source*](https://bookdown.org/jdholster1/idsr/network-analysis.html#advanced-case-study)
+
+License types with high degrees of betweenness are license types that might not be particularly central to the network but are influential to the flow of the system around them. As in, disruption to license types with high levels of betweenness may impact the overall structure of the network significantly. 
+
+Initially, we had interpreted license types high betweenness and relatively low centrality to be important "fringe" fisheries that may not be a harvesters focal fishery, but one with low cost of entry that may serve as a supplement or back-up options when landings are low. It is unclear at this time whether that is an appropriate interpretation of this metric.
 
 ```{r}
 #| label:      betweeness
@@ -311,6 +315,9 @@ gridExtra::marrangeGrob(betweeness_plots$time_series, layout_matrix = matrix(1:9
 ```
 
 ## Annual Network Plots
+
+Groups, or *modules*, are denoted by color. Community structure is determined by a multi-level optimization of modularity, known as Louvain clustering.
+> It is based on the modularity measure and a hierarchical approach. Initially, each vertex is assigned to a community on its own. In every step, vertices are re-assigned to communities in a local, greedy way: each vertex is moved to the community with which it achieves the highest contribution to modularity. When no vertices can be reassigned, each community is considered a vertex on its own, and the process starts again with the merged communities. The process stops when there is only a single vertex left or when the modularity cannot be increased any more in a step. Since igraph 1.3, vertices are processed in a random order.
 
 ```{r}
 #| label: network plots
@@ -361,7 +368,12 @@ gridExtra::marrangeGrob(annual_graphs$ggraph, layout_matrix = matrix(1:2, ncol =
 
 ```
 
-# Edge Density and Modularity
+## Edge Density and Modularity
+
+Below is the time series of network edge density. The density of a graph is the ratio of the actual number of edges and the largest possible number of edges in the graph, assuming that no multi-edges are present. A network with higher density suggests more connections within the network. In the case of license holdings, a region with a denser network means that fishers have a more diversified permit portfolio and have flexibility to participate in multiple activities.
+
+> High modularity and low density have different subgroups of the target species that alternate over the time period, while high density implies species are being caught simultaneously (Nomura et. al, 2021)
+
 ```{r}
 #| label: edge density and modularity
 #| echo: false
@@ -372,22 +384,21 @@ gridExtra::marrangeGrob(annual_graphs$ggraph, layout_matrix = matrix(1:2, ncol =
 #| fig-height: 6
 #| fig-align: center
 
-
 ggplot(annual_metrics) +
   geom_line(aes(x = license_year, y = density)) +
+  geom_smooth(aes(x = license_year, y = density), method = "lm") +
   xlab("Year") + ylab("Density") + ggtitle("Edge Density") +
   theme_gmri() +
   ylim(c(0.5,1))
 
 ggplot(annual_metrics) +
   geom_line(aes(x = license_year, y = modularity)) +
+  geom_smooth(aes(x = license_year, y = modularity), method = "lm") +
   xlab("Year") + ylab("Modularity") + ggtitle("Modularity") +
   theme_gmri() +
   ylim(c(0,0.15))
 
 ```
-
-
 
 ```{r}
 #| label: dendrogram
