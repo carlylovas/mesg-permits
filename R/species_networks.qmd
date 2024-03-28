@@ -135,8 +135,8 @@ ggplot(targeted_species)+
 #| warning: false
 #| column: page
 #| fig-align: center
-#| fig-height: 6
-#| fig-width: 8
+#| fig-height: 7
+#| fig-width: 9
 
 species_portfolio %>% 
   pivot_longer(cols = 3:21, names_to = "species", values_to = "count") %>%
@@ -154,10 +154,12 @@ ggplot(data = species_proportions, aes(x = license_year, y = proportion, fill = 
   geom_col(position = "stack") +
   theme_gmri(plot.title = element_text(size = 10),
              axis.text  = element_text(size = 10),
-             axis.title = element_text(size = 8)) +
+             axis.title = element_text(size = 8),
+             legend.title = element_blank(),
+             legend.position = "bottom") +
   xlab("Year") + ylab("Proportion") + ggtitle("Proportion of Targeted Species") +
   scale_fill_viridis_d() +
-  guides(fill = guide_legend(nrow=2))
+  guides(fill = guide_legend(ncol=4))
 ```
 
 ```{r}
@@ -239,8 +241,7 @@ gridExtra::marrangeGrob(time_series$time_series, layout_matrix = matrix(1:12, nc
 
 ### Degree centrality
 
-"The *degree* of a node is the number of other nodes that single node is connected to.
-
+> "The *degree* of a node is the number of other nodes that single node is connected to.
 Important nodes tend to have more connections to other nodes. Highly connected nodes are interpreted to have high degree centrality."
 
 ```{r}
@@ -299,7 +300,7 @@ degree_plots <- metrics_series %>%
   mutate(time_series = map2(data, species, function(x, description){
     out <- ggplot(data = x)+
       geom_line(aes(x=license_year, y=degree)) +
-      ylim(c(0, 40)) + 
+      ylim(c(0, 30)) + 
       xlim(c(1990, 2021)) +
       theme_gmri(plot.title = element_text(size = 8),
                  axis.text  = element_text(size = 6),
@@ -315,7 +316,11 @@ gridExtra::marrangeGrob(degree_plots$time_series, layout_matrix = matrix(1:12, n
 
 ### Betweeness
 
-"\[*Betweenness*\] ranks the nodes based on the flow of connections through the network. Importance is demonstrated through high frequency of connection with multiple other nodes. Nodes with high levels of betweenness tend to serve as a bridge for multiple sets of other important nodes." [*Source*](https://bookdown.org/jdholster1/idsr/network-analysis.html#advanced-case-study)
+>"\[*Betweenness*\] ranks the nodes based on the flow of connections through the network. Importance is demonstrated through high frequency of connection with multiple other nodes. Nodes with high levels of betweenness tend to serve as a bridge for multiple sets of other important nodes." [*Source*](https://bookdown.org/jdholster1/idsr/network-analysis.html#advanced-case-study)
+
+License types with high degrees of betweenness are license types that might not be particularly central to the network but are influential to the flow of the system around them. As in, disruption to license types with high levels of betweenness may impact the overall structure of the network significantly. 
+
+Initially, we had interpreted license types high betweenness and relatively low centrality to be important "fringe" fisheries that may not be a harvesters focal fishery, but one with low cost of entry that may serve as a supplement or back-up options when landings are low. It is unclear at this time whether that is an appropriate interpretation of this metric.
 
 ```{r}
 #| label:      annual metrics pt 2
@@ -347,7 +352,10 @@ gridExtra::marrangeGrob(betweeness_plots$time_series, layout_matrix = matrix(1:1
 
 ## Annual Network Plots
 
-Similar to plotting the license holdings as a network over time, we plot the target species pertaining to these permits over time. This makes for a more easily interpretable graph, as well as increased potential for correlating license changes to species distribution changes
+Similar to plotting the license holdings as a network over time, we plot the target species pertaining to these permits over time. This makes for a more easily interpretable graph, as well as increased potential for correlating license changes to species distribution changes.
+
+Groups, or *modules*, are denoted by color. Community structure is determined by a multi-level optimization of modularity, known as Louvain clustering.
+> It is based on the modularity measure and a hierarchical approach. Initially, each vertex is assigned to a community on its own. In every step, vertices are re-assigned to communities in a local, greedy way: each vertex is moved to the community with which it achieves the highest contribution to modularity. When no vertices can be reassigned, each community is considered a vertex on its own, and the process starts again with the merged communities. The process stops when there is only a single vertex left or when the modularity cannot be increased any more in a step. Since igraph 1.3, vertices are processed in a random order.
 
 ```{r}
 #| label: species networks
