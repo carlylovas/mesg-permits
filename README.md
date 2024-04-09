@@ -9,6 +9,7 @@ This is the public repository containing the necessary data and code for network
 3.  [License network plots](https://carlylovas.github.io/mesg-permits/R/license_network_plots.html)
 4.  [Anomalies](https://carlylovas.github.io/mesg-permits/R/anomalies.html)
 5.  [Stoll 2016 grouping](https://carlylovas.github.io/mesg-permits/R/license_divisions.html)
+6.  [GARFO Summaries](hhtps://carlylovas.github.io/mesg-permits/R/garfo_sum_stats.html)
 
 ## Replication
 
