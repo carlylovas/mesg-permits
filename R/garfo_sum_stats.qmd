@@ -277,7 +277,36 @@ garfo_holdings %>%
   scale_fill_gmri()
 ```
 
+
+# Unique license types per year
+```{r}
+#| label: license types
+#| echo: false
+#| message: false
+#| fig-align: center
+#| fig-height: 6
+#| fig-width: 9
+
+garfo_holdings %>% 
+  ungroup() %>%
+  select(AP_YEAR, PERMIT_TYPE) %>% 
+  distinct() %>%
+  group_by(AP_YEAR) %>% 
+  nest() %>% 
+  mutate(UNIQUE = map_dbl(data, function(x){nrow(x)})) %>%
+  ggplot() +
+  geom_line(aes(x = AP_YEAR, y = UNIQUE)) +
+  xlab("Year") + ylab("Number of licenses types issued per year") +
+  theme_gmri(strip.background = element_rect(fill = "transparent"),
+             strip.text = element_text(color = "black"))
+
+```
+
+
+
+
 # Averages 
+
 ## Average number of licenses per vessel over time
 ```{r}
 #| label: license per vessel
