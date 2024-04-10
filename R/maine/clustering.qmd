@@ -1,0 +1,79 @@
+---
+title: "clustering"
+author: "cslovas"
+format: 
+  html:
+    toc: true
+    self-contained: true
+editor: visual
+---
+```{r, message = FALSE}
+#| label: load packages & data
+#| echo: false
+#| warning: false
+
+install.packages("vegan")
+library(vegan)
+library(tidyverse)
+library(janitor)
+library(tidygraph)
+library(ggraph)
+library(igraph)
+library(patchwork)
+library(gmRi)
+library(grid)
+library(here)
+library(gt)
+
+# Read in gomfish package from Joshua and Theresa
+# devtools::install_github("Social-Oceans-Lab/gomfish")
+library(gomfish)
+
+data(ind_lic_portfolio) 
+
+ind_lic_portfolio <- ind_lic_portfolio %>% filter(!license_year == "2022") # unreliable
+
+# Read in updated license codes 
+updated_license_codes <- read.csv(here("Data", "updated_license_codes.csv")) %>%
+  rename("license_type" = "code")
+
+# Add Stoll et al 2016 license subdivisions
+license_divisions <- read.csv(here("Data", "stoll_license_divisions.csv")) %>%
+  # select(License.Type, Target.Species, Stoll.et.al..2016.Name) %>%
+  rename("description" = "License.Type",
+         "group" = "Target.Species",
+         "license_group" = "Stoll.et.al..2016.Name",
+         "divisions" = "Stoll.et.al..2016") %>%
+  select(description, group, license_group, divisions)
+```
+
+```{r}
+#| label: dissimilarity index
+#| echo: false
+#| message: false
+#| warning: false
+
+# Remove indigenous and non-harvester licenses
+license_types <- names(ind_lic_portfolio %>%
+                         select(!c(landings_number, license_year)))
+license_types <- as_tibble(license_types) %>%
+  rename("license_type" = "value") %>%
+  left_join(updated_license_codes) %>%
+  mutate(description = str_to_sentence(description))
+
+license_types %>%
+  filter(!group %in% c("Demo","Post-Harvest", "Non-resident", "Recreational")) %>%
+  filter(!(str_starts(license_type, "ma"))) %>%
+  filter(!(str_starts(license_type, "mi"))) %>%
+  filter(!(str_starts(license_type, "nb"))) %>%
+  filter(!(str_starts(license_type, "p")))  %>%
+  filter(!license_type %in% c("st", "sts", "csw", "csws", "fhc", "lnc", "mws", "mw", "ncs", "nfhc", "nfhs", "vh")) %>%
+  drop_na() -> license_types
+
+
+license_portfolio <- ind_lic_portfolio %>%
+  select(landings_number, license_year, license_types$license_type)
+
+
+
+```

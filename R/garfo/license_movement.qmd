@@ -1,0 +1,131 @@
+---
+title: "License Movement"
+author: "cslovas"
+format: 
+  html:
+    toc: true
+    self-contained: true
+editor: visual
+---
+
+```{r}
+#| label: read in geocoded garfo data
+#| echo: false
+#| message: false
+
+library(tidyverse)
+library(gmRi)
+library(here)
+library(matrixStats)
+
+garfo_geo <- read.csv(file = here("Outputs", "GARFO_geocoded.csv"))
+
+```
+
+## Tracking latitudinal movement of GARFO licenses
+By rounding latitude to 1/10 of a degree, we can calculate the center of gravity/occurrence of a license type. To do this, we weight the average latitude by the total number of a particular license type associated with that latitude over time.
+
+### Black sea bass
+Black sea bass is used as an example, as there are only two license types and a distinguishable trend of northward (poleward) latitudinal movement. 
+```{r}
+#| label: restructuring dataframe
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-align: center
+#| fig-height: 5
+#| fig-width: 7 
+
+garfo_geo %>%
+  ungroup() %>%
+  pivot_longer(cols = BLACK_SEA_BASS_1:TILEFISH_D, names_to = "license", values_to = "count") %>%
+  filter(!count == 0) %>%
+  group_by(VP_NUM, license) %>%
+  mutate(lat = round(lat, digits = 1),
+         long = round(long, digits = 1)) %>%
+  filter(lat >= 30) %>%
+  group_by(AP_YEAR, license, lat) %>%
+  summarise(count = sum(count)) %>%
+  group_by(AP_YEAR, license) %>%
+  summarise(center_lat = weightedMean(lat, w = count)) %>%
+  distinct() -> center_lats
+
+center_lats %>% 
+  filter(str_starts(license, "BLACK_SEA_BASS")) %>% 
+  ggplot() +
+  geom_point(aes(x = AP_YEAR, y = center_lat, color = license)) +
+  xlab("Year") + ylab("Center of Latitude") + ggtitle("Movement of BSB Licenses") +
+  ylim(c(37,42)) +
+  scale_color_gmri() + 
+  theme_gmri()
+  
+```
+### Multispecies licenses
+```{r}
+#| label: multispecies plot
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-align: center
+#| fig-height: 13
+#| fig-width: 9 
+
+center_lats %>% 
+  filter(str_starts(license, "MULTISPECIES")) %>% 
+  ggplot() +
+  geom_point(aes(x = AP_YEAR, y = center_lat, color = license)) +
+  xlab("Year") + ylab("Center of Latitude") + ggtitle("Movement of Multispecies Licenses") +
+  facet_wrap(~license, ncol = 3) + 
+  ylim(c(35,45)) +
+  scale_color_gmri() + 
+  theme_gmri(legend.position = "none",
+             strip.background = element_rect(fill = "lightgray"),
+             strip.text = element_text(color = "black"))
+```
+Perhaps some of these are endorsements? Not sure why some would only have one observation or none... 
+
+### Lobster
+```{r}
+#| label: lobster
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-align: center
+#| fig-height: 13
+#| fig-width: 9 
+
+center_lats %>% 
+  filter(str_starts(license, "LOBSTER")) %>% 
+  ggplot() +
+  geom_point(aes(x = AP_YEAR, y = center_lat, color = license)) +
+  xlab("Year") + ylab("Center of Latitude") + ggtitle("Movement of Lobster Licenses") +
+  facet_wrap(~license, ncol = 3) + 
+  ylim(c(35,45)) +
+  scale_color_gmri() + 
+  theme_gmri(legend.position = "none",
+             strip.background = element_rect(fill = "lightgray"),
+             strip.text = element_text(color = "black"))
+```
+
+### Herring
+```{r}
+#| label: herring
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-align: center
+#| fig-height: 13
+#| fig-width: 9 
+
+center_lats %>% 
+  filter(str_starts(license, "HERRING")) %>% 
+  ggplot() +
+  geom_point(aes(x = AP_YEAR, y = center_lat, color = license)) +
+  xlab("Year") + ylab("Center of Latitude") + ggtitle("Movement of Herring Licenses") +
+  facet_wrap(~license, ncol = 3) + 
+  ylim(c(35,45)) +
+  scale_color_gmri() + 
+  theme_gmri(legend.position = "none",
+             strip.background = element_rect(fill = "lightgray"),
+             strip.text = element_text(color = "black"))
+```
