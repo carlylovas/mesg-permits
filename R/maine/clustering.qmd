@@ -8,6 +8,8 @@ format:
 editor: visual
 ---
 
+### License portfolio
+Each column represents a differnt license type and each cell is the total number of that license type issued that year, spanning 1990 to 2021. 
 ```{r}
 #| label: load packages & data
 #| echo: false
