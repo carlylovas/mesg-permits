@@ -1,0 +1,165 @@
+---
+title: "Shrimp"
+author: "cslovas"
+format: 
+  html:
+    toc: true
+    self-contained: true
+editor: visual
+---
+```{r}
+#| label:   load libraries & data
+#| echo:    false
+#| message: false
+#| warning: false
+
+# Install & load the libraries
+library(tidyverse)
+library(tidygraph)
+library(ggraph)
+library(igraph)
+library(here)
+library(gmRi)
+library(grid)
+library(gt)
+
+# Read in gomfish package from Joshua and Theresa
+# devtools::install_github("Social-Oceans-Lab/gomfish")
+library(gomfish)
+
+data(ind_lic_portfolio) 
+
+ind_lic_portfolio <- ind_lic_portfolio %>% filter(!license_year == 2022) # unreliable
+
+# Read in updated license codes 
+updated_license_codes <- read.csv(here("Data", "updated_license_codes.csv")) %>%
+  rename("license_type" = "code")
+
+# Remove indigenous and non-harvester licenses
+license_types <- names(ind_lic_portfolio %>%
+                         select(!c(landings_number, license_year)))
+license_types <- as_tibble(license_types) %>%
+  rename("license_type" = "value") %>%
+  left_join(updated_license_codes) %>%
+  mutate(description = str_to_sentence(description))
+
+license_types %>%
+  filter(!group %in% c("Demo","Post-Harvest", "Non-resident", "Recreational")) %>%
+  filter(!(str_starts(license_type, "ma"))) %>%
+  filter(!(str_starts(license_type, "mi"))) %>%
+  filter(!(str_starts(license_type, "nb"))) %>%
+  filter(!(str_starts(license_type, "p")))  %>%
+  filter(!license_type %in% c("st", "sts", "csw", "csws", "fhc", "lnc", "mws", "mw", "ncs", "nfhc", "nfhs", "vh")) %>%
+  drop_na() -> license_types
+```
+
+```{r}
+#| label:      annual metrics
+#| echo:       false
+#| message:    false
+#| warning:    false
+#| column:     page
+#| fig-width:  9
+#| fig-height: 13
+#| fig-align: center
+
+co_matrix <- ind_lic_portfolio %>%
+  arrange(license_year) %>%
+  mutate(shrimp = ifelse(license_year >= 2014, "post-closure", "pre-closure")) %>%
+  #filter(!is.na(landings_number)) %>% # removing NA landings
+  select(license_types$license_type, shrimp) %>%
+  group_by(shrimp) %>%
+  nest() %>% 
+  # left_join(unique_licenses) %>%
+  # select(license_year, data, licenses) %>% 
+  mutate(co_matrix = map(data, function(df){
+    # df <- x %>% select(y$license_type) # this filters the portfolio to feature only licenses issued in that year. If you want to run with all licenses, command out this line. 
+    out <- crossprod(as.matrix(df)) 
+    diag(out) <- 0
+    return(out)
+  })) %>%
+  select(shrimp, co_matrix) 
+
+```
+
+```{r}
+#| label: metrics
+#| echo: false
+#| message: false
+
+metrics <- co_matrix %>%
+  mutate(graph_obj     = map(co_matrix, function(x){graph.adjacency(x, mode = "undirected", weighted = TRUE)}),
+         degree        = map(graph_obj, function(x){degree(x)}),
+         betweeness    = map(graph_obj, function(x){betweenness(x)}),
+         density       = map(graph_obj, function(x){edge_density(x, loops = FALSE)}),
+         community     = map(graph_obj, function(x){cluster_louvain(x)}),
+         modularity    = map(community, function(x){modularity(x)}),
+         membership    = map(community, function(x){membership(x)}),
+         evcent        = map(graph_obj, function(x){evcent(x)}))
+
+```
+
+````{r}
+#| label: plots
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-align: center
+#| fig-width: 13
+#| fig-height: 9
+
+networks <- metrics %>%
+  mutate(ggraph = map2(graph_obj, shrimp, function(x, y){
+    x <- as_tbl_graph(x)
+    x %>% 
+      activate(nodes) %>%
+      mutate(community = as.character(group_louvain())) -> x
+    out <- ggraph(x, 'kk') + 
+      geom_node_point(aes(color = community), size = 7, alpha = 1, show.legend = FALSE) +
+      geom_edge_link(aes(width = weight), alpha = 0.5, show.legend = FALSE) + 
+      coord_fixed() +
+      scale_edge_width(range = c(0.2, 2)) +
+      scale_color_gmri() +
+      ggtitle(shrimp) +
+      geom_node_text(aes(label = name), repel = TRUE, color = "black", max.overlaps = 100) +
+      theme_graph()   
+  })) %>%
+  mutate(ggraph_circular = map2(graph_obj, shrimp, function(x, y){
+    x <- as_tbl_graph(x)
+    x %>% 
+      activate(nodes) %>%
+      mutate(community = as.character(group_louvain())) -> x
+    out <- ggraph(x, layout = "linear", circular = TRUE) + 
+      geom_node_point(aes(color = community), size = 7, alpha = 1, show.legend = FALSE) +
+      geom_edge_link(aes(width = weight), alpha = 0.5, show.legend = FALSE) + 
+      scale_edge_width(range = c(0.2, 2)) +
+      scale_color_gmri() +
+      coord_fixed() +
+      ggtitle(shrimp) +
+      geom_node_text(aes(label = name), repel = TRUE, color = "black", max.overlaps = 100) +
+      theme_graph()})) %>%
+  select(shrimp, density, modularity, ggraph, ggraph_circular)
+
+gridExtra::marrangeGrob(networks$ggraph, layout_matrix = matrix(1:2, ncol = 2, nrow = 1, byrow= TRUE), top = NULL)
+
+gridExtra::marrangeGrob(networks$ggraph_circular, layout_matrix = matrix(1:2, ncol = 2, nrow = 1, byrow= TRUE), top = NULL)
+
+
+```
+
+```{r}
+#| label: density and modularity
+#| echo: false
+#| message: false
+#| warning: false
+
+metrics %>%
+  select(shrimp, density, modularity) %>%
+  gt(groupname_col = NULL) %>%
+  cols_label(
+    shrimp = "",
+    density = md("**Density**"),
+    modularity = md("**Modularity**")
+    )
+
+```
