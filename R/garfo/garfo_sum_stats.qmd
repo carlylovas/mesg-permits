@@ -18,7 +18,8 @@ library(gmRi)
 library(here)
 library(grid)
 
-garfo_clean <- read.csv(here("Data", "all_GARFO_data.csv"))
+garfo_clean    <- read.csv(here("Data", "all_GARFO_data.csv"))
+garfo_landings <- read.csv(here("Data", "landings.csv"))
 # garfo_geo <- read.csv(here("Data", "cleaned_geocodes.csv"))
 
 ```
@@ -27,7 +28,6 @@ garfo_clean <- read.csv(here("Data", "all_GARFO_data.csv"))
 
 ## Totals by state
 
-Below are the total number of GARFO regulated licenses issued per year from 1996 to 2022.
 
 ```{r}
 #| label: summary stats by state 
@@ -53,11 +53,34 @@ garfo_holdings %>%
   ggplot() +
   geom_col(aes(x = AP_YEAR, y = TOTAL_COUNT), fill = "#00608A") +
   facet_wrap(~PPST, scales = "free_y")  +
-  xlab("Year") + ylab("Total Permits Issued") +
+  xlab("Year") + ylab("Total Licenses Issued") + ggtitle("Number of licenses issued annually by state") +
   theme_gmri(strip.background = element_rect(fill = "transparent"),
              strip.text = element_text(color = "black")) 
 
-# this seems...incorrect...
+```
+```{r}
+#| label: landings
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-align: center
+#| fig-height: 6
+#| fig-width: 9 
+#| 
+garfo_landings %>%
+  filter(YEAR >= 1990 & STATE %in% c("ME", "NH", "MA", "CT", "RI", "DE", "MD", "VA", "NC")) %>% 
+  mutate(LANDED.LBS = parse_number(LANDED.LBS)) %>%
+  group_by(YEAR, STATE) %>% 
+  summarise(TOTAL.LANDED = sum(LANDED.LBS, na.rm = TRUE)) %>%
+  mutate(TOTAL.LANDED = TOTAL.LANDED/1000000) %>%
+  arrange(STATE) %>% 
+  ggplot() +
+  geom_col(aes(x = YEAR, y = TOTAL.LANDED), fill = "#00608A") +
+  facet_wrap(~STATE, scales = "free_y")  +
+  xlab("Year") + ylab("Total Landed Pounds (millions)") + ggtitle("Annual landings by state") +
+  theme_gmri(strip.background = element_rect(fill = "transparent"),
+             strip.text = element_text(color = "black"))
+
 
 ```
 
@@ -353,5 +376,30 @@ garfo_holdings %>%
   theme_gmri(strip.background = element_rect(fill = "transparent"),
              strip.text = element_text(color = "black"))
     
+
+```
+
+```{r}
+#| label: landings vs licenses by port
+#| echo: false
+
+# garfo_landings %>% 
+#   filter(YEAR >= 1996) %>% 
+#   rename("PPORT"   = "PORT.NAME",
+#          "PPST"    = "STATE",
+#          "AP_YEAR" = "YEAR") %>% 
+#   mutate(LANDED.LBS = parse_number(LANDED.LBS))%>% 
+#   group_by(AP_YEAR, PPORT, PPST) %>% 
+#   summarise(TOTAL_LBS = sum(LANDED.LBS)) -> landings_by_port
+# 
+# garfo_holdings %>% 
+#   group_by(AP_YEAR, PPORT, PPST) %>% 
+#   summarise(TOTAL_LICENSES = sum(COUNT)) %>% 
+#   right_join(landings_by_port) %>% 
+#   unite(PPORT, PPST, col = "PORT", sep = ", ") -> landings_with_licenses
+#   
+# unique(landings_with_licenses$PORT)
+
+## this is probably not the way to do this
 
 ```
