@@ -38,10 +38,10 @@ portfolio <- read_rds(here("Data", "clean_portfolio.rds"))
 #| fig-height: 13
 #| fig-align: center
 
-co_matrix <- ind_lic_portfolio %>%
+co_matrix <- portfolio %>%
   arrange(license_year) %>%
-  mutate(shrimp = ifelse(license_year >= 2014, "post-closure", "pre-closure")) %>%
-  select(license_types$license_type, shrimp) %>%
+  mutate(shrimp = ifelse(license_year >= 2015, "post-closure", "pre-closure")) %>%
+  select(!c(license_year, landings_number)) %>%
   group_by(shrimp) %>%
   nest() %>% 
   mutate(co_matrix = map(data, function(df){
@@ -70,7 +70,8 @@ metrics <- co_matrix %>%
 
 ```
 
-````{r}
+## All harvesters
+```{r}
 #| label: plots
 #| echo: false
 #| message: false
@@ -111,7 +112,7 @@ networks <- metrics %>%
       theme_graph()})) %>%
   select(shrimp, density, modularity, ggraph, ggraph_circular)
 
-gridExtra::marrangeGrob(networks$ggraph, layout_matrix = matrix(1:2, ncol = 2, nrow = 1, byrow= TRUE), top = NULL)
+# gridExtra::marrangeGrob(networks$ggraph, layout_matrix = matrix(1:2, ncol = 2, nrow = 1, byrow= TRUE), top = NULL)
 
 gridExtra::marrangeGrob(networks$ggraph_circular, layout_matrix = matrix(1:2, ncol = 2, nrow = 1, byrow= TRUE), top = NULL)
 
@@ -207,7 +208,8 @@ shrimp_metrics <- shrimp_matrix %>%
 
 ```
 
-````{r}
+## Portfolio networks of shrimp harvesters 
+```{r}
 #| label: shrimp plots
 #| echo: false
 #| message: false
@@ -248,7 +250,7 @@ shrimp_networks <- shrimp_metrics %>%
       theme_graph()})) %>%
   select(closure, density, modularity, ggraph, ggraph_circular)
 
-gridExtra::marrangeGrob(shrimp_networks$ggraph, layout_matrix = matrix(1:2, ncol = 2, nrow = 1, byrow= TRUE), top = NULL)
+# gridExtra::marrangeGrob(shrimp_networks$ggraph, layout_matrix = matrix(1:2, ncol = 2, nrow = 1, byrow= TRUE), top = NULL)
 
 gridExtra::marrangeGrob(shrimp_networks$ggraph_circular, layout_matrix = matrix(1:2, ncol = 2, nrow = 1, byrow= TRUE), top = NULL)
 ```
@@ -267,7 +269,7 @@ shrimp_metrics %>%
     density = md("**Density**"),
     modularity = md("**Modularity**"))
 ```
-
+# Changes in portfolios of shrimp harvesters
 ```{r}
 #| label: shrimper changes 
 #| echo: false
@@ -278,13 +280,15 @@ shrimp_portfolios %>%
   pivot_longer(al:sws, names_to = "license_type", values_to = "count") %>% 
   filter(!count == 0 & !license_year == "2015") %>% 
   mutate(closure = ifelse(license_year <= 2014, "pre-closure", "post-closure")) %>%
-  filter(closure == "pre-closure") %>%
+  # filter(closure == "pre-closure") %>%
   ggplot() +
   geom_col(aes(x = license_year, y = count, fill = license_type)) +
   facet_wrap(~factor(closure, levels = c("pre-closure", "post-closure")), scales = "free_x", ncol = 2) +
   guides(fill = guide_legend(ncol = 9)) +
   scale_fill_gmri()+
-  theme_gmri(legend.position = "bottom") # try species level -> switch from shrimp to what (if to anything)
+  theme_gmri(legend.position = "bottom",
+             strip.background = element_rect(fill = "transparent"),
+             strip.text = element_text(color = "black")) # try species level -> switch from shrimp to what (if to anything)
 
 ```
 
@@ -297,16 +301,16 @@ shrimp_portfolios %>%
 license_types <- read.csv(here("Data", "updated_license_codes.csv"))%>%
   rename("license_type" = "code")
 
-shrimp_portfolios %>% 
-  pivot_longer(cols = al:sws, names_to = "license_type", values_to = "licensed") %>%
-  filter(!licensed == 0) %>%
-  left_join(license_types) %>%
-  mutate(row = row_number()) %>%
-  select(license_year, landings_number, licensed, group, row) %>%
-  pivot_wider(names_from=group,values_from=licensed,names_expand=TRUE,values_fill = list(licensed=0)) %>%
-  select(-row)%>%
-  group_by(landings_number,license_year)%>%
-  summarise(across(everything(),sum))
+# shrimp_portfolios %>% 
+#   pivot_longer(cols = al:sws, names_to = "license_type", values_to = "licensed") %>%
+#   filter(!licensed == 0) %>%
+#   left_join(license_types) %>%
+#   mutate(row = row_number()) %>%
+#   select(license_year, landings_number, licensed, group, row) %>%
+#   pivot_wider(names_from=group,values_from=licensed,names_expand=TRUE,values_fill = list(licensed=0)) %>%
+#   select(-row)%>%
+#   group_by(landings_number,license_year)%>%
+#   summarise(across(everything(),sum))
 
 shrimp_portfolios %>% 
   pivot_longer(cols = al:sws, names_to = "license_type", values_to = "licensed") %>%
@@ -314,19 +318,21 @@ shrimp_portfolios %>%
   filter(!licensed == 0 & !group %in% c("Aquaculture", "Menhaden")) %>% # removing license types that didn't exist prior to closure
   group_by(group, license_year) %>%
   summarise(total = sum(licensed)) %>%
-  mutate(closure = ifelse(license_year <= 2014, "pre-closure", "post-closure")) -> shrimper_counts
+  mutate(closure = ifelse(license_year <= 2015, "pre-closure", "post-closure")) -> shrimper_counts
 
 ```
 
+## Entry and exit
 ```{r}
 #| label: entry and exit
 #| echo: false
 #| message: false
+#| warning: false
 
 shrimp_portfolios %>% 
   pivot_longer(cols = al:sws, names_to = "license_type", values_to = "licensed") %>%
   left_join(license_types) %>%
-  filter(!licensed == 0 & !group %in% c("Aquaculture", "Menhaden")) %>%
+  filter(!licensed == 0) %>% # & !group %in% c("Aquaculture", "Menhaden")) %>%
   mutate(closure = ifelse(license_year <= 2015, "pre_closure", "post_closure")) %>% 
   group_by(license_year, landings_number, closure) %>%  
   summarise(total_licenses = sum(licensed)) %>%
@@ -336,20 +342,19 @@ shrimp_portfolios %>%
   relocate("pre_closure", .before = "post_closure") %>% 
   filter(is.na(post_closure)) -> ex_shrimpers
 
-
 # all harvesters before and after shrimp
 portfolio %>% 
   select(license_year, landings_number) %>% 
   distinct() %>% 
-  mutate(closure = ifelse(license_year <= 2014, "pre_closure", "post_closure")) %>% 
+  mutate(closure = ifelse(license_year <= 2015, "pre_closure", "post_closure")) %>% 
   group_by(license_year, closure) %>%
   nest() %>% 
   mutate(total_harvesters = map_dbl(data, function(x){nrow(x)})) -> harvesters 
 
-harvesters %>% 
-  select(!data) %>% 
-  group_by(closure) %>% 
-  summarise(avg_harvesters = mean(total_harvesters)) # more harvesters after closure lol 
+# harvesters %>% 
+#   select(!data) %>% 
+#   group_by(closure) %>% 
+#   summarise(avg_harvesters = mean(total_harvesters)) # more harvesters after closure lol 
 
 # I should re-run the before and after portfolios with only harvests who stayed 
 
@@ -362,36 +367,42 @@ harvesters %>%
 #| warning: false
 
 # those who stayed
-shrimp_portfolios %>% 
-  pivot_longer(cols = al:sws, names_to = "license_type", values_to = "count") %>%
-  filter(!count == 0 & !landings_number %in% ex_shrimpers$landings_number) %>%
-  left_join(license_types) %>% 
-  mutate(closure = ifelse(license_year <= 2014, "pre-closure", "post-closure")) %>%
-  # filter(closure == "pre-closure") %>%
-  ggplot() +
-  geom_col(aes(x = license_year, y = count, fill = group)) +
-  facet_wrap(~factor(closure, levels = c("pre-closure", "post-closure")), scales = "free_x", ncol = 2) +
-  guides(fill = guide_legend(ncol = 4)) +
-  # scale_fill_gmri()+
-  theme_gmri(legend.position = "bottom")
-
-# those who left (portfolio prior to closure)
-shrimp_portfolios %>% 
-  pivot_longer(cols = al:sws, names_to = "license_type", values_to = "count") %>%
-  filter(!count == 0 & landings_number %in% ex_shrimpers$landings_number) %>%
-  left_join(license_types) %>% 
-  mutate(closure = ifelse(license_year <= 2014, "pre-closure", "post-closure")) %>%
-  # filter(closure == "pre-closure") %>%
-  ggplot() +
-  geom_col(aes(x = license_year, y = count, fill = group)) +
-  facet_wrap(~factor(closure, levels = c("pre-closure", "post-closure")), scales = "free_x", ncol = 2) +
-  guides(fill = guide_legend(ncol = 4)) +
-  # scale_fill_gmri()+
-  theme_gmri(legend.position = "bottom") # their pre-closure portfolios weren't that different from those who stayed
+# shrimp_portfolios %>% 
+#   pivot_longer(cols = al:sws, names_to = "license_type", values_to = "count") %>%
+#   filter(!count == 0 & !landings_number %in% ex_shrimpers$landings_number) %>%
+#   left_join(license_types) %>% 
+#   mutate(closure = ifelse(license_year <= 2015, "pre-closure", "post-closure")) %>%
+#   # filter(closure == "pre-closure") %>%
+#   ggplot() +
+#   geom_col(aes(x = license_year, y = count, fill = group)) +
+#   facet_wrap(~factor(closure, levels = c("pre-closure", "post-closure")), scales = "free_x", ncol = 2) +
+#   xlab("Year") + ylab("Count") + ggtitle("Harvesters who stayed in fisheries") + 
+#   guides(fill = guide_legend(ncol = 4)) +
+#   # scale_fill_gmri()+
+#   theme_gmri(legend.position = "bottom",
+#              strip.background = element_rect(fill = "transparent"),
+#              strip.text = element_text(color = "black"))
+# 
+# # those who left (portfolio prior to closure)
+# shrimp_portfolios %>% 
+#   pivot_longer(cols = al:sws, names_to = "license_type", values_to = "count") %>%
+#   filter(!count == 0 & landings_number %in% ex_shrimpers$landings_number) %>%
+#   left_join(license_types) %>% 
+#   mutate(closure = ifelse(license_year <= 2015, "pre-closure", "post-closure")) %>%
+#   # filter(closure == "pre-closure") %>%
+#   ggplot() +
+#   geom_col(aes(x = license_year, y = count, fill = group)) +
+#   facet_wrap(~factor(closure, levels = c("pre-closure", "post-closure")), scales = "free_x", ncol = 2) +
+#   xlab("Year") + ylab("Count") + ggtitle("Harvesters who left fisheries") + 
+#   guides(fill = guide_legend(ncol = 4)) +
+#   # scale_fill_gmri()+
+#   theme_gmri(legend.position = "bottom",
+#              strip.background = element_rect(fill = "transparent"),
+#              strip.text = element_text(color = "black")) # their pre-closure portfolios weren't that different from those who stayed
 
 # maybe compare those who stayed vs those who left pre-closure 
 ```
-
+Post closure, shrimp (css, csc), lobster-apprentice under 18 (lau), and elver dip net fyke 1 (e6) are replaced by menhaden (menc, menr), spat, and aquaculture, all of which are new license categories and don't necessarily represent a shift in fisheries. 
 ```{r}
 #| label: pre-closure portfolios
 #| echo: false
@@ -408,18 +419,62 @@ shrimp_portfolios %>%
   mutate(participation = "exited") %>% 
   relocate(participation, .after = landings_number) %>%
   full_join(continued) %>% 
-  arrange(landings_number) %>%
-  filter(license_year <= 2015) -> pre_closure
+  arrange(landings_number) -> participants
+  # filter(license_year <= 2015) -> pre_closure
 
-pre_closure %>%
+participants %>%
   pivot_longer(cols = al:sws, names_to = "license_type", values_to = "count") %>%
+  filter(license_year <= 2015) %>%
   left_join(license_types) %>% 
   ggplot() +
   geom_col(aes(x = license_year, y = count, fill = group)) +
-  facet_wrap(~participation, ncol = 2, scales = "free_y") + 
-  # facet_wrap(~factor(participation, levels = c("pre-closure", "post-closure")), scales = "free_x", ncol = 2) +
+  # facet_wrap(~participation, ncol = 2, scales = "free_y") + 
+  facet_wrap(~factor(participation, levels = c("exited", "continued")), scales = "free_y", ncol = 2) +
+  xlab("Year") + ylab("Count") + ggtitle("Pre-closure portfolios") + 
   guides(fill = guide_legend(ncol = 4)) +
-  # scale_fill_gmri()+
-  theme_gmri(legend.position = "bottom") # proportions next? 
+  scale_fill_gmri()+
+    theme_gmri(legend.position = "bottom",
+               legend.title = element_blank(), 
+               strip.background = element_rect(fill = "transparent"),
+               strip.text = element_text(color = "black"))
 
+participants %>%
+  pivot_longer(cols = al:sws, names_to = "license_type", values_to = "count") %>%
+  filter(license_year > 2015) %>%
+  left_join(license_types) %>% 
+  ggplot() +
+  geom_col(aes(x = license_year, y = count, fill = group)) +
+  # facet_wrap(~participation, ncol = 2, scales = "free_y") + 
+  facet_wrap(~factor(participation, levels = c("exited", "continued")), scales = "free_y", ncol = 2) +
+  xlab("Year") + ylab("Count") + ggtitle("Post-closure portfolios") + 
+  guides(fill = guide_legend(ncol = 4)) +
+  scale_fill_gmri()+
+    theme_gmri(legend.position = "bottom",
+               legend.title = element_blank(), 
+               strip.background = element_rect(fill = "transparent"),
+               strip.text = element_text(color = "black")) # proportions next? 
+
+shrimp_portfolios %>% 
+  pivot_longer(cols = al:sws, names_to = "license_type", values_to = "count") %>%
+  filter(!count == 0) %>%
+  mutate(closure = ifelse(license_year <= 2015, "pre-closure", "post-closure")) %>% 
+  select(closure, license_type) %>%
+  distinct() -> closure_portfolios
+
+```
+The proportion of licenses held by shrimpers didn't appear to change dramatically by those who chose to continue in fisheries. Lobster was still the dominant target species by these harvesters. 
+```{r}
+#| label: re-entry?
+#| echo: false
+#| message: false
+#| warning: false
+
+# participants %>% 
+#  filter(participation == "exited" & al == 1)
+
+# participants %>% 
+#  filter(participation == "exited" & spt == 1)
+
+# portfolio %>% 
+#  filter(landings_number == 108978)
 ```
