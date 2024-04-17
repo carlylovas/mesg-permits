@@ -29,7 +29,7 @@ library(gomfish)
 
 data(ind_lic_portfolio) 
 
-# ind_lic_portfolio <- ind_lic_portfolio %>% filter(!license_year == "2022") # unreliable
+ind_lic_portfolio <- ind_lic_portfolio %>% filter(!license_year == "2022") # unreliable
 
 # Read in updated license codes 
 updated_license_codes <- read.csv(here("Data", "updated_license_codes.csv")) %>%
@@ -241,8 +241,7 @@ gridExtra::marrangeGrob(time_series$time_series, layout_matrix = matrix(1:12, nc
 
 ### Degree centrality
 
-> "The *degree* of a node is the number of other nodes that single node is connected to.
-Important nodes tend to have more connections to other nodes. Highly connected nodes are interpreted to have high degree centrality."
+> "The *degree* of a node is the number of other nodes that single node is connected to. Important nodes tend to have more connections to other nodes. Highly connected nodes are interpreted to have high degree centrality."
 
 ```{r}
 #| label:      annual metrics
@@ -316,9 +315,9 @@ gridExtra::marrangeGrob(degree_plots$time_series, layout_matrix = matrix(1:12, n
 
 ### Betweeness
 
->"\[*Betweenness*\] ranks the nodes based on the flow of connections through the network. Importance is demonstrated through high frequency of connection with multiple other nodes. Nodes with high levels of betweenness tend to serve as a bridge for multiple sets of other important nodes." [*Source*](https://bookdown.org/jdholster1/idsr/network-analysis.html#advanced-case-study)
+> "\[*Betweenness*\] ranks the nodes based on the flow of connections through the network. Importance is demonstrated through high frequency of connection with multiple other nodes. Nodes with high levels of betweenness tend to serve as a bridge for multiple sets of other important nodes." [*Source*](https://bookdown.org/jdholster1/idsr/network-analysis.html#advanced-case-study)
 
-License types with high degrees of betweenness are license types that might not be particularly central to the network but are influential to the flow of the system around them. As in, disruption to license types with high levels of betweenness may impact the overall structure of the network significantly. 
+License types with high degrees of betweenness are license types that might not be particularly central to the network but are influential to the flow of the system around them. As in, disruption to license types with high levels of betweenness may impact the overall structure of the network significantly.
 
 Initially, we had interpreted license types high betweenness and relatively low centrality to be important "fringe" fisheries that may not be a harvesters focal fishery, but one with low cost of entry that may serve as a supplement or back-up options when landings are low. It is unclear at this time whether that is an appropriate interpretation of this metric.
 
@@ -354,8 +353,7 @@ gridExtra::marrangeGrob(betweeness_plots$time_series, layout_matrix = matrix(1:1
 
 Similar to plotting the license holdings as a network over time, we plot the target species pertaining to these permits over time. This makes for a more easily interpretable graph, as well as increased potential for correlating license changes to species distribution changes.
 
-Groups, or *modules*, are denoted by color. Community structure is determined by a multi-level optimization of modularity, known as Louvain clustering.
-> It is based on the modularity measure and a hierarchical approach. Initially, each vertex is assigned to a community on its own. In every step, vertices are re-assigned to communities in a local, greedy way: each vertex is moved to the community with which it achieves the highest contribution to modularity. When no vertices can be reassigned, each community is considered a vertex on its own, and the process starts again with the merged communities. The process stops when there is only a single vertex left or when the modularity cannot be increased any more in a step. Since igraph 1.3, vertices are processed in a random order.
+Groups, or *modules*, are denoted by color. Community structure is determined by a multi-level optimization of modularity, known as Louvain clustering. \> It is based on the modularity measure and a hierarchical approach. Initially, each vertex is assigned to a community on its own. In every step, vertices are re-assigned to communities in a local, greedy way: each vertex is moved to the community with which it achieves the highest contribution to modularity. When no vertices can be reassigned, each community is considered a vertex on its own, and the process starts again with the merged communities. The process stops when there is only a single vertex left or when the modularity cannot be increased any more in a step. Since igraph 1.3, vertices are processed in a random order.
 
 ```{r}
 #| label: species networks
