@@ -445,7 +445,7 @@ participants %>%
   ggplot() +
   geom_col(aes(x = license_year, y = count, fill = group)) +
   # facet_wrap(~participation, ncol = 2, scales = "free_y") + 
-  facet_wrap(~factor(participation, levels = c("exited", "continued")), scales = "free_y", ncol = 2) +
+  facet_wrap(~factor(participation, levels = c("exited", "continued")), ncol = 2) +
   xlab("Year") + ylab("Count") + ggtitle("Post-closure portfolios") + 
   guides(fill = guide_legend(ncol = 4)) +
   scale_fill_gmri()+
@@ -463,18 +463,49 @@ shrimp_portfolios %>%
 
 ```
 The proportion of licenses held by shrimpers didn't appear to change dramatically by those who chose to continue in fisheries. Lobster was still the dominant target species by these harvesters. 
+
+
+## Difference in difference estimator
+Did the closure of the shrimp fishery impact the number of licenses held by harvesters? 
+
 ```{r}
-#| label: re-entry?
+#| label: difference in differences
 #| echo: false
 #| message: false
 #| warning: false
 
-# participants %>% 
-#  filter(participation == "exited" & al == 1)
+portfolio %>% 
+  pivot_longer(al:sws, names_to = "license_type", values_to = "count") %>% 
+  filter(!count == 0 & license_year >= 2009) %>% # & !license_year == 2015) %>%
+  mutate(shrimp_harvester = ifelse(landings_number %in% shrimpers$landings_number, 1, 0),
+         closure = ifelse(license_year >= 2016, 1, 0), 
+         did = shrimp_harvester*closure) %>% 
+  group_by(license_year, landings_number, shrimp_harvester, closure, did) %>% 
+  summarise(total = sum(count))-> shrimp_did
 
-# participants %>% 
-#  filter(participation == "exited" & spt == 1)
+did_regression <- lm(total ~ shrimp_harvester + closure + did, data = shrimp_did)
+# summary(did_regression)
+# plot(did_regression)
 
-# portfolio %>% 
-#  filter(landings_number == 108978)
+shrimp_did %>% 
+  group_by(license_year, shrimp_harvester, closure, did) %>% 
+  summarise(avg_total = mean(total)) -> shrimp_did_avg
+
+# summary(lm(avg_total ~ shrimp_harvester + closure + did, data = shrimp_did_avg))
+did_2 <-lm(avg_total ~ shrimp_harvester + closure + did, data = shrimp_did_avg) 
+broom::tidy(did_2)
+
+# plot(did_2)
+ggplot(shrimp_did_avg) + 
+  geom_line(aes(x = license_year, y = avg_total, color = as.factor(shrimp_harvester))) +
+  geom_smooth(aes(x = license_year, y = avg_total, color = as.factor(shrimp_harvester)), method = "lm", se = FALSE, linetype = 2) +
+  geom_segment(aes(x = 2015, y = 0, yend = 3), alpha = 0.9, color = "darkgrey", linetype = 3) +
+  ylab("Avg. number of licenses per harvester") + xlab("Year") +
+  scale_color_manual(labels = c("No", "Yes"), values = c("#00608A", "#EA4F12")) +
+  ylim(c(0,3)) +
+  #scale_color_gmri() +
+  guides(color = guide_legend(title = "Shrimp harvester")) +
+  theme_gmri() 
+  
 ```
+According to the DiD estimator, the closure did negatively impact those shrimpers in a statistically significant way. It may be worth noting that a significant number of harvester left fisheries entirely after the moratorium and we may need to figure out a way to incorporate exit and entry in the difference-in-difference estimation.  
