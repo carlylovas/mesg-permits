@@ -25,7 +25,7 @@ library(grid)
 library(gt)
 
 # Read in gomfish package from Joshua and Theresa
-devtools::install_github("Social-Oceans-Lab/gomfish")
+# devtools::install_github("Social-Oceans-Lab/gomfish")
 library(gomfish)
 
 data(ind_lic_portfolio) 
@@ -72,6 +72,11 @@ license_types %>%
     license_type   = md("**License Code**"),
     description = md("**License Type**"))
 
+ind_lic_portfolio %>%
+  arrange(license_year) %>%
+  select(license_year, landings_number, license_types$license_type) -> clean_portfolio # for future use
+
+saveRDS(clean_portfolio, here("Data", "clean_portfolio.rds"))
 ```
 
 ## Licenses Issued
@@ -164,7 +169,7 @@ The total amount of licenses issued per year.
 #| message: false
 #| warning: false
 #| column:  screen
-#| fig-width:  9
+#| fig-width:  11
 #| fig-height: 9
 #| fig-align: center
 
@@ -185,8 +190,8 @@ license_time_series %>%
   mutate(time_series = map2(data, description, function(x,y){
     out <- ggplot(data = x)+
       geom_line(aes(x = license_year, y = total)) +
-      ylim(c(0, NA)) +
-      xlim(c(1990, NA)) +
+      ylim(c(0, 3500)) +
+      scale_x_continuous(breaks = c(1990, 1995, 2000, 2005, 2010, 2015, 2020, 2025)) +
       theme_gmri(plot.title = element_text(size = 8),
                  axis.text  = element_text(size = 8),
                  axis.title = element_blank()) + 
@@ -194,7 +199,7 @@ license_time_series %>%
     return(out)
   })) -> license_time_series
 
-gridExtra::marrangeGrob(license_time_series$time_series, layout_matrix = matrix(1:12, ncol = 4, nrow = 3, byrow = TRUE), top = NULL,  left = textGrob(
+gridExtra::marrangeGrob(license_time_series$time_series, layout_matrix = matrix(1:9, ncol = 3, nrow = 3, byrow = TRUE), top = NULL,  left = textGrob(
   expression(bold("Total Annual")), rot = 90, gp = gpar(col = "black", fontsize = 10)))
 ```
 
@@ -267,8 +272,8 @@ Important nodes tend to have more connections to other nodes. Highly connected n
 #| message:    false
 #| warning:    false
 #| column:     page
-#| fig-width:  9
-#| fig-height: 13
+#| fig-width:  11
+#| fig-height: 9
 #| fig-align: center
 
 annual_co_matrix <- ind_lic_portfolio %>%
@@ -346,8 +351,8 @@ License times with high and/or increasing betweeness values may represent import
 #| echo:       false
 #| warning:    false
 #| column:     page
-#| fig-width:  9
-#| fig-height: 13
+#| fig-width:  11
+#| fig-height: 9
 #| fig-align: center
 
 betweeness_plots <- metrics_series %>% 

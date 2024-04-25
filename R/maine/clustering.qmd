@@ -9,7 +9,9 @@ editor: visual
 ---
 
 ### License portfolio
-Each column represents a differnt license type and each cell is the total number of that license type issued that year, spanning 1990 to 2021. 
+
+Each column represents a different license type and each cell is the total number of that license type issued that year, spanning 1990 to 2021.
+
 ```{r}
 #| label: load packages & data
 #| echo: false
@@ -24,19 +26,32 @@ library(here)
 library(gt)
 
 portfolio <- read_rds(here("Data", "clean_portfolio.rds"))
+species_portfolio <- read_rds(here("Data", "species_portfolio.rds"))
 years     <- 1990:2021
 
 # reshape portfolio to tally total per license type per year
-portfolio %>% 
-  pivot_longer(al:sws, names_to = "license_type", values_to = "count") %>% 
-  filter(!count == 0) %>% 
+portfolio %>%
+  pivot_longer(al:sws, names_to = "license_type", values_to = "count") %>%
+  filter(!count == 0) %>%
   group_by(license_year, license_type) %>%
   summarise(count = sum(count)) %>%
+  arrange(license_year) %>%
   pivot_wider(names_from = license_type, values_from = count) %>%
   ungroup() %>%
   select(!license_year) -> portfolio
 
 portfolio %>% gt()
+
+# species 
+# species_portfolio %>% 
+#   pivot_longer("Aquaculture":"Surf clam", names_to = "target_species", values_to = "count") %>% 
+#   filter(!count == 0) %>% 
+#   group_by(license_year, target_species) %>%
+#   summarise(count = sum(count)) %>%
+#   arrange(license_year) %>%
+#   pivot_wider(names_from = target_species, values_from = count) %>%
+#   ungroup() %>%
+#   select(!license_year) -> portfolio
 ```
 
 ```{r}
