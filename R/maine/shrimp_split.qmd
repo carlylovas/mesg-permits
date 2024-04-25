@@ -7,6 +7,7 @@ format:
     self-contained: true
 editor: visual
 ---
+
 ```{r}
 #| label:   load libraries & data
 #| echo:    false
@@ -41,6 +42,7 @@ portfolio <- read_rds(here("Data", "clean_portfolio.rds"))
 co_matrix <- portfolio %>%
   arrange(license_year) %>%
   mutate(shrimp = ifelse(license_year >= 2015, "post-closure", "pre-closure")) %>%
+  filter(license_year >= 2009 & !license_year == 2015) %>% 
   select(!c(license_year, landings_number)) %>%
   group_by(shrimp) %>%
   nest() %>% 
@@ -69,8 +71,12 @@ metrics <- co_matrix %>%
          evcent        = map(graph_obj, function(x){evcent(x)}))
 
 ```
+# Networks
+### All harvesters
 
-## All harvesters
+-   *Pre-closure*: 2009-2014
+-   *Post-closure*: 2016-2021
+
 ```{r}
 #| label: plots
 #| echo: false
@@ -134,31 +140,32 @@ metrics %>%
     modularity = md("**Modularity**"))
 ```
 
+### Shrimpers
 ```{r}
-#| label: DiD estimation
+#| label: shrimpers
 #| echo: false
 #| message: false
 #| warning: false
 
 portfolio %>% 
   select(license_year, landings_number, csc, css) %>% 
-  filter(license_year >= 2005) %>% 
+  filter(license_year >= 2009) %>% 
   mutate(participation = ifelse(csc == 0 & css == 0, "false", "true")) -> shrimp_fishery_participation 
 
 portfolio %>% 
-  filter(license_year >= 2005) %>% 
+  filter(license_year >= 2009) %>% 
   right_join(shrimp_fishery_participation) %>% 
   relocate(participation, .after = landings_number)-> shrimp
 
-shrimp %>% 
-  pivot_longer(al:sws, names_to = "license_type", values_to = "count") %>% 
-  filter(!count == 0) %>% 
-  group_by(license_year, participation) %>% 
-  summarise(tot_count = sum(count)) %>% 
-  ggplot()+
-  geom_line(aes(x = license_year, y = tot_count, color = participation)) +
-  scale_color_gmri() +
-  theme_gmri()
+# shrimp %>% 
+#   pivot_longer(al:sws, names_to = "license_type", values_to = "count") %>% 
+#   filter(!count == 0) %>% 
+#   group_by(license_year, participation) %>% 
+#   summarise(tot_count = sum(count)) %>% 
+#   ggplot()+
+#   geom_line(aes(x = license_year, y = tot_count, color = participation)) +
+#   scale_color_gmri() +
+#   theme_gmri()
 
 shrimp_fishery_participation %>% 
   filter(participation == "true") %>% 
@@ -167,7 +174,7 @@ shrimp_fishery_participation %>%
   distinct() -> shrimpers 
 
 portfolio %>% 
-  filter(landings_number %in% shrimpers$landings_number & license_year >= 2000) -> shrimp_portfolios
+  filter(landings_number %in% shrimpers$landings_number & license_year >= 2009 & !license_year == 2015) -> shrimp_portfolios
 
 ```
 
@@ -178,7 +185,7 @@ portfolio %>%
 
 shrimp_matrix <- shrimp_portfolios %>%
   arrange(license_year) %>%
-  mutate(closure = ifelse(license_year >= 2014, "post-closure", "pre-closure")) %>%
+  mutate(closure = ifelse(license_year >= 2016, "post-closure", "pre-closure")) %>%
   select(!c(license_year, landings_number)) %>%
   group_by(closure) %>%
   nest() %>% 
@@ -208,7 +215,6 @@ shrimp_metrics <- shrimp_matrix %>%
 
 ```
 
-## Portfolio networks of shrimp harvesters 
 ```{r}
 #| label: shrimp plots
 #| echo: false
@@ -269,7 +275,88 @@ shrimp_metrics %>%
     density = md("**Density**"),
     modularity = md("**Modularity**"))
 ```
-# Changes in portfolios of shrimp harvesters
+
+### Non-shrimpers
+```{r}
+#| label: non-shrimpers
+#| echo: false
+#| warning: false
+#| fig-align: center
+#| fig-width: 13
+#| fig-height: 9
+#| 
+portfolio %>% 
+  filter(!landings_number %in% shrimpers$landings_number & license_year >= 2009 & !license_year == 2015) -> non_shrimp_portfolios
+
+non_shrimp_matrix <- non_shrimp_portfolios %>%
+  arrange(license_year) %>%
+  mutate(closure = ifelse(license_year >= 2016, "post-closure", "pre-closure")) %>%
+  select(!c(license_year, landings_number)) %>%
+  group_by(closure) %>%
+  nest() %>% 
+  mutate(co_matrix = map(data, function(df){
+    out <- crossprod(as.matrix(df)) 
+    diag(out) <- 0
+    return(out)
+  })) %>%
+  select(closure, co_matrix) 
+
+non_shrimp_metrics <- non_shrimp_matrix %>%
+  mutate(graph_obj     = map(co_matrix, function(x){graph.adjacency(x, mode = "undirected", weighted = TRUE)}),
+         degree        = map(graph_obj, function(x){degree(x)}),
+         betweeness    = map(graph_obj, function(x){betweenness(x)}),
+         density       = map(graph_obj, function(x){edge_density(x, loops = FALSE)}),
+         community     = map(graph_obj, function(x){cluster_louvain(x)}),
+         modularity    = map(community, function(x){modularity(x)}),
+         membership    = map(community, function(x){membership(x)}),
+         evcent        = map(graph_obj, function(x){evcent(x)}))
+
+non_shrimp_networks <- non_shrimp_metrics %>%
+  mutate(ggraph = map2(graph_obj, closure, function(x, y){
+    x <- as_tbl_graph(x)
+    x %>% 
+      activate(nodes) %>%
+      mutate(community = as.character(group_louvain())) -> x
+    out <- ggraph(x, 'kk') + 
+      geom_node_point(aes(color = community), size = 7, alpha = 1, show.legend = FALSE) +
+      geom_edge_link(aes(width = weight), alpha = 0.5, show.legend = FALSE) + 
+      coord_fixed() +
+      scale_edge_width(range = c(0.2, 2)) +
+      scale_color_gmri() +
+      ggtitle(closure) +
+      geom_node_text(aes(label = name), repel = TRUE, color = "black", max.overlaps = 100) +
+      theme_graph()   
+  })) %>%
+  mutate(ggraph_circular = map2(graph_obj, closure, function(x, y){
+    x <- as_tbl_graph(x)
+    x %>% 
+      activate(nodes) %>%
+      mutate(community = as.character(group_louvain())) -> x
+    out <- ggraph(x, layout = "linear", circular = TRUE) + 
+      geom_node_point(aes(color = community), size = 7, alpha = 1, show.legend = FALSE) +
+      geom_edge_link(aes(width = weight), alpha = 0.5, show.legend = FALSE) + 
+      scale_edge_width(range = c(0.2, 2)) +
+      scale_color_gmri() +
+      coord_fixed() +
+      ggtitle(closure) +
+      geom_node_text(aes(label = name), repel = TRUE, color = "black", max.overlaps = 100) +
+      theme_graph()})) %>%
+  select(closure, density, modularity, ggraph, ggraph_circular)
+
+# gridExtra::marrangeGrob(shrimp_networks$ggraph, layout_matrix = matrix(1:2, ncol = 2, nrow = 1, byrow= TRUE), top = NULL)
+
+gridExtra::marrangeGrob(non_shrimp_networks$ggraph_circular, layout_matrix = matrix(1:2, ncol = 2, nrow = 1, byrow= TRUE), top = NULL)
+
+non_shrimp_metrics %>%
+  select(closure, density, modularity) %>%
+  gt(groupname_col = NULL) %>%
+  cols_label(
+    closure = "",
+    density = md("**Density**"),
+    modularity = md("**Modularity**"))
+```
+## Changes in portfolios of shrimp harvesters
+
 ```{r}
 #| label: shrimper changes 
 #| echo: false
@@ -323,6 +410,7 @@ shrimp_portfolios %>%
 ```
 
 ## Entry and exit
+
 ```{r}
 #| label: entry and exit
 #| echo: false
@@ -402,7 +490,9 @@ portfolio %>%
 
 # maybe compare those who stayed vs those who left pre-closure 
 ```
-Post closure, shrimp (css, csc), lobster-apprentice under 18 (lau), and elver dip net fyke 1 (e6) are replaced by menhaden (menc, menr), spat, and aquaculture, all of which are new license categories and don't necessarily represent a shift in fisheries. 
+
+Post closure, shrimp (css, csc), lobster-apprentice under 18 (lau), and elver dip net fyke 1 (e6) are replaced by menhaden (menc, menr), spat, and aquaculture, all of which are new license categories and don't necessarily represent a shift in fisheries.
+
 ```{r}
 #| label: pre-closure portfolios
 #| echo: false
@@ -462,11 +552,12 @@ shrimp_portfolios %>%
   distinct() -> closure_portfolios
 
 ```
-The proportion of licenses held by shrimpers didn't appear to change dramatically by those who chose to continue in fisheries. Lobster was still the dominant target species by these harvesters. 
 
+The proportion of licenses held by shrimpers didn't appear to change dramatically by those who chose to continue in fisheries. Lobster was still the dominant target species by these harvesters.
 
 ## Difference in difference estimator
-Did the closure of the shrimp fishery impact the number of licenses held by harvesters? 
+
+Did the closure of the shrimp fishery impact the number of licenses held by harvesters?
 
 ```{r}
 #| label: difference in differences
@@ -476,7 +567,7 @@ Did the closure of the shrimp fishery impact the number of licenses held by harv
 
 portfolio %>% 
   pivot_longer(al:sws, names_to = "license_type", values_to = "count") %>% 
-  filter(!count == 0 & license_year >= 2009) %>% # & !license_year == 2015) %>%
+  filter(!count == 0 & license_year >= 2009& !license_year == 2015) %>%
   mutate(shrimp_harvester = ifelse(landings_number %in% shrimpers$landings_number, 1, 0),
          closure = ifelse(license_year >= 2016, 1, 0), 
          did = shrimp_harvester*closure) %>% 
@@ -506,6 +597,14 @@ ggplot(shrimp_did_avg) +
   #scale_color_gmri() +
   guides(color = guide_legend(title = "Shrimp harvester")) +
   theme_gmri() 
+
+# add averages pre-closure, average post-closure
   
 ```
-According to the DiD estimator, the closure did negatively impact those shrimpers in a statistically significant way. It may be worth noting that a significant number of harvester left fisheries entirely after the moratorium and we may need to figure out a way to incorporate exit and entry in the difference-in-difference estimation.  
+
+According to the DiD estimator, the closure did negatively impact those shrimpers in a statistically significant way. It may be worth noting that a significant number of harvester left fisheries entirely after the moratorium and we may need to figure out a way to incorporate exit and entry in the difference-in-difference estimation.
+
+```{r}
+#| label:
+
+```
