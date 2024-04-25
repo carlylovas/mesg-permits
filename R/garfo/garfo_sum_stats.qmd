@@ -20,6 +20,7 @@ library(grid)
 
 garfo_clean    <- read.csv(here("Data", "all_GARFO_data.csv"))
 garfo_landings <- read.csv(here("Data", "landings.csv"))
+license_list   <- read.csv(here("Data", "garfo_license_list.csv"))
 # garfo_geo <- read.csv(here("Data", "cleaned_geocodes.csv"))
 
 ```
@@ -27,7 +28,6 @@ garfo_landings <- read.csv(here("Data", "landings.csv"))
 # Summaries
 
 ## Totals by state
-
 
 ```{r}
 #| label: summary stats by state 
@@ -42,7 +42,8 @@ garfo_clean %>%
   select(PPORT, PPST, AP_NUM, AP_YEAR, VP_NUM, PERMIT_TYPE, COUNT) %>%
   filter(PPST %in% c("ME", "NH", "MA", "RI", "CT", "DE", "MD", "VA", "NC")) %>%
   filter(!is.na(COUNT)) %>%
-  filter(!COUNT == 0) -> garfo_holdings
+  filter(!COUNT == 0) %>%
+  left_join((license_list %>% rename("PERMIT_TYPE" = "license"))) -> garfo_holdings
 
 # unique(garfo_holdings$PERMIT_TYPE)
 
@@ -58,6 +59,29 @@ garfo_holdings %>%
              strip.text = element_text(color = "black")) 
 
 ```
+## Total by license category 
+
+```{r}
+#| label: number licenses by category
+#| echo: false
+#| message: false
+#| fig-align: center
+#| fig-height: 13
+#| fig-width: 9
+
+garfo_holdings %>% 
+  group_by(AP_YEAR, category) %>% 
+  summarise(TOTAL_COUNT = sum(COUNT)) %>%
+  ggplot()+
+  geom_col(aes(x = AP_YEAR, y = TOTAL_COUNT, fill = category), position = "stack") +
+  facet_wrap(~category, ncol = 3) +
+  theme_gmri() +
+  scale_fill_gmri()
+
+```
+
+## Landings by state
+
 ```{r}
 #| label: landings
 #| echo: false
@@ -97,11 +121,11 @@ garfo_landings %>%
 garfo_holdings %>%
   arrange(PPST) %>%
   filter(PPST == "ME") %>%
-  group_by(PPST, AP_YEAR, PERMIT_TYPE) %>%
+  group_by(PPST, AP_YEAR, category) %>%
   summarise(TOTAL_COUNT = sum(COUNT)) %>%
-  group_by(PPST, PERMIT_TYPE) %>% 
+  group_by(PPST, category) %>% 
   ggplot()+
-  geom_col(aes(x = AP_YEAR, y = TOTAL_COUNT, fill = PERMIT_TYPE), position = "stack") +
+  geom_col(aes(x = AP_YEAR, y = TOTAL_COUNT, fill = category), position = "stack") +
   xlab("Year") + ylab("Total Licenses Issued") +
   theme_gmri(legend.position = "bottom") +
   guides(fill = guide_legend(ncol = 6)) +
@@ -121,11 +145,11 @@ garfo_holdings %>%
 garfo_holdings %>%
   arrange(PPST) %>%
   filter(PPST == "NH") %>%
-  group_by(PPST, AP_YEAR, PERMIT_TYPE) %>%
+  group_by(PPST, AP_YEAR, category) %>%
   summarise(TOTAL_COUNT = sum(COUNT)) %>%
-  group_by(PPST, PERMIT_TYPE) %>% 
+  group_by(PPST, category) %>% 
   ggplot()+
-  geom_col(aes(x = AP_YEAR, y = TOTAL_COUNT, fill = PERMIT_TYPE), position = "stack") +
+  geom_col(aes(x = AP_YEAR, y = TOTAL_COUNT, fill = category), position = "stack") +
   xlab("Year") + ylab("Total Licenses Issued") +
   theme_gmri(legend.position = "bottom") +
   guides(fill = guide_legend(ncol = 6)) +
@@ -145,11 +169,11 @@ garfo_holdings %>%
 garfo_holdings %>%
   arrange(PPST) %>%
   filter(PPST == "MA") %>%
-  group_by(PPST, AP_YEAR, PERMIT_TYPE) %>%
+  group_by(PPST, AP_YEAR, category) %>%
   summarise(TOTAL_COUNT = sum(COUNT)) %>%
-  group_by(PPST, PERMIT_TYPE) %>% 
+  group_by(PPST, category) %>% 
   ggplot()+
-  geom_col(aes(x = AP_YEAR, y = TOTAL_COUNT, fill = PERMIT_TYPE), position = "stack") +
+  geom_col(aes(x = AP_YEAR, y = TOTAL_COUNT, fill = category), position = "stack") +
   xlab("Year") + ylab("Total Licenses Issued") +
   theme_gmri(legend.position = "bottom") +
   guides(fill = guide_legend(ncol = 6)) +
@@ -169,11 +193,11 @@ garfo_holdings %>%
 garfo_holdings %>%
   arrange(PPST) %>%
   filter(PPST == "CT") %>%
-  group_by(PPST, AP_YEAR, PERMIT_TYPE) %>%
+  group_by(PPST, AP_YEAR, category) %>%
   summarise(TOTAL_COUNT = sum(COUNT)) %>%
-  group_by(PPST, PERMIT_TYPE) %>% 
+  group_by(PPST, category) %>% 
   ggplot()+
-  geom_col(aes(x = AP_YEAR, y = TOTAL_COUNT, fill = PERMIT_TYPE), position = "stack") +
+  geom_col(aes(x = AP_YEAR, y = TOTAL_COUNT, fill = category), position = "stack") +
   xlab("Year") + ylab("Total Licenses Issued") +
   theme_gmri(legend.position = "bottom") +
   guides(fill = guide_legend(ncol = 6)) +
@@ -193,11 +217,11 @@ garfo_holdings %>%
 garfo_holdings %>%
   arrange(PPST) %>%
   filter(PPST == "RI") %>%
-  group_by(PPST, AP_YEAR, PERMIT_TYPE) %>%
+  group_by(PPST, AP_YEAR, category) %>%
   summarise(TOTAL_COUNT = sum(COUNT)) %>%
-  group_by(PPST, PERMIT_TYPE) %>% 
+  group_by(PPST, category) %>% 
   ggplot()+
-  geom_col(aes(x = AP_YEAR, y = TOTAL_COUNT, fill = PERMIT_TYPE), position = "stack") +
+  geom_col(aes(x = AP_YEAR, y = TOTAL_COUNT, fill = category), position = "stack") +
   xlab("Year") + ylab("Total Licenses Issued") +
   theme_gmri(legend.position = "bottom") +
   guides(fill = guide_legend(ncol = 6)) +
@@ -217,11 +241,11 @@ garfo_holdings %>%
 garfo_holdings %>%
   arrange(PPST) %>%
   filter(PPST == "DE") %>%
-  group_by(PPST, AP_YEAR, PERMIT_TYPE) %>%
+  group_by(PPST, AP_YEAR, category) %>%
   summarise(TOTAL_COUNT = sum(COUNT)) %>%
-  group_by(PPST, PERMIT_TYPE) %>% 
+  group_by(PPST, category) %>% 
   ggplot()+
-  geom_col(aes(x = AP_YEAR, y = TOTAL_COUNT, fill = PERMIT_TYPE), position = "stack") +
+  geom_col(aes(x = AP_YEAR, y = TOTAL_COUNT, fill = category), position = "stack") +
   xlab("Year") + ylab("Total Licenses Issued") +
   theme_gmri(legend.position = "bottom") +
   guides(fill = guide_legend(ncol = 6)) +
@@ -241,11 +265,11 @@ garfo_holdings %>%
 garfo_holdings %>%
   arrange(PPST) %>%
   filter(PPST == "MD") %>%
-  group_by(PPST, AP_YEAR, PERMIT_TYPE) %>%
+  group_by(PPST, AP_YEAR, category) %>%
   summarise(TOTAL_COUNT = sum(COUNT)) %>%
-  group_by(PPST, PERMIT_TYPE) %>% 
+  group_by(PPST, category) %>% 
   ggplot()+
-  geom_col(aes(x = AP_YEAR, y = TOTAL_COUNT, fill = PERMIT_TYPE), position = "stack") +
+  geom_col(aes(x = AP_YEAR, y = TOTAL_COUNT, fill = category), position = "stack") +
   xlab("Year") + ylab("Total Licenses Issued") +
   theme_gmri(legend.position = "bottom") +
   guides(fill = guide_legend(ncol = 6)) +
@@ -265,11 +289,11 @@ garfo_holdings %>%
 garfo_holdings %>%
   arrange(PPST) %>%
   filter(PPST == "VA") %>%
-  group_by(PPST, AP_YEAR, PERMIT_TYPE) %>%
+  group_by(PPST, AP_YEAR, category) %>%
   summarise(TOTAL_COUNT = sum(COUNT)) %>%
-  group_by(PPST, PERMIT_TYPE) %>% 
+  group_by(PPST, category) %>% 
   ggplot()+
-  geom_col(aes(x = AP_YEAR, y = TOTAL_COUNT, fill = PERMIT_TYPE), position = "stack") +
+  geom_col(aes(x = AP_YEAR, y = TOTAL_COUNT, fill = category), position = "stack") +
   xlab("Year") + ylab("Total Licenses Issued") +
   theme_gmri(legend.position = "bottom") +
   guides(fill = guide_legend(ncol = 6)) +
@@ -289,11 +313,11 @@ garfo_holdings %>%
 garfo_holdings %>%
   arrange(PPST) %>%
   filter(PPST == "NC") %>%
-  group_by(PPST, AP_YEAR, PERMIT_TYPE) %>%
+  group_by(PPST, AP_YEAR, category) %>%
   summarise(TOTAL_COUNT = sum(COUNT)) %>%
-  group_by(PPST, PERMIT_TYPE) %>% 
+  group_by(PPST, category) %>% 
   ggplot()+
-  geom_col(aes(x = AP_YEAR, y = TOTAL_COUNT, fill = PERMIT_TYPE), position = "stack") +
+  geom_col(aes(x = AP_YEAR, y = TOTAL_COUNT, fill = category), position = "stack") +
   xlab("Year") + ylab("Total Licenses Issued") +
   theme_gmri(legend.position = "bottom") +
   guides(fill = guide_legend(ncol = 6)) +
@@ -379,27 +403,4 @@ garfo_holdings %>%
 
 ```
 
-```{r}
-#| label: landings vs licenses by port
-#| echo: false
 
-# garfo_landings %>% 
-#   filter(YEAR >= 1996) %>% 
-#   rename("PPORT"   = "PORT.NAME",
-#          "PPST"    = "STATE",
-#          "AP_YEAR" = "YEAR") %>% 
-#   mutate(LANDED.LBS = parse_number(LANDED.LBS))%>% 
-#   group_by(AP_YEAR, PPORT, PPST) %>% 
-#   summarise(TOTAL_LBS = sum(LANDED.LBS)) -> landings_by_port
-# 
-# garfo_holdings %>% 
-#   group_by(AP_YEAR, PPORT, PPST) %>% 
-#   summarise(TOTAL_LICENSES = sum(COUNT)) %>% 
-#   right_join(landings_by_port) %>% 
-#   unite(PPORT, PPST, col = "PORT", sep = ", ") -> landings_with_licenses
-#   
-# unique(landings_with_licenses$PORT)
-
-## this is probably not the way to do this
-
-```

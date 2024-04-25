@@ -18,15 +18,54 @@ library(gmRi)
 library(here)
 library(matrixStats)
 
-garfo_geo <- read.csv(file = here("Outputs", "GARFO_geocoded.csv"))
+garfo_geo    <- read.csv(file = here("Outputs", "GARFO_geocoded.csv"))
+species_list <- c("Atlantic menhaden", "Black sea bass", "Bluefish", "Clearnose skate", "Horseshoe crab", "Longfin squid", "Rosette skate", "Scup", "Striped bass", "Summer flounder", "Tilefish", "Weakfish")
 
 ```
 
 ## Tracking latitudinal movement of GARFO licenses
+
 By rounding latitude to 1/10 of a degree, we can calculate the center of gravity/occurrence of a license type. To do this, we weight the average latitude by the total number of a particular license type associated with that latitude over time.
+```{r}
+#| label: grouped by target species 
+#| echo: false
+#| message: false
+
+species_list <- as_tibble(species_list) %>% rename("species" = "value") 
+
+license_list <- garfo_geo %>%
+  ungroup() %>%
+  pivot_longer(cols = BLACK_SEA_BASS_1:TILEFISH_D, names_to = "license", values_to = "count") %>%
+  select(license) %>% 
+  distinct() %>%
+  mutate(category = NA)
+
+license_list$category[str_starts(license_list$license, "BLACK_SEA_BASS")] = "Black sea bass"
+license_list$category[str_starts(license_list$license, "BLUEFISH")] = "Bluefish"
+license_list$category[str_starts(license_list$license, "DOGFISH")] = "Dogfish"
+license_list$category[str_starts(license_list$license, "GEN_CAT")] = "Scallop"
+license_list$category[str_starts(license_list$license, "HERRING")] = "Herring"
+license_list$category[str_starts(license_list$license, "HMS_")] = "Squid"
+license_list$category[str_starts(license_list$license, "LOBSTER")] = "Lobster"
+license_list$category[str_starts(license_list$license, "MONKFISH")] = "Monkfish"
+license_list$category[str_starts(license_list$license, "MULTISPECIES_")] = "Multispecies"
+license_list$category[str_starts(license_list$license, "QUAHOG")] = "Quahog"
+license_list$category[str_starts(license_list$license, "RED")] = "Red crab"
+license_list$category[str_starts(license_list$license, "SCUP")] = "Scup"
+license_list$category[str_starts(license_list$license, "SEA_SCALLOP")] = "Sea scallop"
+license_list$category[str_starts(license_list$license, "SKATE")] = "Skate"
+license_list$category[str_starts(license_list$license, "SQUID_")] = "Squid/Mackerel/Butterfish"
+license_list$category[str_starts(license_list$license, "SUMMER")] = "Summer flounder"
+license_list$category[str_starts(license_list$license, "SURF")] = "Surf clam"
+license_list$category[str_starts(license_list$license, "TILE")] = "Tilefish"
+
+write_csv(license_list, here("Data", "garfo_license_list.csv"))
+```
 
 ### Black sea bass
-Black sea bass is used as an example, as there are only two license types and a distinguishable trend of northward (poleward) latitudinal movement. 
+
+Black sea bass is used as an example, as there are only two license types and a distinguishable trend of northward (poleward) latitudinal movement.
+
 ```{r}
 #| label: restructuring dataframe
 #| echo: false
@@ -40,66 +79,121 @@ garfo_geo %>%
   ungroup() %>%
   pivot_longer(cols = BLACK_SEA_BASS_1:TILEFISH_D, names_to = "license", values_to = "count") %>%
   filter(!count == 0) %>%
-  group_by(VP_NUM, license) %>%
+  left_join(license_list) %>%
+  group_by(VP_NUM, category) %>%
   mutate(lat = round(lat, digits = 1),
          long = round(long, digits = 1)) %>%
   filter(lat >= 30) %>%
-  group_by(AP_YEAR, license, lat) %>%
+  group_by(AP_YEAR, category, lat) %>%
   summarise(count = sum(count)) %>%
-  group_by(AP_YEAR, license) %>%
+  group_by(AP_YEAR, category) %>%
   summarise(center_lat = weightedMean(lat, w = count)) %>%
   distinct() -> center_lats
 
 center_lats %>% 
-  filter(str_starts(license, "BLACK_SEA_BASS")) %>% 
+  filter(category == "Black sea bass") %>%
+  # filter(str_starts(license, "BLACK_SEA_BASS")) %>% 
   ggplot() +
-  geom_point(aes(x = AP_YEAR, y = center_lat, color = license)) +
-  xlab("Year") + ylab("Center of Latitude") + ggtitle("Movement of BSB Licenses") +
+  geom_point(aes(x = AP_YEAR, y = center_lat)) +  #, color = license)) +
+  xlab("Year") + ylab("Center of Latitude") +
   ylim(c(37,42)) +
   scale_color_gmri() + 
   theme_gmri()
   
 ```
-### Multispecies licenses
+
+### Bluefish
+
 ```{r}
-#| label: multispecies plot
+#| label: bluefish plot
 #| echo: false
 #| message: false
 #| warning: false
 #| fig-align: center
-#| fig-height: 13
-#| fig-width: 9 
+#| fig-height: 5
+#| fig-width: 7 
+
 
 center_lats %>% 
-  filter(str_starts(license, "MULTISPECIES")) %>% 
+  filter(category == "Bluefish") %>%
+  #filter(str_starts(license, "BLUEFISH")) %>% 
   ggplot() +
-  geom_point(aes(x = AP_YEAR, y = center_lat, color = license)) +
-  xlab("Year") + ylab("Center of Latitude") + ggtitle("Movement of Multispecies Licenses") +
-  facet_wrap(~license, ncol = 3) + 
+  geom_line(aes(x = AP_YEAR, y = center_lat)) +
+  geom_point(aes(x = AP_YEAR, y = center_lat)) +# color = license)) +
+  xlab("Year") + ylab("Center of Latitude") + 
+  # facet_wrap(~license, ncol = 3) + 
+  # ylim(c(35,45)) +
+  # scale_color_gmri() + 
+  theme_gmri(legend.position = "none",
+             strip.background = element_rect(fill = "lightgray"),
+             strip.text = element_text(color = "black"))
+```
+
+### Multispecies
+```{r}
+#| label: multispecies
+#| echo: false
+#| message: false
+#| fig-align: center
+#| fig-height: 5
+#| fig-width: 7 
+
+center_lats %>% 
+  filter(category == "Multispecies") %>%
+  ggplot() +
+  geom_line(aes(x = AP_YEAR, y = center_lat)) +
+  geom_point(aes(x = AP_YEAR, y = center_lat)) + # color = license)) +
+  xlab("Year") + ylab("Center of Latitude") + 
+  theme_gmri(legend.position = "none",
+             strip.background = element_rect(fill = "lightgray"),
+             strip.text = element_text(color = "black"))
+
+```
+
+
+### Squid, mackerel, and butterfish
+
+```{r}
+#| label: squid
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-align: center
+#| fig-height: 5
+#| fig-width: 7 
+
+center_lats %>% 
+  filter(category == "Squid/Mackerel/Butterfish") %>%
+  # filter(str_starts(license, "SQUID")) %>% 
+  ggplot() +
+  geom_point(aes(x = AP_YEAR, y = center_lat))+ #, color = license)) +
+  xlab("Year") + ylab("Center of Latitude")  +
+  # facet_wrap(~license, ncol = 3) + 
   ylim(c(35,45)) +
   scale_color_gmri() + 
   theme_gmri(legend.position = "none",
              strip.background = element_rect(fill = "lightgray"),
              strip.text = element_text(color = "black"))
 ```
-Perhaps some of these are endorsements? Not sure why some would only have one observation or none... 
 
-### Lobster
+### Skate
+
 ```{r}
-#| label: lobster
+#| label: skate
 #| echo: false
 #| message: false
 #| warning: false
 #| fig-align: center
-#| fig-height: 13
-#| fig-width: 9 
+#| fig-height: 5
+#| fig-width: 7 
+
 
 center_lats %>% 
-  filter(str_starts(license, "LOBSTER")) %>% 
+  filter(category == "Skate") %>%
   ggplot() +
-  geom_point(aes(x = AP_YEAR, y = center_lat, color = license)) +
-  xlab("Year") + ylab("Center of Latitude") + ggtitle("Movement of Lobster Licenses") +
-  facet_wrap(~license, ncol = 3) + 
+  geom_point(aes(x = AP_YEAR, y = center_lat)) +
+  xlab("Year") + ylab("Center of Latitude") + 
+  # facet_wrap(~license, ncol = 3) + 
   ylim(c(35,45)) +
   scale_color_gmri() + 
   theme_gmri(legend.position = "none",
@@ -107,22 +201,23 @@ center_lats %>%
              strip.text = element_text(color = "black"))
 ```
 
-### Herring
+### Scup
 ```{r}
-#| label: herring
+#| label: scup
 #| echo: false
 #| message: false
 #| warning: false
 #| fig-align: center
-#| fig-height: 13
-#| fig-width: 9 
+#| fig-height: 5
+#| fig-width: 7 
+
 
 center_lats %>% 
-  filter(str_starts(license, "HERRING")) %>% 
+  filter(category == "Scup") %>%
   ggplot() +
-  geom_point(aes(x = AP_YEAR, y = center_lat, color = license)) +
-  xlab("Year") + ylab("Center of Latitude") + ggtitle("Movement of Herring Licenses") +
-  facet_wrap(~license, ncol = 3) + 
+  geom_point(aes(x = AP_YEAR, y = center_lat)) +
+  xlab("Year") + ylab("Center of Latitude") + 
+  # facet_wrap(~license, ncol = 3) + 
   ylim(c(35,45)) +
   scale_color_gmri() + 
   theme_gmri(legend.position = "none",
