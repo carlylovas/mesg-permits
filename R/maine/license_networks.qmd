@@ -379,7 +379,7 @@ gridExtra::marrangeGrob(betweeness_plots$time_series, layout_matrix = matrix(1:1
 
 ## Annual Network Plots
 
-Density time series and network plots are available [here](https://carlylovas.github.io/mesg-permits/R/license_network_plots.html)
+Density time series and network plots are available [here](https://carlylovas.github.io/mesg-permits/R/maine/license_network_plots.html)
 
 ```{r}
 #| label: network plots
