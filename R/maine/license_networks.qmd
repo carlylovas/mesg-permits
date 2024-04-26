@@ -25,12 +25,12 @@ library(grid)
 library(gt)
 
 # Read in gomfish package from Joshua and Theresa
-# devtools::install_github("Social-Oceans-Lab/gomfish")
+devtools::install_github("Social-Oceans-Lab/gomfish")
 library(gomfish)
 
 data(ind_lic_portfolio) 
 
-ind_lic_portfolio <- ind_lic_portfolio %>% filter(!license_year == 2022) # unreliable
+# ind_lic_portfolio <- ind_lic_portfolio %>% filter(!license_year == 2022) # unreliable
 
 # Read in updated license codes 
 updated_license_codes <- read.csv(here("Data", "updated_license_codes.csv")) %>%
@@ -397,8 +397,8 @@ annual_graphs <- annual_metrics %>%
       activate(nodes) %>%
       mutate(community = as.character(group_louvain())) -> x
     out <- ggraph(x, 'kk') + 
-      geom_node_point(aes(color = community), size = 7, alpha = 1, show.legend = FALSE) +
-      geom_edge_link(aes(width = weight), alpha = 0.5, show.legend = FALSE) + 
+      geom_edge_link(aes(width = weight), alpha = 0.25, show.legend = FALSE) + 
+      geom_node_point(aes(color = community), size = 7, alpha = .8, show.legend = FALSE) +
       coord_fixed() +
       scale_edge_width(range = c(0.2, 2)) +
       # scale_color_discrete() +
@@ -413,8 +413,8 @@ annual_graphs <- annual_metrics %>%
       activate(nodes) %>%
       mutate(community = as.character(group_louvain())) -> x
     out <- ggraph(x, layout = "linear", circular = TRUE) + 
-      geom_node_point(aes(color = community), size = 7, alpha = 1, show.legend = FALSE) +
-      geom_edge_link(aes(width = weight), alpha = 0.5, show.legend = FALSE) + 
+     geom_edge_link(aes(width = weight), alpha = 0.25, show.legend = FALSE) + 
+     geom_node_point(aes(color = community), size = 7, alpha = .8, show.legend = FALSE) +
       scale_edge_width(range = c(0.2, 2)) +
       scale_color_gmri() +
       coord_fixed() +

@@ -29,7 +29,7 @@ library(gomfish)
 
 data(ind_lic_portfolio) 
 
-ind_lic_portfolio <- ind_lic_portfolio %>% filter(!license_year == "2022") # unreliable
+# ind_lic_portfolio <- ind_lic_portfolio %>% filter(!license_year == "2022") # unreliable
 
 # Read in updated license codes 
 updated_license_codes <- read.csv(here("Data", "updated_license_codes.csv")) %>%

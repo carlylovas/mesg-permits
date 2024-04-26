@@ -30,7 +30,7 @@ library(gomfish)
 
 data(ind_lic_portfolio) 
 
-ind_lic_portfolio <- ind_lic_portfolio %>% filter(!license_year == "2022") # unreliable
+# ind_lic_portfolio <- ind_lic_portfolio %>% filter(!license_year == "2022") # unreliable
 
 # Read in updated license codes 
 updated_license_codes <- read.csv(here("Data", "updated_license_codes.csv")) %>%
@@ -135,7 +135,9 @@ ggplot(unique_license_groups) +
 ```
 
 ## Time Series
-Total number of a particular license group issued per year. 
+
+Total number of a particular license group issued per year.
+
 ```{r}
 #| label:   time series of license types
 #| echo:    false
@@ -160,7 +162,7 @@ license_time_series %>%
   mutate(time_series = map2(data, license_group, function(x,y){
     out <- ggplot(data = x)+
       geom_line(aes(x = license_year, y = total)) +
-      ylim(c(0, NA)) +
+      ylim(c(0, 3500)) +
       xlim(c(1990, NA)) +
       theme_gmri(plot.title = element_text(size = 8),
                  axis.text  = element_text(size = 8),
@@ -339,7 +341,7 @@ betweeness_plots <- metrics_series %>%
   mutate(time_series = map2(data, license_group, function(x, license_group){
     out <- ggplot(data = x)+
       geom_line(aes(x=license_year, y= as.numeric(betweeness))) +
-      # ylim(c(0, 40)) + 
+      ylim(c(0, 150)) + 
       xlim(c(1990, 2021)) +
       theme_gmri(plot.title = element_text(size = 8),
                  axis.text  = element_text(size = 6),
@@ -374,8 +376,8 @@ annual_graphs <- annual_metrics %>%
       activate(nodes) %>%
       mutate(community = as.character(group_louvain())) -> x
     out <- ggraph(x, 'kk') + 
-      geom_node_point(aes(color = community), size = 7, alpha = 0.7, show.legend = FALSE) +
-      geom_edge_link(aes(width = weight), alpha = 0.6, show.legend = FALSE) + 
+      geom_edge_link(aes(width = weight), alpha = 0.25, show.legend = FALSE) + 
+      geom_node_point(aes(color = community), size = 7, alpha = .8, show.legend = FALSE) +
       coord_fixed() +
       scale_edge_width(range = c(0.2, 2)) +
       # scale_color_discrete() +
@@ -390,8 +392,8 @@ annual_graphs <- annual_metrics %>%
       activate(nodes) %>%
       mutate(community = as.character(group_louvain())) -> x
     out <- ggraph(x, layout = "linear", circular = TRUE) + 
-      geom_node_point(aes(color = community), size = 7, alpha = 0.7, show.legend = FALSE) +
-      geom_edge_link(aes(width = weight), alpha = 0.6, show.legend = FALSE) + 
+      geom_edge_link(aes(width = weight), alpha = 0.25, show.legend = FALSE) + 
+      geom_node_point(aes(color = community), size = 7, alpha = .8, show.legend = FALSE) +
       scale_edge_width(range = c(0.2, 2)) +
       scale_color_gmri() +
       coord_fixed() +
