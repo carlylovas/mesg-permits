@@ -59,7 +59,8 @@ garfo_holdings %>%
              strip.text = element_text(color = "black")) 
 
 ```
-## Total by license category 
+
+## Total by license category
 
 ```{r}
 #| label: number licenses by category
@@ -400,7 +401,23 @@ garfo_holdings %>%
   theme_gmri(strip.background = element_rect(fill = "transparent"),
              strip.text = element_text(color = "black"))
     
-
 ```
 
+# Proportion of holdings by license group
+It appears that the majority of license holdings report their principal port state as Massachusetts. 
+```{r}
+#| label: proportions 
+#| echo: false
+#| message: false
+#| fig-align: center
+#| fig-height: 13
+#| fig-width: 9
+
+garfo_holdings %>% 
+  ggplot()+
+  geom_bar(aes(x = AP_YEAR, group = PPST, fill = PPST), position = "stack") +
+  facet_wrap(~category, ncol = 3, scales = "free_y") +
+  theme_gmri()
+
+```
 

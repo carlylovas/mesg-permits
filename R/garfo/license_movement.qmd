@@ -26,6 +26,7 @@ species_list <- c("Atlantic menhaden", "Black sea bass", "Bluefish", "Clearnose 
 ## Tracking latitudinal movement of GARFO licenses
 
 By rounding latitude to 1/10 of a degree, we can calculate the center of gravity/occurrence of a license type. To do this, we weight the average latitude by the total number of a particular license type associated with that latitude over time.
+
 ```{r}
 #| label: grouped by target species 
 #| echo: false
@@ -99,7 +100,11 @@ center_lats %>%
   ylim(c(37,42)) +
   scale_color_gmri() + 
   theme_gmri()
-  
+
+
+
+
+ 
 ```
 
 ### Bluefish
@@ -130,6 +135,7 @@ center_lats %>%
 ```
 
 ### Multispecies
+
 ```{r}
 #| label: multispecies
 #| echo: false
@@ -149,7 +155,6 @@ center_lats %>%
              strip.text = element_text(color = "black"))
 
 ```
-
 
 ### Squid, mackerel, and butterfish
 
@@ -202,6 +207,7 @@ center_lats %>%
 ```
 
 ### Scup
+
 ```{r}
 #| label: scup
 #| echo: false
@@ -223,4 +229,48 @@ center_lats %>%
   theme_gmri(legend.position = "none",
              strip.background = element_rect(fill = "lightgray"),
              strip.text = element_text(color = "black"))
+```
+
+## Test maps
+
+```{r}
+#| label: maps...?
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-align: center
+#| fig-height: 5
+#| fig-width: 7 
+
+library(sf)
+library(rnaturalearth)
+
+world <- ne_countries(returnclass = "sf")
+
+garfo_geo %>%
+  ungroup() %>%
+  pivot_longer(cols = BLACK_SEA_BASS_1:TILEFISH_D, names_to = "license", values_to = "count") %>%
+  filter(!count == 0) %>%
+  left_join(license_list) %>%
+  filter(category == "Multispecies") %>% 
+  mutate(decade = 10*AP_YEAR %/% 10) -> multispecies_map
+
+ggplot() +
+  geom_sf(data = world) +
+  geom_point(data = multispecies_map, aes(x = long, y = lat, color = decade)) +
+  coord_sf(xlim = c(-78,-64), ylim = c(34, 47)) +
+  scale_x_continuous(breaks = c(-76, -72, -68, -64)) +
+  scale_y_continuous(breaks = c(34, 38, 42, 46)) +
+  facet_wrap(~decade, nrow = 1) +
+  theme_gmri(strip.background = element_rect(fill = "transparent", color = "black", linewidth = 0.7),
+             strip.text = element_text(color = "black"),
+             # legend.title = element_text(size = 15, face = "bold"),
+             # legend.text = element_text(size = 15),
+             legend.position = "none",
+             plot.title = element_text(size = 15, face = "bold"),
+             plot.subtitle = element_text(size = 13),
+             axis.title = element_text(size = 12, face = "bold"),
+             axis.text = element_text(size = 12),
+             panel.border = element_rect(color = "black", linetype = 1, linewidth = 0.5))
+
 ```
