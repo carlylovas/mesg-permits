@@ -100,10 +100,6 @@ center_lats %>%
   ylim(c(37,42)) +
   scale_color_gmri() + 
   theme_gmri()
-
-
-
-
  
 ```
 
@@ -123,7 +119,7 @@ center_lats %>%
   filter(category == "Bluefish") %>%
   #filter(str_starts(license, "BLUEFISH")) %>% 
   ggplot() +
-  geom_line(aes(x = AP_YEAR, y = center_lat)) +
+  # geom_line(aes(x = AP_YEAR, y = center_lat)) +
   geom_point(aes(x = AP_YEAR, y = center_lat)) +# color = license)) +
   xlab("Year") + ylab("Center of Latitude") + 
   # facet_wrap(~license, ncol = 3) + 
@@ -147,7 +143,7 @@ center_lats %>%
 center_lats %>% 
   filter(category == "Multispecies") %>%
   ggplot() +
-  geom_line(aes(x = AP_YEAR, y = center_lat)) +
+  # geom_line(aes(x = AP_YEAR, y = center_lat)) +
   geom_point(aes(x = AP_YEAR, y = center_lat)) + # color = license)) +
   xlab("Year") + ylab("Center of Latitude") + 
   theme_gmri(legend.position = "none",
@@ -231,16 +227,16 @@ center_lats %>%
              strip.text = element_text(color = "black"))
 ```
 
-## Test maps
+## Geographic spread 
 
 ```{r}
-#| label: maps...?
+#| label: maps
 #| echo: false
 #| message: false
 #| warning: false
 #| fig-align: center
-#| fig-height: 5
-#| fig-width: 7 
+#| fig-height: 7
+#| fig-width: 10 
 
 library(sf)
 library(rnaturalearth)
@@ -258,9 +254,10 @@ garfo_geo %>%
 ggplot() +
   geom_sf(data = world) +
   geom_point(data = multispecies_map, aes(x = long, y = lat, color = decade)) +
-  coord_sf(xlim = c(-78,-64), ylim = c(34, 47)) +
-  scale_x_continuous(breaks = c(-76, -72, -68, -64)) +
+  coord_sf(xlim = c(-78,-66), ylim = c(34, 47)) +
+  scale_x_continuous(breaks = c(-76, -72, -68)) +
   scale_y_continuous(breaks = c(34, 38, 42, 46)) +
+  ggtitle("Multispecies licenses") + xlab("Lat") + ylab("Lon") +
   facet_wrap(~decade, nrow = 1) +
   theme_gmri(strip.background = element_rect(fill = "transparent", color = "black", linewidth = 0.7),
              strip.text = element_text(color = "black"),
@@ -272,5 +269,54 @@ ggplot() +
              axis.title = element_text(size = 12, face = "bold"),
              axis.text = element_text(size = 12),
              panel.border = element_rect(color = "black", linetype = 1, linewidth = 0.5))
+```
+There's no clear trend at this scale of license distribution changing. In the center of gravity analysis, there is a strong southward trend of multispecies groundfish licenses. We will run a GINI analysis later but first will plot the raw latitude data as boxplot to understand the spread of these license categories. It might be useful to compare the groundfish landings trends to the license trend so see if there are correlative shifts. 
+
+```{r}
+#| label: boxplot
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-align: center
+#| fig-height: 7
+#| fig-width: 10 
+ggplot(data = multispecies_map) +
+  geom_boxplot(aes(x = AP_YEAR, y = lat, group = AP_YEAR), outlier.alpha = 0.2) +
+  ggtitle("Multispecies licenses", "Boxplot of license spread") +
+  ylab("Latitude") + xlab("Year") +
+  ylim(c(38,46)) +
+  theme_gmri()
 
 ```
+There is a very subtle trend of the median moving southwards, likely being pulled towards all the southern outliers, which seem to outnumber northward outliers. 
+
+```{r}
+#| label: boxplots for all
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-align: center
+#| fig-height: 7
+#| fig-width: 10 
+
+garfo_geo %>%
+  ungroup() %>%
+  pivot_longer(cols = BLACK_SEA_BASS_1:TILEFISH_D, names_to = "license", values_to = "count") %>%
+  filter(!count == 0) %>%
+  left_join(license_list) %>%
+  mutate(decade = 10*AP_YEAR %/% 10) %>% 
+  group_by(category) %>%
+  filter(!category == "Multispecies") %>% # already above
+  nest() %>%
+  mutate(boxplot = map2(data, category, function(x,y){
+    ggplot(data = x) +
+      geom_boxplot(aes(x = AP_YEAR, y = lat, group = AP_YEAR), outlier.alpha = 0.2) +
+      ggtitle(y, "Boxplot of license spread") +
+      ylab("Latitude") + xlab("Year") +
+      ylim(c(36,46)) +
+      theme_gmri()
+  })) -> boxplots
+
+gridExtra::marrangeGrob(boxplots$boxplot, layout_matrix = matrix(1:1, ncol = 1, nrow = 1, byrow = TRUE), top = NULL)
+```
+
