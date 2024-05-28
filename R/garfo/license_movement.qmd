@@ -319,4 +319,43 @@ garfo_geo %>%
 
 gridExtra::marrangeGrob(boxplots$boxplot, layout_matrix = matrix(1:1, ncol = 1, nrow = 1, byrow = TRUE), top = NULL)
 ```
+```{r}
+#| label: maps for all
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-align: center
+#| fig-height: 7
+#| fig-width: 10 
 
+garfo_geo %>%
+  ungroup() %>%
+  pivot_longer(cols = BLACK_SEA_BASS_1:TILEFISH_D, names_to = "license", values_to = "count") %>%
+  filter(!count == 0) %>%
+  left_join(license_list) %>%
+  mutate(decade = 10*AP_YEAR %/% 10) %>% 
+  group_by(category) %>%
+  filter(!category == "Multispecies") %>% # already above
+  nest() %>%
+  mutate(maps = map2(data, category, function(x,y){
+    ggplot() +
+      geom_sf(data = world) +
+      geom_point(data = x, aes(x = long, y = lat, color = decade)) +
+      coord_sf(xlim = c(-78,-66), ylim = c(34, 47)) +
+      scale_x_continuous(breaks = c(-76, -72, -68)) +
+      scale_y_continuous(breaks = c(34, 38, 42, 46)) +
+      ggtitle(y) + xlab("Lat") + ylab("Lon") +
+      facet_wrap(~decade, nrow = 1) +
+      theme_gmri(strip.background = element_rect(fill = "transparent", color = "black", linewidth = 0.7),
+             strip.text = element_text(color = "black"),
+             legend.position = "none",
+             plot.title = element_text(size = 15, face = "bold"),
+             plot.subtitle = element_text(size = 13),
+             axis.title = element_text(size = 12, face = "bold"),
+             axis.text = element_text(size = 12),
+             panel.border = element_rect(color = "black", linetype = 1, linewidth = 0.5))
+  })) -> maps
+
+gridExtra::marrangeGrob(maps$maps, layout_matrix = matrix(1:1, ncol = 1, nrow = 1, byrow = TRUE), top = NULL)
+```
+New Jersey appears to be missing from all of these...
