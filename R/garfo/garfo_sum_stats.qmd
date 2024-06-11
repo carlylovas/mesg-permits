@@ -40,7 +40,7 @@ license_list   <- read.csv(here("Data", "garfo_license_list.csv"))
 garfo_clean %>%
   pivot_longer(cols = BLACK_SEA_BASS_1:TILEFISH_D, names_to = "PERMIT_TYPE", values_to = "COUNT") %>%
   select(PPORT, PPST, AP_NUM, AP_YEAR, VP_NUM, PERMIT_TYPE, COUNT) %>%
-  filter(PPST %in% c("ME", "NH", "MA", "RI", "CT", "DE", "MD", "VA", "NC")) %>%
+  filter(PPST %in% c("ME", "NH", "MA", "RI", "CT", "NY", "NJ", "DE", "MD", "VA", "NC")) %>%
   filter(!is.na(COUNT)) %>%
   filter(!COUNT == 0) %>%
   left_join((license_list %>% rename("PERMIT_TYPE" = "license"))) -> garfo_holdings
@@ -93,7 +93,7 @@ garfo_holdings %>%
 #| fig-width: 9 
 #| 
 garfo_landings %>%
-  filter(YEAR >= 1990 & STATE %in% c("ME", "NH", "MA", "CT", "RI", "DE", "MD", "VA", "NC")) %>% 
+  filter(YEAR >= 1990 & STATE %in% c("ME", "NH", "MA", "CT", "RI", "NY", "NJ", "DE", "MD", "VA", "NC")) %>% 
   mutate(LANDED.LBS = parse_number(LANDED.LBS)) %>%
   group_by(YEAR, STATE) %>% 
   summarise(TOTAL.LANDED = sum(LANDED.LBS, na.rm = TRUE)) %>%
@@ -228,7 +228,50 @@ garfo_holdings %>%
   guides(fill = guide_legend(ncol = 6)) +
   scale_fill_gmri()
 ```
+### New York
+```{r}
+#| label: NY
+#| echo: false 
+#| message: false
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 8
 
+garfo_holdings %>%
+  arrange(PPST) %>%
+  filter(PPST == "NY") %>%
+  group_by(PPST, AP_YEAR, category) %>%
+  summarise(TOTAL_COUNT = sum(COUNT)) %>%
+  group_by(PPST, category) %>% 
+  ggplot()+
+  geom_col(aes(x = AP_YEAR, y = TOTAL_COUNT, fill = category), position = "stack") +
+  xlab("Year") + ylab("Total Licenses Issued") +
+  theme_gmri(legend.position = "bottom") +
+  guides(fill = guide_legend(ncol = 6)) +
+  scale_fill_gmri()
+```
+### New Jersey
+```{r}
+#| label: NJ
+#| echo: false 
+#| message: false
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 8
+
+garfo_holdings %>%
+  arrange(PPST) %>%
+  filter(PPST == "NJ") %>%
+  group_by(PPST, AP_YEAR, category) %>%
+  summarise(TOTAL_COUNT = sum(COUNT)) %>%
+  group_by(PPST, category) %>% 
+  ggplot()+
+  geom_col(aes(x = AP_YEAR, y = TOTAL_COUNT, fill = category), position = "stack") +
+  xlab("Year") + ylab("Total Licenses Issued") +
+  theme_gmri(legend.position = "bottom") +
+  guides(fill = guide_legend(ncol = 6)) +
+  scale_fill_gmri()
+```
 ### Delaware
 
 ```{r}

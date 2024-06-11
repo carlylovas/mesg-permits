@@ -41,6 +41,17 @@ garfo_portfolio_all %>%
   arrange(PPST) %>%
   geocode(., city = PPORT, state = PPST)-> geo_ct_ri
 
+##### Run independently (I forgot they existed), join to later dataframes 
+
+# garfo_portfolio_all %>%
+#   filter(PPST %in%  c("NY", "NJ")) %>%
+#   ungroup() %>%
+#   select(PPORT, PPST) %>%
+#   distinct()  %>%
+#   arrange(PPST) %>%
+#   geocode(., city = PPORT, state = PPST)-> geo_ny_nj
+
+######
 garfo_portfolio_all %>%
   filter(PPST %in%  c("MD", "DE")) %>%
   ungroup() %>%

@@ -3,5 +3,7 @@
 .RData
 .Ruserdata
 .rds
+.png
+.pdf
 
 /.quarto/

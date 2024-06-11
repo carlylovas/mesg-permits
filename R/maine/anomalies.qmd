@@ -268,3 +268,28 @@ ggplot(eel) +
 ```
 
 Eel pot seems to have two booms; one at its beginning and another in 2012 and 2013. When are licenses renewed each year? Could the 2012/2013 boom also been a consequence of the heatwave? There isn't anything that immediately jumps out at me as an issue with the data, persay.
+
+## Lobsters
+
+```{r}
+#| label: lobster anomalies
+#| echo: false
+#| message: false
+
+lobster <- ind_lic_portfolio %>%
+  select(license_year, landings_number, la, lao, lau, lc1, lc2, lc2o, lc3, lc3o, lco, lcs, lcu) %>%
+  filter(license_year == 2022)
+
+lobster_2022 <- lobster %>% 
+  pivot_longer(la:lcu, names_to = "license_type", values_to = "count") %>% 
+  filter(!count == 0) %>% 
+  filter(count >= 2)
+
+lobster_2022 %>%
+  select(landings_number) %>% 
+  distinct() # 4,952 out of 5,826 licensed people. (3 of them have 3)
+
+```
+
+
+
