@@ -1,0 +1,76 @@
+---
+title: "geo codes"
+---
+
+```{r}
+#| label: load libraries & data
+#| echo: false
+#| message: false
+
+library(here) 
+library(tidyverse)
+library(gmRi)
+
+geo_codes  <- read.csv(here("Data", " geo_code_v1.csv"))
+garfo_all  <- read.csv(here("Data", "GARFO_Cleaned.csv")) %>% select(!X)
+typos      <- read_csv(file = here("Data", "port_typos.csv"))
+port_codes <- read_csv(file = here("Data", "ports.geocoded.csv")) %>% 
+  select(PORT, STATE, QUERY, lon, lat)
+```
+
+```{r}
+#| label: filtering non-typo data
+#| echo: false
+#| message: false
+
+geo_codes %>% 
+  filter(!is.na(lat)) %>%
+  select(!X) %>% 
+  left_join(garfo_all) %>%
+  arrange(AP_YEAR) -> clean_ports
+
+```
+
+```{r}
+#| label: filtering typos
+#| echo: false
+#| message: false
+
+# by city typos first
+typos %>% 
+  filter(!is.na(PPORT_CORRECTED)) %>%
+  select(!PPST_CORRECTED) %>% 
+  left_join(garfo_all) %>% 
+  select(!PPORT) %>% 
+  rename("PPORT" = "PPORT_CORRECTED") %>%
+  relocate("PPORT", .before = "PPST") -> x
+
+# then by state
+typos %>% 
+  filter(!is.na(PPST_CORRECTED)) %>% 
+  select(!PPORT_CORRECTED) %>%
+  left_join(garfo_all) %>% 
+  select(!PPST) %>% 
+  rename("PPST" = "PPST_CORRECTED") -> y
+
+# grab menemsha & dennis (pport_corrected)
+typos %>% 
+  filter(PPORT_CORRECTED %in% c("MENEMSHA", "DENNIS")) %>% 
+  drop_na() %>%
+  left_join(garfo_all) %>% 
+  select(!c(PPORT, PPST)) %>% 
+  rename("PPORT" = "PPORT_CORRECTED",
+         "PPST"  = "PPST_CORRECTED") -> z
+
+corrected_ports <- x %>% full_join(y) %>% full_join(z)
+```
+
+```{r}
+#| label: combined datasets
+#| echo: false
+#| message: false
+
+clean_ports %>% 
+  full_join(corrected_ports) # still missing some (garfo_all = 146787 rows, this has 118360 rows)
+
+```

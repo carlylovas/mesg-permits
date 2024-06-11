@@ -85,3 +85,16 @@ geo_ny_nj %>%
   separate(PORT_Corrected, into = c("PPORT_Corrected", "PPST_Corrected"), sep = ", ") %>%
   geocode(., city = PPORT_Corrected, state = PPST_Corrected) -> geo_ny_nj
 
+# combine with garfo data after running 04_GARFO_data_cleaned.R
+garfo_all  <- read.csv(here("Data", "all_GARFO_data.csv")) %>% select(!X)
+
+geo_ny_nj %>% 
+  separate(PORT, into = c("PPORT", "PPST"), sep = ", ") %>%
+  left_join(garfo_all) %>% 
+  select(!c(PPORT, PPST)) %>% 
+  rename("PPORT" = "PPORT_Corrected",
+         "PPST"  = "PPST_Corrected") %>% 
+  full_join(ny_nj %>% filter(!is.na(lat)) %>% left_join(garfo_all)) -> geo_ny_nj
+
+# save out 
+write_csv(geo_ny_nj, here("Outputs", "geo_ny_nj.csv"))

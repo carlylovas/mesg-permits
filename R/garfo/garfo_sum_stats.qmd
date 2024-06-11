@@ -22,7 +22,6 @@ garfo_clean    <- read.csv(here("Data", "all_GARFO_data.csv"))
 garfo_landings <- read.csv(here("Data", "landings.csv"))
 license_list   <- read.csv(here("Data", "garfo_license_list.csv"))
 # garfo_geo <- read.csv(here("Data", "cleaned_geocodes.csv"))
-
 ```
 
 # Summaries
@@ -228,7 +227,9 @@ garfo_holdings %>%
   guides(fill = guide_legend(ncol = 6)) +
   scale_fill_gmri()
 ```
+
 ### New York
+
 ```{r}
 #| label: NY
 #| echo: false 
@@ -250,7 +251,9 @@ garfo_holdings %>%
   guides(fill = guide_legend(ncol = 6)) +
   scale_fill_gmri()
 ```
+
 ### New Jersey
+
 ```{r}
 #| label: NJ
 #| echo: false 
@@ -272,6 +275,7 @@ garfo_holdings %>%
   guides(fill = guide_legend(ncol = 6)) +
   scale_fill_gmri()
 ```
+
 ### Delaware
 
 ```{r}
@@ -447,7 +451,9 @@ garfo_holdings %>%
 ```
 
 # Proportion of holdings by license group
-It appears that the majority of license holdings report their principal port state as Massachusetts. 
+
+It appears that the majority of license holdings report their principal port state as Massachusetts.
+
 ```{r}
 #| label: proportions 
 #| echo: false
@@ -463,4 +469,3 @@ garfo_holdings %>%
   theme_gmri()
 
 ```
-

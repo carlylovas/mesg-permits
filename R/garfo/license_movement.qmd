@@ -19,6 +19,7 @@ library(here)
 library(matrixStats)
 
 garfo_geo    <- read.csv(file = here("Outputs", "GARFO_geocoded.csv"))
+ny_nj        <- read.csv(file = here("Outputs", "geo_ny_nj.csv"))
 species_list <- c("Atlantic menhaden", "Black sea bass", "Bluefish", "Clearnose skate", "Horseshoe crab", "Longfin squid", "Rosette skate", "Scup", "Striped bass", "Summer flounder", "Tilefish", "Weakfish")
 
 ```
@@ -31,6 +32,9 @@ By rounding latitude to 1/10 of a degree, we can calculate the center of gravity
 #| label: grouped by target species 
 #| echo: false
 #| message: false
+
+garfo_geo <- garfo_geo %>% full_join(ny_nj)
+
 
 species_list <- as_tibble(species_list) %>% rename("species" = "value") 
 
@@ -227,7 +231,7 @@ center_lats %>%
              strip.text = element_text(color = "black"))
 ```
 
-## Geographic spread 
+## Geographic spread
 
 ```{r}
 #| label: maps
@@ -270,7 +274,8 @@ ggplot() +
              axis.text = element_text(size = 12),
              panel.border = element_rect(color = "black", linetype = 1, linewidth = 0.5))
 ```
-There's no clear trend at this scale of license distribution changing. In the center of gravity analysis, there is a strong southward trend of multispecies groundfish licenses. We will run a GINI analysis later but first will plot the raw latitude data as boxplot to understand the spread of these license categories. It might be useful to compare the groundfish landings trends to the license trend so see if there are correlative shifts. 
+
+There's no clear trend at this scale of license distribution changing. In the center of gravity analysis, there is a strong southward trend of multispecies groundfish licenses. We will run a GINI analysis later but first will plot the raw latitude data as boxplot to understand the spread of these license categories. It might be useful to compare the groundfish landings trends to the license trend so see if there are correlative shifts.
 
 ```{r}
 #| label: boxplot
@@ -288,7 +293,8 @@ ggplot(data = multispecies_map) +
   theme_gmri()
 
 ```
-There is a very subtle trend of the median moving southwards, likely being pulled towards all the southern outliers, which seem to outnumber northward outliers. 
+
+There is a very subtle trend of the median moving southwards, likely being pulled towards all the southern outliers, which seem to outnumber northward outliers.
 
 ```{r}
 #| label: boxplots for all
@@ -319,6 +325,7 @@ garfo_geo %>%
 
 gridExtra::marrangeGrob(boxplots$boxplot, layout_matrix = matrix(1:1, ncol = 1, nrow = 1, byrow = TRUE), top = NULL)
 ```
+
 ```{r}
 #| label: maps for all
 #| echo: false
@@ -358,4 +365,5 @@ garfo_geo %>%
 
 gridExtra::marrangeGrob(maps$maps, layout_matrix = matrix(1:1, ncol = 1, nrow = 1, byrow = TRUE), top = NULL)
 ```
+
 New Jersey appears to be missing from all of these...
