@@ -15,6 +15,7 @@ This is the public repository containing the necessary data and code for network
 ### Federal licenses
 1.  [GARFO Summaries](https://carlylovas.github.io/mesg-permits/R/garfo/garfo_sum_stats.html)
 2.  [GARFO License Movement](https://carlylovas.github.io/mesg-permits/R/garfo/license_movement.html)
+3.  [GINI coefficient](https://carlylovas.github.io/mesg-permits/R/garfo/gini.html)
 
 ## Replication
 
