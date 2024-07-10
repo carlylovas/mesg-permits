@@ -88,7 +88,7 @@ garfo_geo %>%
   group_by(VP_NUM, category) %>%
   mutate(lat = round(lat, digits = 1),
          long = round(long, digits = 1)) %>%
-  filter(lat >= 30) %>%
+  filter(lat %in% seq(30, 48)) %>%
   group_by(AP_YEAR, category, lat) %>%
   summarise(count = sum(count)) %>%
   group_by(AP_YEAR, category) %>%
@@ -101,7 +101,7 @@ center_lats %>%
   ggplot() +
   geom_point(aes(x = AP_YEAR, y = center_lat)) +  #, color = license)) +
   xlab("Year") + ylab("Center of Latitude") +
-  ylim(c(37,42)) +
+  ylim(c(35,45)) +
   scale_color_gmri() + 
   theme_gmri()
  
@@ -126,6 +126,7 @@ center_lats %>%
   # geom_line(aes(x = AP_YEAR, y = center_lat)) +
   geom_point(aes(x = AP_YEAR, y = center_lat)) +# color = license)) +
   xlab("Year") + ylab("Center of Latitude") + 
+  ylim(c(35,45)) +
   # facet_wrap(~license, ncol = 3) + 
   # ylim(c(35,45)) +
   # scale_color_gmri() + 
@@ -150,6 +151,7 @@ center_lats %>%
   # geom_line(aes(x = AP_YEAR, y = center_lat)) +
   geom_point(aes(x = AP_YEAR, y = center_lat)) + # color = license)) +
   xlab("Year") + ylab("Center of Latitude") + 
+  ylim(c(35,45)) +
   theme_gmri(legend.position = "none",
              strip.background = element_rect(fill = "lightgray"),
              strip.text = element_text(color = "black"))
@@ -285,12 +287,12 @@ There's no clear trend at this scale of license distribution changing. In the ce
 #| fig-align: center
 #| fig-height: 7
 #| fig-width: 10 
-ggplot(data = multispecies_map) +
-  geom_boxplot(aes(x = AP_YEAR, y = lat, group = AP_YEAR), outlier.alpha = 0.2) +
-  ggtitle("Multispecies licenses", "Boxplot of license spread") +
-  ylab("Latitude") + xlab("Year") +
-  ylim(c(38,46)) +
-  theme_gmri()
+# ggplot(data = multispecies_map) +
+#   geom_boxplot(aes(x = AP_YEAR, y = lat, group = AP_YEAR), outlier.alpha = 0.2) +
+#   ggtitle("Multispecies licenses", "Boxplot of license spread") +
+#   ylab("Latitude") + xlab("Year") +
+#   ylim(c(38,46)) +
+#   theme_gmri()
 
 ```
 
@@ -305,25 +307,25 @@ There is a very subtle trend of the median moving southwards, likely being pulle
 #| fig-height: 7
 #| fig-width: 10 
 
-garfo_geo %>%
-  ungroup() %>%
-  pivot_longer(cols = BLACK_SEA_BASS_1:TILEFISH_D, names_to = "license", values_to = "count") %>%
-  filter(!count == 0) %>%
-  left_join(license_list) %>%
-  mutate(decade = 10*AP_YEAR %/% 10) %>% 
-  group_by(category) %>%
-  filter(!category == "Multispecies") %>% # already above
-  nest() %>%
-  mutate(boxplot = map2(data, category, function(x,y){
-    ggplot(data = x) +
-      geom_boxplot(aes(x = AP_YEAR, y = lat, group = AP_YEAR), outlier.alpha = 0.2) +
-      ggtitle(y, "Boxplot of license spread") +
-      ylab("Latitude") + xlab("Year") +
-      ylim(c(36,46)) +
-      theme_gmri()
-  })) -> boxplots
-
-gridExtra::marrangeGrob(boxplots$boxplot, layout_matrix = matrix(1:1, ncol = 1, nrow = 1, byrow = TRUE), top = NULL)
+# garfo_geo %>%
+#   ungroup() %>%
+#   pivot_longer(cols = BLACK_SEA_BASS_1:TILEFISH_D, names_to = "license", values_to = "count") %>%
+#   filter(!count == 0) %>%
+#   left_join(license_list) %>%
+#   mutate(decade = 10*AP_YEAR %/% 10) %>% 
+#   group_by(category) %>%
+#   filter(!category == "Multispecies") %>% # already above
+#   nest() %>%
+#   mutate(boxplot = map2(data, category, function(x,y){
+#     ggplot(data = x) +
+#       geom_boxplot(aes(x = AP_YEAR, y = lat, group = AP_YEAR), outlier.alpha = 0.2) +
+#       ggtitle(y, "Boxplot of license spread") +
+#       ylab("Latitude") + xlab("Year") +
+#       ylim(c(36,46)) +
+#       theme_gmri()
+#   })) -> boxplots
+# 
+# gridExtra::marrangeGrob(boxplots$boxplot, layout_matrix = matrix(1:1, ncol = 1, nrow = 1, byrow = TRUE), top = NULL)
 ```
 
 ```{r}
@@ -366,4 +368,35 @@ garfo_geo %>%
 gridExtra::marrangeGrob(maps$maps, layout_matrix = matrix(1:1, ncol = 1, nrow = 1, byrow = TRUE), top = NULL)
 ```
 
-New Jersey appears to be missing from all of these...
+```{r}
+#| label: garfo lats
+#| echo: false
+#| message: false
+
+garfo_geo %>%
+  ungroup() %>%
+  pivot_longer(cols = BLACK_SEA_BASS_1:TILEFISH_D, names_to = "license", values_to = "count") %>%
+  filter(!count == 0) %>%
+  left_join(license_list) %>%
+  group_by(VP_NUM, category) %>%
+  mutate(lat = round(lat, digits = 1),
+         long = round(long, digits = 1)) %>%
+  filter(lat %in% seq(30,48)) %>% 
+  group_by(AP_YEAR, lat, category) %>% 
+  summarise(count = sum(count)) -> garfo_lats
+
+garfo_lats %>% 
+  group_by(category) %>%
+  nest() %>% 
+  mutate(plot = map2(data, category, function(x,y){
+    ggplot(data = x)+
+      geom_point(aes(x = AP_YEAR, y = lat, size = count, alpha = count), color = "#00608A") +
+      ggtitle(category) + xlab("Year") + ylab("Latitude") +
+      ylim(c(30,45)) +
+      theme_gmri() 
+  })) -> garfo_lats
+
+gridExtra::marrangeGrob(garfo_lats$plot, layout_matrix = matrix(1:1, ncol = 1, nrow = 1, byrow = TRUE), top = NULL)
+
+```
+

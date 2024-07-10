@@ -459,13 +459,28 @@ It appears that the majority of license holdings report their principal port sta
 #| echo: false
 #| message: false
 #| fig-align: center
-#| fig-height: 13
-#| fig-width: 9
+#| fig-height: 9
+#| fig-width: 12
+
+pal <- c("#38431d", "#773891", "#ebcb27", "#057872", "#363b45","#b94a40", "#004966","#ea4f12", "#00608a","#abb400", "#07a3b7")
 
 garfo_holdings %>% 
-  ggplot()+
-  geom_bar(aes(x = AP_YEAR, group = PPST, fill = PPST), position = "stack") +
-  facet_wrap(~category, ncol = 3, scales = "free_y") +
-  theme_gmri()
+  group_by(category, AP_YEAR, PPST) %>%
+  summarise(count = sum(COUNT)) %>% 
+  group_by(category, AP_YEAR) %>% 
+  mutate(total = sum(count),
+         freq  = (count/total)) -> holdings_prop
+
+  
+ggplot(holdings_prop)+
+  geom_col(aes(x = AP_YEAR, y = freq, group = PPST, fill = PPST), position = "stack") +
+  facet_wrap(~category, ncol = 4, scales = "free_y") +
+  scale_fill_manual(values = pal) + 
+  scale_y_continuous(breaks = c(0.0, 0.5, 1.0)) +
+ 
+  xlab("Year") + ylab("Proportion") +
+  guides(fill = guide_legend(nrow = 2)) + 
+  theme_gmri(strip.background = element_rect(fill = "transparent"),
+             strip.text = element_text(color = "black"))
 
 ```

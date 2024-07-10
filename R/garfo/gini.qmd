@@ -1,0 +1,140 @@
+---
+title: "GINI"
+author: "cslovas"
+format: 
+  html:
+    toc: true
+    self-contained: true
+editor: visual
+---
+```{r}
+#| label: load dependencies & data
+#| echo: false
+#| message: false
+#| warning: false
+
+library(tidyverse)
+library(gmRi)
+library(here)
+library(matrixStats)
+library(DescTools)
+
+garfo_geo    <- read.csv(file = here("Outputs", "GARFO_geocoded.csv"))
+ny_nj        <- read.csv(file = here("Outputs", "geo_ny_nj.csv"))
+species_list <- c("Atlantic menhaden", "Black sea bass", "Bluefish", "Clearnose skate", "Horseshoe crab", "Longfin squid", "Rosette skate", "Scup", "Striped bass", "Summer flounder", "Tilefish", "Weakfish")
+license_list <- read.csv(file = here("Data", "garfo_license_list.csv"))
+
+
+garfo_geo %>%
+  full_join(ny_nj) %>% 
+  ungroup() %>%
+  pivot_longer(cols = BLACK_SEA_BASS_1:TILEFISH_D, names_to = "license", values_to = "count") %>%
+  filter(!count == 0) %>%
+  left_join(license_list) %>%
+  group_by(VP_NUM, category) %>%
+  mutate(lat = round(lat, digits = 1),
+         long = round(long, digits = 1)) -> garfo_geo
+
+```
+
+```{r}
+#| label: GINI first pass
+#| echo: false
+#| message: false
+#| warning: false
+
+garfo_geo %>% 
+  select(PPST, AP_YEAR, count, category) %>% 
+  group_by(category, AP_YEAR, PPST) %>% 
+  summarise(count = sum(count)) %>%
+  group_by(category, AP_YEAR) %>% 
+  mutate(total_count = sum(count),
+         freq = (count/total_count)*100) -> license_freq
+
+
+license_freq %>% 
+  group_by(AP_YEAR, PPST) %>% #
+  summarise(GINI = Gini(count)) -> gini_state # I think this way yield inequality across license types, not states 
+
+ggplot(gini_state) +
+  geom_line(aes(x = AP_YEAR, y = GINI, color = PPST)) +
+  theme_gmri() +
+  scale_color_gmri()
+
+license_freq %>% 
+  group_by(AP_YEAR, category) %>% 
+  summarise(GINI = Gini(count)) -> gini_category # This highlights which licenses are distibuted unequally (?) but we don't know where 
+
+gini_category %>% # freq and count yield same results 
+  filter(category == "Lobster") %>% 
+  ggplot() +
+  geom_line(aes(x = AP_YEAR, y = GINI)) +
+  ylim(c(0,1)) +
+  theme_gmri() # I think this is say that lobster is unequally distributed across the states (?) which would make sense 
+
+# Is that goal that a license with a low/decreasing GINI coefficient move evenly distributed over time?
+# Maybe the shannon diversity index is better suited for this after all.... 
+```
+
+
+```{r}
+#| label: landings
+#| echo: false
+#| message: false
+#| warning: false
+
+common_names <- read.csv(here("Data", "common_names.csv")) %>% 
+  select(SPPNAME, COMNAME)
+
+garfo_landings <- read.csv(here("Data", "landings.csv")) %>% 
+  select(YEAR, PORT.NAME, STATE, SPPNAME, LANDED.LBS, VALUE) %>% 
+  mutate(LANDED.LBS = parse_number(LANDED.LBS),
+         VALUE = parse_number(VALUE)) %>% 
+  left_join(common_names)
+
+fast_movers <-garfo_landings %>% 
+  filter(COMNAME %in% c("Black sea bass", "Summer flounder", "Spiny dogfish", "Smooth dogfish", "Monkfish", "Scup")) %>%
+  group_by(SPPNAME, STATE, YEAR, COMNAME) %>% 
+  summarise(TOTAL_LANDINGS = (sum(LANDED.LBS))/1000000,
+            TOTAL_VALUE    = (sum(VALUE))/1000000) %>% 
+  group_by(SPPNAME, COMNAME) %>%
+  nest()
+
+fast_movers %>% 
+  mutate(PLOT = map2(data, COMNAME, function(x,y){
+    ggplot(data = x) +
+      geom_line(aes(x = YEAR, y = TOTAL_LANDINGS)) +
+      facet_wrap(~STATE, scales = "free_y", ncol = 3) +
+      ggtitle(y) + ylab("Total landings (mil lbs)") +
+      xlab("Year") +
+      theme_gmri() 
+  })) -> fast_movers 
+
+# fast_movers$PLOT[[4]]
+# gridExtra::marrangeGrob(fast_movers$PLOT, layout_matrix = matrix(1:1, ncol = 1, nrow = 1, byrow = TRUE), top = NULL) 
+
+```
+
+
+
+```{r}
+#| label: bsb example
+#| echo: false
+#| message: false
+#| warning: false
+
+garfo_geo %>% 
+  filter(category == "Black sea bass") %>% 
+  group_by(VP_NUM) %>% 
+  nest() %>% 
+  mutate(nrow   = map_dbl(data, function(x){nrow(x)}),
+         max    = map_dbl(data, function(x){max(x$lat)}),
+         min    = map_dbl(data, function(x){min(x$lat)}),
+         med    = map_dbl(data, function(x){median(x$lat)}),
+         move   = (max-min),
+         year_1 = map_dbl(data, function(x){min(x$AP_YEAR)})) -> bsb
+
+bsb_movers <- bsb %>% 
+  filter(move >= 2)
+```
+
