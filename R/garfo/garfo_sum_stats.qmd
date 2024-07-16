@@ -1,5 +1,5 @@
 ---
-title: "GARFO Exploration"
+title: "GARFO summaries"
 author: "cslovas"
 format: 
   html:
@@ -33,8 +33,8 @@ license_list   <- read.csv(here("Data", "garfo_license_list.csv"))
 #| echo: false
 #| message: false
 #| fig-align: center
-#| fig-height: 6
-#| fig-width: 9
+#| fig-height: 9
+#| fig-width: 12
 
 garfo_clean %>%
   pivot_longer(cols = BLACK_SEA_BASS_1:TILEFISH_D, names_to = "PERMIT_TYPE", values_to = "COUNT") %>%
@@ -66,16 +66,18 @@ garfo_holdings %>%
 #| echo: false
 #| message: false
 #| fig-align: center
-#| fig-height: 13
-#| fig-width: 9
+#| fig-height: 9
+#| fig-width: 12
 
 garfo_holdings %>% 
   group_by(AP_YEAR, category) %>% 
   summarise(TOTAL_COUNT = sum(COUNT)) %>%
   ggplot()+
-  geom_col(aes(x = AP_YEAR, y = TOTAL_COUNT, fill = category), position = "stack") +
-  facet_wrap(~category, ncol = 3) +
-  theme_gmri() +
+  geom_col(aes(x = AP_YEAR, y = TOTAL_COUNT), position = "stack", fill = "#00608A") +
+  facet_wrap(~category, ncol = 4) +
+  xlab("Year") + ylab("Total licenses issued") +
+  theme_gmri(strip.background = element_rect(fill = "transparent"),
+             strip.text = element_text(color = "black")) +
   scale_fill_gmri()
 
 ```
@@ -88,9 +90,9 @@ garfo_holdings %>%
 #| message: false
 #| warning: false
 #| fig-align: center
-#| fig-height: 6
-#| fig-width: 9 
-#| 
+#| fig-height: 9
+#| fig-width: 12
+
 garfo_landings %>%
   filter(YEAR >= 1990 & STATE %in% c("ME", "NH", "MA", "CT", "RI", "NY", "NJ", "DE", "MD", "VA", "NC")) %>% 
   mutate(LANDED.LBS = parse_number(LANDED.LBS)) %>%
@@ -108,6 +110,7 @@ garfo_landings %>%
 
 ```
 
+## License categories by state
 ### Maine
 
 ```{r}
@@ -115,8 +118,8 @@ garfo_landings %>%
 #| echo: false 
 #| message: false
 #| fig-align: center
-#| fig-width: 10
-#| fig-height: 8
+#| fig-width: 12
+#| fig-height: 9
 
 garfo_holdings %>%
   arrange(PPST) %>%
@@ -125,10 +128,14 @@ garfo_holdings %>%
   summarise(TOTAL_COUNT = sum(COUNT)) %>%
   group_by(PPST, category) %>% 
   ggplot()+
-  geom_col(aes(x = AP_YEAR, y = TOTAL_COUNT, fill = category), position = "stack") +
+  # geom_col(aes(x = AP_YEAR, y = TOTAL_COUNT, fill = category), position = "stack") +
+  geom_line(aes(x = AP_YEAR, y = TOTAL_COUNT)) +
+  facet_wrap(~category, ncol = 4) +
+  ylim(c(0,3000)) +
   xlab("Year") + ylab("Total Licenses Issued") +
-  theme_gmri(legend.position = "bottom") +
-  guides(fill = guide_legend(ncol = 6)) +
+  theme_gmri(panel.border = element_rect(linewidth = 1, linetype = 1, color = "grey"), 
+             strip.background = element_rect(fill = "transparent"),
+             strip.text = element_text(color = "black")) +
   scale_fill_gmri()
 ```
 
@@ -149,10 +156,14 @@ garfo_holdings %>%
   summarise(TOTAL_COUNT = sum(COUNT)) %>%
   group_by(PPST, category) %>% 
   ggplot()+
-  geom_col(aes(x = AP_YEAR, y = TOTAL_COUNT, fill = category), position = "stack") +
+  # geom_col(aes(x = AP_YEAR, y = TOTAL_COUNT, fill = category), position = "stack") +
+  geom_line(aes(x = AP_YEAR, y = TOTAL_COUNT)) +
+  facet_wrap(~category, ncol = 4) +
   xlab("Year") + ylab("Total Licenses Issued") +
-  theme_gmri(legend.position = "bottom") +
-  guides(fill = guide_legend(ncol = 6)) +
+  ylim(c(0,3000)) +
+  theme_gmri(panel.border = element_rect(linewidth = 1, linetype = 1, color = "grey"), 
+             strip.background = element_rect(fill = "transparent"),
+             strip.text = element_text(color = "black")) +
   scale_fill_gmri()
 ```
 
@@ -172,11 +183,15 @@ garfo_holdings %>%
   group_by(PPST, AP_YEAR, category) %>%
   summarise(TOTAL_COUNT = sum(COUNT)) %>%
   group_by(PPST, category) %>% 
-  ggplot()+
-  geom_col(aes(x = AP_YEAR, y = TOTAL_COUNT, fill = category), position = "stack") +
+  # geom_col(aes(x = AP_YEAR, y = TOTAL_COUNT, fill = category), position = "stack") +
+  ggplot() +
+  geom_line(aes(x = AP_YEAR, y = TOTAL_COUNT)) +
+  facet_wrap(~category, ncol = 4) +
+  ylim(c(0,3000)) +
   xlab("Year") + ylab("Total Licenses Issued") +
-  theme_gmri(legend.position = "bottom") +
-  guides(fill = guide_legend(ncol = 6)) +
+  theme_gmri(panel.border = element_rect(linewidth = 1, linetype = 1, color = "grey"), 
+             strip.background = element_rect(fill = "transparent"),
+             strip.text = element_text(color = "black")) +
   scale_fill_gmri()
 ```
 
@@ -197,10 +212,14 @@ garfo_holdings %>%
   summarise(TOTAL_COUNT = sum(COUNT)) %>%
   group_by(PPST, category) %>% 
   ggplot()+
-  geom_col(aes(x = AP_YEAR, y = TOTAL_COUNT, fill = category), position = "stack") +
+  # geom_col(aes(x = AP_YEAR, y = TOTAL_COUNT, fill = category), position = "stack") +
+  geom_line(aes(x = AP_YEAR, y = TOTAL_COUNT)) +
+  facet_wrap(~category, ncol = 4) +
   xlab("Year") + ylab("Total Licenses Issued") +
-  theme_gmri(legend.position = "bottom") +
-  guides(fill = guide_legend(ncol = 6)) +
+  ylim(c(0,3000)) +
+  theme_gmri(panel.border = element_rect(linewidth = 1, linetype = 1, color = "grey"), 
+             strip.background = element_rect(fill = "transparent"),
+             strip.text = element_text(color = "black")) +
   scale_fill_gmri()
 ```
 
@@ -221,10 +240,14 @@ garfo_holdings %>%
   summarise(TOTAL_COUNT = sum(COUNT)) %>%
   group_by(PPST, category) %>% 
   ggplot()+
-  geom_col(aes(x = AP_YEAR, y = TOTAL_COUNT, fill = category), position = "stack") +
+  # geom_col(aes(x = AP_YEAR, y = TOTAL_COUNT, fill = category), position = "stack") +
+  geom_line(aes(x = AP_YEAR, y = TOTAL_COUNT)) +
+  facet_wrap(~category, ncol = 4) +
+  ylim(c(0,3000)) +
   xlab("Year") + ylab("Total Licenses Issued") +
-  theme_gmri(legend.position = "bottom") +
-  guides(fill = guide_legend(ncol = 6)) +
+  theme_gmri(panel.border = element_rect(linewidth = 1, linetype = 1, color = "grey"), 
+             strip.background = element_rect(fill = "transparent"),
+             strip.text = element_text(color = "black")) +
   scale_fill_gmri()
 ```
 
@@ -245,10 +268,14 @@ garfo_holdings %>%
   summarise(TOTAL_COUNT = sum(COUNT)) %>%
   group_by(PPST, category) %>% 
   ggplot()+
-  geom_col(aes(x = AP_YEAR, y = TOTAL_COUNT, fill = category), position = "stack") +
+  # geom_col(aes(x = AP_YEAR, y = TOTAL_COUNT, fill = category), position = "stack") +
+  geom_line(aes(x = AP_YEAR, y = TOTAL_COUNT)) +
+  facet_wrap(~category, ncol = 4) +
   xlab("Year") + ylab("Total Licenses Issued") +
-  theme_gmri(legend.position = "bottom") +
-  guides(fill = guide_legend(ncol = 6)) +
+  ylim(c(0,3000)) +
+  theme_gmri(panel.border = element_rect(linewidth = 1, linetype = 1, color = "grey"), 
+             strip.background = element_rect(fill = "transparent"),
+             strip.text = element_text(color = "black")) +
   scale_fill_gmri()
 ```
 
@@ -269,10 +296,14 @@ garfo_holdings %>%
   summarise(TOTAL_COUNT = sum(COUNT)) %>%
   group_by(PPST, category) %>% 
   ggplot()+
-  geom_col(aes(x = AP_YEAR, y = TOTAL_COUNT, fill = category), position = "stack") +
+  # geom_col(aes(x = AP_YEAR, y = TOTAL_COUNT, fill = category), position = "stack") +
+  geom_line(aes(x = AP_YEAR, y = TOTAL_COUNT)) +
+  facet_wrap(~category, ncol = 4) +
+  ylim(c(0,3000)) +
   xlab("Year") + ylab("Total Licenses Issued") +
-  theme_gmri(legend.position = "bottom") +
-  guides(fill = guide_legend(ncol = 6)) +
+  theme_gmri(panel.border = element_rect(linewidth = 1, linetype = 1, color = "grey"), 
+             strip.background = element_rect(fill = "transparent"),
+             strip.text = element_text(color = "black")) +
   scale_fill_gmri()
 ```
 
@@ -293,10 +324,14 @@ garfo_holdings %>%
   summarise(TOTAL_COUNT = sum(COUNT)) %>%
   group_by(PPST, category) %>% 
   ggplot()+
-  geom_col(aes(x = AP_YEAR, y = TOTAL_COUNT, fill = category), position = "stack") +
+  # geom_col(aes(x = AP_YEAR, y = TOTAL_COUNT, fill = category), position = "stack") +
+  geom_line(aes(x = AP_YEAR, y = TOTAL_COUNT)) +
+  facet_wrap(~category, ncol = 4) +
   xlab("Year") + ylab("Total Licenses Issued") +
-  theme_gmri(legend.position = "bottom") +
-  guides(fill = guide_legend(ncol = 6)) +
+  ylim(c(0,3000)) +
+  theme_gmri(panel.border = element_rect(linewidth = 1, linetype = 1, color = "grey"), 
+             strip.background = element_rect(fill = "transparent"),
+             strip.text = element_text(color = "black")) +
   scale_fill_gmri()
 ```
 
@@ -317,10 +352,14 @@ garfo_holdings %>%
   summarise(TOTAL_COUNT = sum(COUNT)) %>%
   group_by(PPST, category) %>% 
   ggplot()+
-  geom_col(aes(x = AP_YEAR, y = TOTAL_COUNT, fill = category), position = "stack") +
+  # geom_col(aes(x = AP_YEAR, y = TOTAL_COUNT, fill = category), position = "stack") +
+  geom_line(aes(x = AP_YEAR, y = TOTAL_COUNT)) +
+  facet_wrap(~category, ncol = 4) +
+  ylim(c(0,3000)) +
   xlab("Year") + ylab("Total Licenses Issued") +
-  theme_gmri(legend.position = "bottom") +
-  guides(fill = guide_legend(ncol = 6)) +
+  theme_gmri(panel.border = element_rect(linewidth = 1, linetype = 1, color = "grey"), 
+             strip.background = element_rect(fill = "transparent"),
+             strip.text = element_text(color = "black")) +
   scale_fill_gmri()
 ```
 
@@ -341,10 +380,14 @@ garfo_holdings %>%
   summarise(TOTAL_COUNT = sum(COUNT)) %>%
   group_by(PPST, category) %>% 
   ggplot()+
-  geom_col(aes(x = AP_YEAR, y = TOTAL_COUNT, fill = category), position = "stack") +
+ # geom_col(aes(x = AP_YEAR, y = TOTAL_COUNT, fill = category), position = "stack") +
+  geom_line(aes(x = AP_YEAR, y = TOTAL_COUNT)) +
+  facet_wrap(~category, ncol = 4) +
+  ylim(c(0,3000)) +
   xlab("Year") + ylab("Total Licenses Issued") +
-  theme_gmri(legend.position = "bottom") +
-  guides(fill = guide_legend(ncol = 6)) +
+  theme_gmri(panel.border = element_rect(linewidth = 1, linetype = 1, color = "grey"), 
+             strip.background = element_rect(fill = "transparent"),
+             strip.text = element_text(color = "black")) +
   scale_fill_gmri()
 ```
 
@@ -365,10 +408,14 @@ garfo_holdings %>%
   summarise(TOTAL_COUNT = sum(COUNT)) %>%
   group_by(PPST, category) %>% 
   ggplot()+
-  geom_col(aes(x = AP_YEAR, y = TOTAL_COUNT, fill = category), position = "stack") +
+  # geom_col(aes(x = AP_YEAR, y = TOTAL_COUNT, fill = category), position = "stack") +
+  geom_line(aes(x = AP_YEAR, y = TOTAL_COUNT)) +
+  facet_wrap(~category, ncol = 4) +
   xlab("Year") + ylab("Total Licenses Issued") +
-  theme_gmri(legend.position = "bottom") +
-  guides(fill = guide_legend(ncol = 6)) +
+  ylim(c(0,3000)) +
+  theme_gmri(panel.border = element_rect(linewidth = 1, linetype = 1, color = "grey"), 
+             strip.background = element_rect(fill = "transparent"),
+             strip.text = element_text(color = "black")) +
   scale_fill_gmri()
 ```
 
@@ -377,10 +424,10 @@ garfo_holdings %>%
 ```{r}
 #| label: license types
 #| echo: false
-#| message: false
+#| message: false 
 #| fig-align: center
-#| fig-height: 6
-#| fig-width: 9
+#| fig-height: 8
+#| fig-width: 10
 
 garfo_holdings %>% 
   ungroup() %>%
@@ -406,8 +453,8 @@ garfo_holdings %>%
 #| echo: false
 #| message: false
 #| fig-align: center
-#| fig-height: 6
-#| fig-width: 9
+#| fig-height: 9
+#| fig-width: 12
 
 garfo_holdings %>% 
   group_by(PPST, VP_NUM, AP_YEAR) %>% 
@@ -430,8 +477,8 @@ garfo_holdings %>%
 #| echo: false
 #| message: false
 #| fig-align: center
-#| fig-height: 6
-#| fig-width: 9
+#| fig-height: 9
+#| fig-width: 12
 
 garfo_holdings %>%
   ungroup() %>% 
