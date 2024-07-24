@@ -609,6 +609,8 @@ ggplot(shrimp_did_avg) +
 
 According to the DiD estimator, the closure did negatively impact those shrimpers in a statistically significant way. It may be worth noting that a significant number of harvester left fisheries entirely after the moratorium and we may need to figure out a way to incorporate exit and entry in the difference-in-difference estimation.
 
+
+## Chord diagrams
 ```{r}
 #| label: chord diagram
 #| echo: false
@@ -619,6 +621,8 @@ According to the DiD estimator, the closure did negatively impact those shrimper
 #| fig-height: 5
 
 library(chorddiag)
+
+palette <- c("#773891", "#535353", "#363b45", "#004966", "#00608a", "#07a3b7", "#057872", "#38431d", "#abb400", "#ebcb27", "#ea4f12", "#b94a40")
 
 participants %>%
   pivot_longer(cols = al:sws, names_to = "license_type", values_to = "licensed") %>%
@@ -642,7 +646,9 @@ diag(pre_closure) <- 0
 chorddiag(data = as.matrix(pre_closure),
           type = "directional",
           showTicks = FALSE,
-          groupPadding = 5)
+          groupPadding = 5,
+          groupColors = palette,
+          chordedgeColor = palette)
 
 
 post_closure <- shrimpDiag %>% 
@@ -656,6 +662,8 @@ diag(post_closure) <- 0
 chorddiag(data = as.matrix(post_closure),
           type = "directional",
           showTicks = FALSE,
-          groupPadding = 5)
+          groupPadding = 5,
+          groupColors = palette,
+          chordedgeColor = palette)
 
 ```
