@@ -111,6 +111,7 @@ garfo_landings %>%
 ```
 
 ## License categories by state
+
 ### Maine
 
 ```{r}
@@ -131,7 +132,7 @@ garfo_holdings %>%
   # geom_col(aes(x = AP_YEAR, y = TOTAL_COUNT, fill = category), position = "stack") +
   geom_line(aes(x = AP_YEAR, y = TOTAL_COUNT)) +
   facet_wrap(~category, ncol = 4) +
-  ylim(c(0,3000)) +
+  ylim(c(0,NA)) +
   xlab("Year") + ylab("Total Licenses Issued") +
   theme_gmri(panel.border = element_rect(linewidth = 1, linetype = 1, color = "grey"), 
              strip.background = element_rect(fill = "transparent"),
@@ -160,7 +161,7 @@ garfo_holdings %>%
   geom_line(aes(x = AP_YEAR, y = TOTAL_COUNT)) +
   facet_wrap(~category, ncol = 4) +
   xlab("Year") + ylab("Total Licenses Issued") +
-  ylim(c(0,3000)) +
+  ylim(c(0,NA)) +
   theme_gmri(panel.border = element_rect(linewidth = 1, linetype = 1, color = "grey"), 
              strip.background = element_rect(fill = "transparent"),
              strip.text = element_text(color = "black")) +
@@ -187,7 +188,7 @@ garfo_holdings %>%
   ggplot() +
   geom_line(aes(x = AP_YEAR, y = TOTAL_COUNT)) +
   facet_wrap(~category, ncol = 4) +
-  ylim(c(0,3000)) +
+  ylim(c(0,NA)) +
   xlab("Year") + ylab("Total Licenses Issued") +
   theme_gmri(panel.border = element_rect(linewidth = 1, linetype = 1, color = "grey"), 
              strip.background = element_rect(fill = "transparent"),
@@ -216,7 +217,7 @@ garfo_holdings %>%
   geom_line(aes(x = AP_YEAR, y = TOTAL_COUNT)) +
   facet_wrap(~category, ncol = 4) +
   xlab("Year") + ylab("Total Licenses Issued") +
-  ylim(c(0,3000)) +
+  ylim(c(0,NA)) +
   theme_gmri(panel.border = element_rect(linewidth = 1, linetype = 1, color = "grey"), 
              strip.background = element_rect(fill = "transparent"),
              strip.text = element_text(color = "black")) +
@@ -243,7 +244,7 @@ garfo_holdings %>%
   # geom_col(aes(x = AP_YEAR, y = TOTAL_COUNT, fill = category), position = "stack") +
   geom_line(aes(x = AP_YEAR, y = TOTAL_COUNT)) +
   facet_wrap(~category, ncol = 4) +
-  ylim(c(0,3000)) +
+  ylim(c(0,NA)) +
   xlab("Year") + ylab("Total Licenses Issued") +
   theme_gmri(panel.border = element_rect(linewidth = 1, linetype = 1, color = "grey"), 
              strip.background = element_rect(fill = "transparent"),
@@ -272,7 +273,7 @@ garfo_holdings %>%
   geom_line(aes(x = AP_YEAR, y = TOTAL_COUNT)) +
   facet_wrap(~category, ncol = 4) +
   xlab("Year") + ylab("Total Licenses Issued") +
-  ylim(c(0,3000)) +
+  ylim(c(0,NA)) +
   theme_gmri(panel.border = element_rect(linewidth = 1, linetype = 1, color = "grey"), 
              strip.background = element_rect(fill = "transparent"),
              strip.text = element_text(color = "black")) +
@@ -299,7 +300,7 @@ garfo_holdings %>%
   # geom_col(aes(x = AP_YEAR, y = TOTAL_COUNT, fill = category), position = "stack") +
   geom_line(aes(x = AP_YEAR, y = TOTAL_COUNT)) +
   facet_wrap(~category, ncol = 4) +
-  ylim(c(0,3000)) +
+  ylim(c(0,NA)) +
   xlab("Year") + ylab("Total Licenses Issued") +
   theme_gmri(panel.border = element_rect(linewidth = 1, linetype = 1, color = "grey"), 
              strip.background = element_rect(fill = "transparent"),
@@ -328,7 +329,7 @@ garfo_holdings %>%
   geom_line(aes(x = AP_YEAR, y = TOTAL_COUNT)) +
   facet_wrap(~category, ncol = 4) +
   xlab("Year") + ylab("Total Licenses Issued") +
-  ylim(c(0,3000)) +
+  ylim(c(0,NA)) +
   theme_gmri(panel.border = element_rect(linewidth = 1, linetype = 1, color = "grey"), 
              strip.background = element_rect(fill = "transparent"),
              strip.text = element_text(color = "black")) +
@@ -355,7 +356,7 @@ garfo_holdings %>%
   # geom_col(aes(x = AP_YEAR, y = TOTAL_COUNT, fill = category), position = "stack") +
   geom_line(aes(x = AP_YEAR, y = TOTAL_COUNT)) +
   facet_wrap(~category, ncol = 4) +
-  ylim(c(0,3000)) +
+  ylim(c(0,NA)) +
   xlab("Year") + ylab("Total Licenses Issued") +
   theme_gmri(panel.border = element_rect(linewidth = 1, linetype = 1, color = "grey"), 
              strip.background = element_rect(fill = "transparent"),
@@ -383,7 +384,7 @@ garfo_holdings %>%
  # geom_col(aes(x = AP_YEAR, y = TOTAL_COUNT, fill = category), position = "stack") +
   geom_line(aes(x = AP_YEAR, y = TOTAL_COUNT)) +
   facet_wrap(~category, ncol = 4) +
-  ylim(c(0,3000)) +
+  ylim(c(0,NA)) +
   xlab("Year") + ylab("Total Licenses Issued") +
   theme_gmri(panel.border = element_rect(linewidth = 1, linetype = 1, color = "grey"), 
              strip.background = element_rect(fill = "transparent"),
@@ -412,7 +413,7 @@ garfo_holdings %>%
   geom_line(aes(x = AP_YEAR, y = TOTAL_COUNT)) +
   facet_wrap(~category, ncol = 4) +
   xlab("Year") + ylab("Total Licenses Issued") +
-  ylim(c(0,3000)) +
+  ylim(c(0,NA)) +
   theme_gmri(panel.border = element_rect(linewidth = 1, linetype = 1, color = "grey"), 
              strip.background = element_rect(fill = "transparent"),
              strip.text = element_text(color = "black")) +

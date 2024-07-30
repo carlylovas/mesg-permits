@@ -61,7 +61,7 @@ co_matrix <- portfolio %>%
 #| message: false
 
 metrics <- co_matrix %>%
-  mutate(graph_obj     = map(co_matrix, function(x){graph.adjacency(x, mode = "undirected", weighted = TRUE)}),
+  mutate(graph_obj     = map(co_matrix, function(x){graph_from_adjacency_matrix(x, mode = "undirected", weighted = TRUE)}),
          degree        = map(graph_obj, function(x){degree(x)}),
          betweeness    = map(graph_obj, function(x){betweenness(x)}),
          density       = map(graph_obj, function(x){edge_density(x, loops = FALSE)}),
@@ -113,7 +113,7 @@ networks <- metrics %>%
       geom_node_point(aes(color = community), size = 7, alpha = 1, show.legend = FALSE) +
       geom_edge_link(aes(width = weight), alpha = 0.5, show.legend = FALSE) + 
       scale_edge_width(range = c(0.2, 2)) +
-      scale_color_gmri() +
+      scale_color_gmri(palette = "mixed") +
       coord_fixed() +
       ggtitle(shrimp) +
       geom_node_text(aes(label = name), repel = TRUE, color = "black", max.overlaps = 100) +
@@ -611,6 +611,9 @@ According to the DiD estimator, the closure did negatively impact those shrimper
 
 
 ## Chord diagrams
+
+### Pre-closure
+2009-2014
 ```{r}
 #| label: chord diagram
 #| echo: false
@@ -643,12 +646,26 @@ pre_closure <- shrimpDiag %>%
 pre_closure <- crossprod(as.matrix(pre_closure))
 diag(pre_closure) <- 0
 
+# pre_closure[row(pre_closure) + col(pre_closure) > nrow(pre_closure) + 1] <- NA
+
 chorddiag(data = as.matrix(pre_closure),
           type = "directional",
           showTicks = FALSE,
           groupPadding = 5,
           groupColors = palette,
-          chordedgeColor = palette)
+          chordedgeColor = palette,
+          groupnameFontsize = 12)
+```
+### Post-closure
+2016-2021
+```{r}
+#| label: chord diagram 2
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-align: center
+#| fig-width: 7
+#| fig-height: 5
 
 
 post_closure <- shrimpDiag %>% 
@@ -664,6 +681,8 @@ chorddiag(data = as.matrix(post_closure),
           showTicks = FALSE,
           groupPadding = 5,
           groupColors = palette,
-          chordedgeColor = palette)
+          chordedgeColor = palette,          
+          groupnameFontsize = 12)
+
 
 ```
