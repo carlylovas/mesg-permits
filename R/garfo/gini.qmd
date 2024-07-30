@@ -7,6 +7,7 @@ format:
     self-contained: true
 editor: visual
 ---
+
 ```{r}
 #| label: load dependencies & data
 #| echo: false
@@ -31,6 +32,7 @@ garfo_geo %>%
   pivot_longer(cols = BLACK_SEA_BASS_1:TILEFISH_D, names_to = "license", values_to = "count") %>%
   filter(!count == 0) %>%
   left_join(license_list) %>%
+  filter(!PPST == "FL") %>%
   group_by(VP_NUM, category) %>%
   mutate(lat = round(lat, digits = 1),
          long = round(long, digits = 1)) -> garfo_geo
@@ -42,40 +44,51 @@ garfo_geo %>%
 #| echo: false
 #| message: false
 #| warning: false
+#| fig-align: center
+#| fig-height: 9
+#| fig-width: 12
+pal <- c("#38431d", "#773891", "#ebcb27", "#057872", "#363b45","#b94a40", "#004966","#ea4f12", "#00608a","#abb400", "#07a3b7")
 
 garfo_geo %>% 
   select(PPST, AP_YEAR, count, category) %>% 
-  group_by(category, AP_YEAR, PPST) %>% 
+  group_by(AP_YEAR, category, PPST) %>% # category (argument removed)
   summarise(count = sum(count)) %>%
-  group_by(category, AP_YEAR) %>% 
+  group_by(AP_YEAR, category) %>%  # category (removed)
   mutate(total_count = sum(count),
-         freq = (count/total_count)*100) -> license_freq
+         freq = (count/total_count)) -> license_freq
 
 
 license_freq %>% 
   group_by(AP_YEAR, PPST) %>% #
-  summarise(GINI = Gini(count)) -> gini_state # I think this way yield inequality across license types, not states 
-
-ggplot(gini_state) +
-  geom_line(aes(x = AP_YEAR, y = GINI, color = PPST)) +
-  theme_gmri() +
-  scale_color_gmri()
+  summarise(GINI = Gini(freq)) -> gini_state # I think this way yield inequality across license types, not states 
 
 license_freq %>% 
-  group_by(AP_YEAR, category) %>% 
-  summarise(GINI = Gini(count)) -> gini_category # This highlights which licenses are distibuted unequally (?) but we don't know where 
+  group_by(AP_YEAR, category) %>% #
+  summarise(GINI = Gini(freq)) -> gini_category
 
-gini_category %>% # freq and count yield same results 
-  filter(category == "Lobster") %>% 
-  ggplot() +
-  geom_line(aes(x = AP_YEAR, y = GINI)) +
+ggplot(gini_category) +
+  geom_line(aes(x = AP_YEAR, y = GINI), linewidth = 1) +
+  facet_wrap(~category, ncol = 4) +
+  xlab("Year") + ylab("GINI") +
   ylim(c(0,1)) +
-  theme_gmri() # I think this is say that lobster is unequally distributed across the states (?) which would make sense 
+  theme_gmri(strip.background = element_rect(fill = "transparent"),
+             strip.text = element_text(color = "black"),
+             panel.border = element_rect(color = "grey", linewidth = 0.5, linetype = 1))
+
+# license_freq %>% 
+#   group_by(AP_YEAR, category) %>% 
+#   summarise(GINI = Gini(count)) -> gini_category # This highlights which licenses are distibuted unequally (?) but we don't know where 
+# 
+# gini_category %>% # freq and count yield same results 
+#   filter(category == "Lobster") %>% 
+#   ggplot() +
+#   geom_line(aes(x = AP_YEAR, y = GINI)) +
+#   ylim(c(0,1)) +
+#   theme_gmri() # I think this is say that lobster is unequally distributed across the states (?) which would make sense 
 
 # Is that goal that a license with a low/decreasing GINI coefficient move evenly distributed over time?
 # Maybe the shannon diversity index is better suited for this after all.... 
 ```
-
 
 ```{r}
 #| label: landings
@@ -115,8 +128,6 @@ fast_movers %>%
 
 ```
 
-
-
 ```{r}
 #| label: bsb example
 #| echo: false
@@ -137,4 +148,3 @@ garfo_geo %>%
 bsb_movers <- bsb %>% 
   filter(move >= 2)
 ```
-

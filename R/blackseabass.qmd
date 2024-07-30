@@ -1,0 +1,107 @@
+---
+title: "Black sea bass"
+author: "cslovas"
+format: 
+  html:
+    toc: true
+    self-contained: true
+editor: visual
+---
+
+## What is happening with black sea bass?
+Pulling together bottom trawl survey data, federal landings, and federal license dat, here we explore black sea bass access and exploitation.
+
+```{r}
+#| label: load data and dependencies 
+#| echo: false
+#| message: false
+#| warning: false
+
+library(tidyverse)
+library(gmRi)
+library(here)
+library(grid)
+library(gomfish)
+library(matrixStats)
+
+garfo_clean    <- read.csv(here("Data", "all_GARFO_data.csv"))
+garfo_landings <- read.csv(here("Data", "landings.csv"))
+garfo_licenses <- read.csv(here("Data", "garfo_license_list.csv"))
+maine_licenses <- ind_lic_portfolio
+maine_codes    <- read.csv(here("Data", "updated_license_codes.csv"))
+
+```
+
+```{r}
+#| label: load trawl data
+#| echo: false
+#| message: false
+#| warning: false
+
+# Load NEFSC Bottom Trawl Survey data ####
+clean_survey <- gmri_survdat_prep(
+  survdat_source ="most recent",
+  box_location ="cloudstorage"
+)
+
+clean_survey  <- clean_survey %>% 
+  distinct(est_year, survey_area, stratum, tow, est_towdate, season, comname, catchsex, .keep_all = T) %>%
+  group_by(est_year, survey_area, stratum, tow, est_towdate, season, 
+           avgdepth, surftemp, bottemp, decdeg_beglat, decdeg_beglon, comname, abundance) %>% 
+  summarise(biomass_kg = sum(biomass_kg, na.rm = T), .groups = "drop")
+
+# Weight by biomass
+grouped_center_bio <- function(clean_survey, ...){
+  clean_survey %>% 
+    group_by(comname, ...) %>% 
+    summarise(
+      # Un-weighted averages
+      total_biomass   = sum(biomass_kg),
+      avg_biomass     = mean(biomass_kg),
+      biomass_sd      = sd(biomass_kg),
+      # All below are weighted by biomass
+      avg_depth       = weightedMean(avgdepth, w = biomass_kg, na.rm = T),
+      avg_bot_temp    = weightedMean(bottemp, w = biomass_kg, na.rm = T),
+      avg_sur_temp    = weightedMean(surftemp, w = biomass_kg, na.rm = T),
+      avg_lat         = weightedMean(decdeg_beglat, w = biomass_kg, na.rm = T),
+      avg_lon         = weightedMean(decdeg_beglon, w = biomass_kg, na.rm = T),
+      depth_sd        = weightedSd(avgdepth, w = biomass_kg, na.rm = T),
+      temp_sd         = weightedSd(bottemp, w = biomass_kg, na.rm = T),
+      lat_sd          = weightedSd(decdeg_beglat, w = biomass_kg, na.rm = T),
+      lon_sd          = weightedSd(decdeg_beglon, w = biomass_kg, na.rm = T),
+      .groups = "drop") 
+}
+
+weighted_data <- grouped_center_bio(clean_survey, est_year, season) %>%
+  mutate(decade = 10*est_year %/% 10)
+```
+
+
+```{r}
+#| label: bsb
+#| echo: false
+#| warning: false
+#| message: false
+
+biomass <- weighted_data %>% 
+  filter(comname == "black sea bass")
+
+landings <- garfo_landings %>% 
+  filter(SPPNAME == "SEA BASS, BLACK") %>% 
+  select(PORT.NAME, STATE, LANDED.LBS, VALUE) %>% 
+  mutate(LANDED.LBS = parse_number(LANDED.LBS),
+         VALUE = parse_number(VALUE))
+
+fed_license <- garfo_clean %>% 
+  select(AP_YEAR, AP_NUM, VP_NUM, PPORT, PPST, BLACK_SEA_BASS_1, BLACK_SEA_BASS_2) %>% 
+  pivot_longer(cols = BLACK_SEA_BASS_1:BLACK_SEA_BASS_2, names_to = "license", values_to = "count") %>% 
+  filter(!count == 0)
+
+me_license <- maine_licenses %>% 
+  select(landings_number, license_year, cpc, cps) %>% 
+  pivot_longer(cols = cpc:cps, names_to = "code", values_to = "count") %>%
+  filter(!count == 0) %>%
+  left_join(maine_codes) # in order to compare, would need state landings but I don't think those exist here...
+
+
+```

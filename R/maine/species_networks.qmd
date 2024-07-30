@@ -375,7 +375,8 @@ annual_species_graphs <- annual_metrics %>%
       mutate(community = as.character(group_louvain())) -> x
     out <- ggraph(x, layout = "kk") + 
       geom_edge_link(aes(width = weight), alpha = 0.25, show.legend = FALSE) + 
-      geom_node_point(aes(color = community), size = 7, alpha = .8, show.legend = FALSE) +
+      geom_node_point(aes(color = community), size = 7, alpha = .8, show.legend = FALSE) + 
+      # geom_conn_bundle(data = get_con(from = from, to = to), alpha = 0.1, colour="#69b3a2") +
       scale_color_gmri() +
       scale_edge_width(range = c(0.2, 2)) +
       ggtitle(license_year) +
@@ -388,7 +389,7 @@ annual_species_graphs <- annual_metrics %>%
       activate(nodes) %>%
       mutate(community = as.character(group_louvain())) -> x
     out <- ggraph(x, layout = "linear", circular = TRUE) + 
-       geom_edge_link(aes(width = weight), alpha = 0.25, show.legend = FALSE) +
+      geom_edge_link(aes(width = weight), alpha = 0.25, show.legend = FALSE) +
       geom_node_point(aes(color = community), size = 7, alpha = 1, show.legend = FALSE) +
       scale_edge_width(range = c(0.2, 2)) +
       ggtitle(license_year) +
