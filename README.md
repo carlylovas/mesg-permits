@@ -17,6 +17,9 @@ This is the public repository containing the necessary data and code for network
 2.  [GARFO License Movement](https://carlylovas.github.io/mesg-permits/R/garfo/license_movement.html)
 3.  [GINI coefficient](https://carlylovas.github.io/mesg-permits/R/garfo/gini.html)
 
+### Species-specific case studies
+1.  [Black sea bass](https://carlylovas.github.io/mesg-permits/R/blackseabass.html)
+
 ## Replication
 
 The non-confidential data needed to recreate these three reports is contained within this repository. `Data` contains the files necessary to rerun the scripts contained in `R`. The order of species and network level scripts does not matter but **network analysis must be run prior to network plots** as it outputs an .rds file required for plotting.
