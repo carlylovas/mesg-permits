@@ -84,7 +84,7 @@ weighted_data <- grouped_center_bio(clean_survey, est_year, season) %>%
 #| message: false
 
 biomass <- weighted_data %>% 
-  filter(comname == "black sea bass" & est_year >= 1970) 
+  filter(comname == "black sea bass" & est_year >= 1970 & !season %in% c("Winter", "Summer")) 
 
 landings <- garfo_landings %>% 
   filter(SPPNAME == "SEA BASS, BLACK" & YEAR >= 1970) %>% 
@@ -136,7 +136,7 @@ biomass %>%
   group_by(est_year, season) %>%
   summarise(total_biomass = sum(total_biomass)) %>% 
   ggplot()+
-  geom_col(aes(x = est_year, y = total_biomass, fill = season)) + #fill = "#07a3b7") +
+  geom_col(aes(x = est_year, y = total_biomass, fill = season), position = "dodge") + #fill = "#07a3b7") +
   scale_fill_gmri(palette = "main") +
   theme_gmri() +
   ggtitle("Annual surveyed biomass") +
@@ -159,12 +159,15 @@ Dealer data provided by Greater Atlantic Regional Fisheries Office
 #| fig-width: 11
 #| fig-height: 9
 
+landings$coast <- factor(landings$STATE, levels = c("ME", "NH", "MA", "RI", "CT", "NY", "NJ", "DE", "MD", "VA", "NC" ))
+
 landings %>%
-  group_by(STATE, YEAR) %>% 
+  group_by(STATE, YEAR, coast) %>% 
   summarise(total_volume = sum(LANDED.LBS)/1000000) %>%
   ggplot() +
   geom_col(aes(x = YEAR, y = total_volume), fill = "#07a3b7", alpha = 0.7) +
-  facet_wrap(~STATE, ncol = 3, scales = "free_y") +
+  facet_wrap(~coast, ncol = 3, scales = "free_y") +
+  ylim(c(0,NA)) +
   ggtitle("Landed volume") +
   ylab("Total landings (million lbs)") +
   xlab("Year") +
@@ -172,31 +175,53 @@ landings %>%
               strip.text = element_text(color = "black")) 
 
 landings %>%
-  group_by(STATE, YEAR) %>% 
+  group_by(STATE, YEAR, coast) %>% 
   summarise(total_value = sum(VALUE)/1000000) %>%
   ggplot() +
   geom_line(aes(x = YEAR, y = total_value), color = "#057872") +
-  facet_wrap(~STATE, ncol = 3, scales = "free_y") +
+  facet_wrap(~coast, ncol = 3, scales = "free_y") +
+  ylim(c(0, NA)) +
   ggtitle("Landed value") +
   ylab("Total landings (million $USD)") +
   xlab("Year") +
   theme_gmri(strip.background = element_rect(fill = "transparent"),
               strip.text = element_text(color = "black")) 
 
+```
 
-#   group_by(STATE) %>%
-#   nest() %>%
-#   mutate(plot = map2(data, STATE, function(x,y){
-#     ggplot(data = x) + 
-#       geom_col(aes(x = YEAR, y = total_volume), fill = "#07a3b7", alpha = 0.7) +
-#       xlim(c(1970,2021)) +
-#       ggtitle(y) + ylab("Total landings (million lbs)") +
-#       xlab("Year") + 
-#       theme_gmri(strip.background = element_rect(fill = "transparent"),
-#                 strip.text = element_text(color = "black"))
-# })) -> landings_plots
+```{r}
+#| label: totals
+#| echo: false
+#| message: false 
+#| warning: false
+#| fig-align: center
+#| fig-height: 5
+#| fig-width: 7
+landings %>%
+  group_by(YEAR) %>% 
+  summarise(mean_volume = mean(LANDED.LBS)/1000000) %>%
+  ggplot() +
+  geom_col(aes(x = YEAR, y = mean_volume), fill = "#07a3b7", alpha = 0.7) + 
+  theme_gmri() +
+  ggtitle("Average landed volume", subtitle = "Across all ports") +
+  xlab("Year") + ylab("Landed pounds (million)") -> mean
 
- # gridExtra::marrangeGrob(landings_plots$plot, layout_matrix = matrix(1:3, ncol = 3), top = NULL)
+landings %>%
+  group_by(YEAR) %>% 
+  summarise(total_volume = sum(LANDED.LBS)/1000000) %>%
+  ggplot() +
+  geom_col(aes(x = YEAR, y = total_volume), fill = "#07a3b7", alpha = 0.7) + 
+  theme_gmri() + 
+  ggtitle("Total landed volume", subtitle = "Across all ports") +
+  xlab("Year") + ylab("Landed pounds (million)") -> total
+
+
+patchwork::wrap_plots(total, mean, ncol = 2)
+
+
+
+
+
 
 ```
 
@@ -224,7 +249,18 @@ ex_vessel %>%
   theme_gmri() +
   scale_color_gmri()  
 
+s_and_d <- ex_vessel %>% 
+  group_by(YEAR) %>%
+  summarise(AVG.LANDED.LBS = mean(LANDED.LBS/100000),
+            AVG.EX.VESSEL  = mean(EX.VESSEL))
+  
+# ggplot(s_and_d) +
+#   geom_line(aes(x = YEAR, y = AVG.LANDED.LBS), color = gmri_cols("ecosystems cyan")) + 
+#   geom_line(aes(x = YEAR, y = AVG.EX.VESSEL),  color = gmri_cols("moss green")) +
+#   scale_color_gmri() +
+#   theme_gmri()
 
+  
 ```
 
 ### Federal Licenses
@@ -248,14 +284,17 @@ Given our focus on commercial harvest, we will focus only on **Category** 1.
 #| fig-width: 11
 #| fig-height: 9
 
-# arrange north to south, if you can 
+# arrange north to south
+
+fed_license$states <- factor(fed_license$PPST, levels = c("ME", "NH", "MA", "RI", "CT", "NY", "NJ", "DE", "MD", "VA", "NC" ))
+
 fed_license %>% 
-  group_by(PPST, AP_YEAR) %>% 
+  group_by(PPST, AP_YEAR, states) %>% 
   filter(!PPST %in% c("FL", "GA", "PA", "WA")) %>% 
   summarise(total_count = sum(count)) %>%
   ggplot() +
   geom_col(aes(x = AP_YEAR, y = total_count), fill = gmri_cols("seafood purple")) +
-  facet_wrap(~PPST, scales = "free_y", ncol = 3) +
+  facet_wrap(~states, scales = "free_y", ncol = 3) +
   ggtitle("Commercial harvest licenses") +
   xlab("Year") + ylab("Total issued") +
   scale_fill_gmri() +
@@ -268,5 +307,73 @@ fed_license %>%
 #   filter(!PPST %in% c("FL", "GA", "PA", "WA")) %>% 
 #   group_by(AP_YEAR) %>% 
 #   summarise(total_count = sum(count)) # 669, figure this out
+
+```
+*If Commercial black sea pass permits have been under limited entry since 1996, why are there increases in the number of permits held in some years. Should they all be declining?*
+
+## Recent changes 
+The Gulf of Maine has experienced unprecedented levels of ocean warming in the past decade. In order to examine these more recent changes, we're going to zoom in on 2010 onwards to see if there are any immediate patterns that jump out. 
+
+```{r}
+#| label: recent changes
+#| echo: false
+#| message: false
+#| warning: false
+
+library(rnaturalearth)
+
+world <- ne_states(country = "united states of america", returnclass = "sf")
+
+biomass %>%
+  filter(est_year >= 2010) %>%
+  group_by(est_year) %>% 
+  summarise(avg_lat = mean(avg_lat),
+            avg_lon = mean(avg_lon),
+            avg_biomass = mean(avg_biomass)) -> recent
+  
+ggplot() +
+  geom_sf(data = world)+
+  coord_sf(xlim = c(-74, -70), ylim = c(38,42)) +
+  geom_point(data = recent, aes(x = avg_lon, y = avg_lat, color = as.factor(est_year), size = avg_biomass)) +
+  guides(size = guide_legend(title = "Average biomass (kg)"),
+         color = guide_legend(title = "Year")) +
+  ggtitle("Recent centers of biomass") +
+  xlab("Lat") + ylab("Lon") +
+  theme_gmri() +
+  scale_color_gmri(palette = "mixed")
+  
+# Look at concentration (center of gravity) of landings in recent years
+library(tidygeocoder)
+
+landings %>% 
+  geocode(city = PORT.NAME, state = STATE) -> landings
+
+landings_conc <- landings %>% 
+  group_by(YEAR) %>% 
+  summarise(
+    avg_lat = weightedMean(lat,  w = LANDED.LBS, na.rm = T),
+    avg_lon = weightedMean(long, w = LANDED.LBS, na.rm = T)
+  ) %>% 
+  filter(YEAR >= 1996) %>% 
+  mutate(decade = 10*YEAR %/% 10)
+
+ggplot(landings_conc) +
+  geom_line(aes(x = YEAR, y = avg_lat)) +
+  ylim(c(36, 45)) +
+  ggtitle("Concentration of landings", subtitle = "Since limited entry access") +
+  xlab("Year") + ylab("Latitude") +
+  theme_gmri()
+
+# ggplot() +
+#   geom_sf(data = world)+
+#   coord_sf(xlim = c(-78, -66), ylim = c(36,45)) +
+#   geom_point(data = landings_conc, aes(x = avg_lon, y = avg_lat)) +
+#   theme_gmri()
+
+# ggplot() +
+#   geom_sf(data = world)+
+#   coord_sf(xlim = c(-78, -66), ylim = c(36,45)) +
+#   geom_point(data = (landings %>% filter(YEAR >= 1996 & LANDED.LBS > 10)), aes(x = long, y = lat, alpha = LANDED.LBS)) +
+#   theme_gmri()
 
 ```
