@@ -144,6 +144,17 @@ biomass %>%
   xlab("Year")
 
 
+biomass %>% 
+  group_by(est_year) %>%
+  summarise(annual_biomass = mean(total_biomass)) %>% 
+  ggplot()+
+  geom_line(aes(x = est_year, y = annual_biomass)) + #fill = "#07a3b7") +
+  scale_fill_gmri(palette = "main") +
+  theme_gmri() +
+  ggtitle("Annual mean surveyed biomass") +
+  ylab("Biomass (kg)") +
+  xlab("Year")
+
 ```
 
 ### Federally reported landings
@@ -202,6 +213,7 @@ landings %>%
   summarise(mean_volume = mean(LANDED.LBS)/1000000) %>%
   ggplot() +
   geom_col(aes(x = YEAR, y = mean_volume), fill = "#07a3b7", alpha = 0.7) + 
+  geom_smooth(aes(x = YEAR, y = mean_volume), method = "lm", se = FALSE, linewidth = 1, color = "#535353", alpha = 0.8) +
   theme_gmri() +
   ggtitle("Average landed volume", subtitle = "Across all ports") +
   xlab("Year") + ylab("Landed pounds (million)") -> mean
@@ -211,17 +223,13 @@ landings %>%
   summarise(total_volume = sum(LANDED.LBS)/1000000) %>%
   ggplot() +
   geom_col(aes(x = YEAR, y = total_volume), fill = "#07a3b7", alpha = 0.7) + 
+  geom_smooth(aes(x = YEAR, y = total_volume), method = "lm", se = FALSE, linewidth = 1, color = "#535353", alpha = 0.8) +
   theme_gmri() + 
   ggtitle("Total landed volume", subtitle = "Across all ports") +
   xlab("Year") + ylab("Landed pounds (million)") -> total
 
 
 patchwork::wrap_plots(total, mean, ncol = 2)
-
-
-
-
-
 
 ```
 
@@ -311,11 +319,10 @@ fed_license %>%
 ```
 *If Commercial black sea pass permits have been under limited entry since 1996, why are there increases in the number of permits held in some years. Should they all be declining?*
 
-## Recent changes 
-The Gulf of Maine has experienced unprecedented levels of ocean warming in the past decade. In order to examine these more recent changes, we're going to zoom in on 2010 onwards to see if there are any immediate patterns that jump out. 
+## Concentration of licenses & landings 
 
 ```{r}
-#| label: recent changes
+#| label: concentrations
 #| echo: false
 #| message: false
 #| warning: false
