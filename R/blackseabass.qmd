@@ -10,7 +10,14 @@ editor: visual
 
 ## What is happening with black sea bass?
 
-Pulling together bottom trawl survey data, federal landings, and federal license dat, here we explore black sea bass access and exploitation.
+![](images/bsb.png){fig-align="left" width="134"} 
+
+Pulling together bottom trawl survey data, federal landings, and federal license data, here we explore black sea bass access and exploitation.
+
+#### Helpful information on black sea bass (*Centropristis striata*)
+
+-   [Atlantic States Marine Fisheries Commission](https://www.asmfc.org/species/black-sea-bass)
+-   [NOAA Fisheries](https://www.fisheries.noaa.gov/species/black-sea-bass)
 
 ```{r}
 #| label: load data and dependencies 
@@ -24,6 +31,7 @@ library(here)
 library(grid)
 library(gomfish)
 library(matrixStats)
+library(rnaturalearth)
 
 garfo_clean    <- read.csv(here("Data", "all_GARFO_data.csv"))
 garfo_landings <- read.csv(here("Data", "landings.csv"))
@@ -47,9 +55,10 @@ clean_survey <- gmri_survdat_prep(
 
 clean_survey  <- clean_survey %>% 
   distinct(est_year, survey_area, stratum, tow, est_towdate, season, comname, catchsex, .keep_all = T) %>%
+  filter(!season %in% c("Summer", "Winter") & est_year >= 1970) %>%
   group_by(est_year, survey_area, stratum, tow, est_towdate, season, 
            avgdepth, surftemp, bottemp, decdeg_beglat, decdeg_beglon, comname, abundance) %>% 
-  summarise(biomass_kg = sum(biomass_kg, na.rm = T), .groups = "drop")
+  summarise(biomass_kg = sum(biomass_kg, na.rm = T), .groups = "drop") 
 
 # Weight by biomass
 grouped_center_bio <- function(clean_survey, ...){
@@ -106,6 +115,8 @@ me_license <- maine_licenses %>%
 
 ```
 
+## Distributions
+
 ### Average biomass and center of biomass based on NEFSC bottom trawl survey
 
 ```{r}
@@ -143,7 +154,6 @@ biomass %>%
   ylab("Biomass (kg)") +
   xlab("Year")
 
-
 biomass %>% 
   group_by(est_year) %>%
   summarise(annual_biomass = mean(total_biomass)) %>% 
@@ -155,7 +165,56 @@ biomass %>%
   ylab("Biomass (kg)") +
   xlab("Year")
 
+
 ```
+
+### Leading and trailing edges
+
+```{r}
+#| label: edges
+#| echo: false
+#| message: false
+#| warning: false
+
+clean_survey %>% 
+  filter(comname == "black sea bass" & est_year >= 1970) %>%
+  group_by(est_year) %>%  
+  summarise(
+    `10%`  = Hmisc::wtd.quantile(decdeg_beglat, weights = biomass_kg, probs = 0.10, na.rm = T),
+    `90%`  = Hmisc::wtd.quantile(decdeg_beglat, weights = biomass_kg, probs = 0.90, na.rm = T)) %>% 
+  pivot_longer(cols = 2:3, names_to = "quantile", values_to = "lat") %>% 
+  left_join(
+    clean_survey %>% 
+      filter(est_year >= 1970) %>%
+      group_by(est_year) %>%  
+      summarise(
+        `10%`  = Hmisc::wtd.quantile(decdeg_beglon, weights = biomass_kg, probs = 0.10, na.rm = T),
+        `90%`  = Hmisc::wtd.quantile(decdeg_beglon, weights = biomass_kg, probs = 0.90, na.rm = T)) %>%
+     pivot_longer(cols = 2:3, names_to = "quantile", values_to = "lon")
+  ) -> quantiles
+
+quantiles %>% 
+  group_by(quantile) %>% 
+   mutate(rmean_lat = zoo::rollapplyr(lat, width = 5, FUN = mean, align = "center", partial = T),
+          rmean_lon = zoo::rollapplyr(lon, width = 5, FUN = mean, align = "center", partial = T)) %>%
+  mutate(across(where(is.numeric), round, 4)) -> quantiles
+
+ggplot(quantiles) +
+  geom_line( aes(x = est_year, y = rmean_lat, color = quantile)) +
+  geom_smooth(aes(x = est_year, y = rmean_lat, color = quantile), method = "lm", linetype = 2, linewidth = 0.5) +
+  scale_color_gmri()+
+  theme_gmri() +
+  ggtitle("Leading and trailing edge", subtitle = "5-year rolling mean latitude") +
+  xlab("Year") + ylab("Latitude") +
+  guides(col = guide_legend(title = "Percentile"))
+
+# Map
+# us <- ne_states(country = "united states of america", returnclass = "sf")
+#
+# review lindsey's quantile plots 
+```
+
+## Landings
 
 ### Federally reported landings
 
@@ -261,15 +320,9 @@ s_and_d <- ex_vessel %>%
   group_by(YEAR) %>%
   summarise(AVG.LANDED.LBS = mean(LANDED.LBS/100000),
             AVG.EX.VESSEL  = mean(EX.VESSEL))
-  
-# ggplot(s_and_d) +
-#   geom_line(aes(x = YEAR, y = AVG.LANDED.LBS), color = gmri_cols("ecosystems cyan")) + 
-#   geom_line(aes(x = YEAR, y = AVG.EX.VESSEL),  color = gmri_cols("moss green")) +
-#   scale_color_gmri() +
-#   theme_gmri()
-
-  
 ```
+
+## Licensing
 
 ### Federal Licenses
 
@@ -317,52 +370,68 @@ fed_license %>%
 #   summarise(total_count = sum(count)) # 669, figure this out
 
 ```
+
 *If Commercial black sea pass permits have been under limited entry since 1996, why are there increases in the number of permits held in some years. Should they all be declining?*
 
-## Concentration of licenses & landings 
+## Concentration of licenses & landings
 
 ```{r}
 #| label: concentrations
 #| echo: false
 #| message: false
 #| warning: false
-
-library(rnaturalearth)
+#| fig-align: center
+#| fig-width: 13
+#| fig-height: 9
 
 world <- ne_states(country = "united states of america", returnclass = "sf")
 
 biomass %>%
-  filter(est_year >= 2010) %>%
-  group_by(est_year) %>% 
+  filter(est_year >= 2011) %>%
+  group_by(est_year, season) %>%
   summarise(avg_lat = mean(avg_lat),
             avg_lon = mean(avg_lon),
             avg_biomass = mean(avg_biomass)) -> recent
   
 ggplot() +
   geom_sf(data = world)+
-  coord_sf(xlim = c(-74, -70), ylim = c(38,42)) +
-  geom_point(data = recent, aes(x = avg_lon, y = avg_lat, color = as.factor(est_year), size = avg_biomass)) +
+  coord_sf(xlim = c(-75, -69), ylim = c(38,42)) +
+  geom_point(data = recent, aes(x = avg_lon, y = avg_lat, color = season)) +
+  scale_x_continuous(breaks = c(-70,-74)) +
+  scale_y_continuous(breaks = c(38, 40, 42)) +
+  facet_wrap(~est_year, ncol = 5) +
   guides(size = guide_legend(title = "Average biomass (kg)"),
          color = guide_legend(title = "Year")) +
   ggtitle("Recent centers of biomass") +
   xlab("Lat") + ylab("Lon") +
-  theme_gmri() +
+  theme_gmri(strip.background = element_rect(fill = "transparent"),
+             strip.text = element_text(color = "black")) +
   scale_color_gmri(palette = "mixed")
   
 # Look at concentration (center of gravity) of landings in recent years
-library(tidygeocoder)
+# use ports.geocoded.csv for this
+
+# library(tidygeocoder)
+# 
+# landings %>% 
+#   geocode(city = PORT.NAME, state = STATE) -> landings
+
+geocodes <- read.csv(here("Data", "ports.geocoded.csv")) %>% 
+  rename("PORT.NAME" = "PORT") %>% 
+  select(PORT.NAME, STATE, lon, lat)
 
 landings %>% 
-  geocode(city = PORT.NAME, state = STATE) -> landings
+  left_join(geocodes) -> landings
 
 landings_conc <- landings %>% 
   group_by(YEAR) %>% 
   summarise(
-    avg_lat = weightedMean(lat,  w = LANDED.LBS, na.rm = T),
-    avg_lon = weightedMean(long, w = LANDED.LBS, na.rm = T)
+    avg_lat = weightedMean(lat, w = LANDED.LBS, na.rm = T), # maybe not
+    avg_lon = weightedMean(lon, w = LANDED.LBS, na.rm = T)
   ) %>% 
   filter(YEAR >= 1996) %>% 
-  mutate(decade = 10*YEAR %/% 10)
+  mutate(avg_lat = round(avg_lat, digits = 1),
+         avg_lon = round(avg_lon, digits = 1)) 
 
 ggplot(landings_conc) +
   geom_line(aes(x = YEAR, y = avg_lat)) +
@@ -371,16 +440,14 @@ ggplot(landings_conc) +
   xlab("Year") + ylab("Latitude") +
   theme_gmri()
 
-# ggplot() +
-#   geom_sf(data = world)+
-#   coord_sf(xlim = c(-78, -66), ylim = c(36,45)) +
-#   geom_point(data = landings_conc, aes(x = avg_lon, y = avg_lat)) +
-#   theme_gmri()
-
-# ggplot() +
-#   geom_sf(data = world)+
-#   coord_sf(xlim = c(-78, -66), ylim = c(36,45)) +
-#   geom_point(data = (landings %>% filter(YEAR >= 1996 & LANDED.LBS > 10)), aes(x = long, y = lat, alpha = LANDED.LBS)) +
-#   theme_gmri()
-
+# landings %>% 
+#   select(PORT.NAME, STATE, lat, lon) %>% 
+#   drop_na() %>% 
+#   distinct() %>% 
+#   mutate(avg_lat = round(lat, digits = 1)) %>% 
+#   right_join(landings_conc) %>% 
+#   drop_na() %>% 
+#   arrange(YEAR) -> map
 ```
+
+The concentration of landings are weighted mean of latitude and longitude weighted by landed pounds. The majority of black sea bass landings are concentrated in southeastern New Jersey.
