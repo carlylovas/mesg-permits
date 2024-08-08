@@ -26,6 +26,7 @@ Pulling together bottom trawl survey data, federal landings, and federal license
 #| warning: false
 
 library(tidyverse)
+# devtools::install_github("https://github.com/gulfofmaine/gmRi")
 library(gmRi)
 library(here)
 library(grid)
@@ -91,6 +92,7 @@ weighted_data <- grouped_center_bio(clean_survey, est_year, season) %>%
 #| echo: false
 #| warning: false
 #| message: false
+#| fig-align: center
 
 biomass <- weighted_data %>% 
   filter(comname == "black sea bass" & est_year >= 1970 & !season %in% c("Winter", "Summer")) 
@@ -124,6 +126,7 @@ me_license <- maine_licenses %>%
 #| echo: false
 #| message: false
 #| warnging: false
+#| fig-align: center
 
 ggplot(data = biomass) +
   geom_line(aes(x = est_year, y = avg_lat, color = season)) +
@@ -175,6 +178,7 @@ biomass %>%
 #| echo: false
 #| message: false
 #| warning: false
+#| fig-align: center
 
 clean_survey %>% 
   filter(comname == "black sea bass" & est_year >= 1970) %>%
@@ -203,7 +207,7 @@ ggplot(quantiles) +
   geom_line( aes(x = est_year, y = rmean_lat, color = quantile)) +
   geom_smooth(aes(x = est_year, y = rmean_lat, color = quantile), method = "lm", linetype = 2, linewidth = 0.5) +
   scale_color_gmri()+
-  theme_gmri() +
+  theme_gmri(plot.subtitle = element_text(size = 10)) +
   ggtitle("Leading and trailing edge", subtitle = "5-year rolling mean latitude") +
   xlab("Year") + ylab("Latitude") +
   guides(col = guide_legend(title = "Percentile"))
@@ -301,6 +305,7 @@ Despite a general upward trend in landed volume and value, the price per pound h
 #| echo: false
 #| message: false
 #| warning: false
+#| fig-align: center
 
 ex_vessel <- landings %>% 
   mutate(EX.VESSEL = LANDED.LBS/VALUE) 
@@ -321,7 +326,42 @@ s_and_d <- ex_vessel %>%
   summarise(AVG.LANDED.LBS = mean(LANDED.LBS/100000),
             AVG.EX.VESSEL  = mean(EX.VESSEL))
 ```
+## Concentration of landings
+The concentration of landings are weighted mean of latitude and longitude weighted by landed pounds. The majority of black sea bass landings are concentrated in southeastern New Jersey. 
+```{r}
+#| label: concentrations
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-align: center
 
+world <- ne_states(country = "united states of america", returnclass = "sf")
+
+geocodes <- read.csv(here("Data", "ports.geocoded.csv")) %>% 
+  rename("PORT.NAME" = "PORT") %>% 
+  select(PORT.NAME, STATE, lon, lat)
+
+landings %>% 
+  left_join(geocodes) -> landings
+
+landings_conc <- landings %>% 
+  group_by(YEAR) %>% 
+  summarise(
+    avg_lat = weightedMean(lat, w = LANDED.LBS, na.rm = T), # maybe not
+    avg_lon = weightedMean(lon, w = LANDED.LBS, na.rm = T)
+  ) %>% 
+  filter(YEAR >= 1996) %>% 
+  mutate(avg_lat = round(avg_lat, digits = 1),
+         avg_lon = round(avg_lon, digits = 1)) 
+
+ggplot(landings_conc) +
+  geom_line(aes(x = YEAR, y = avg_lat)) +
+  ylim(c(36, 45)) +
+  ggtitle("Concentration of landings", subtitle = "Since limited entry access") +
+  xlab("Year") + ylab("Latitude") +
+  theme_gmri()
+
+```
 ## Licensing
 
 ### Federal Licenses
@@ -371,83 +411,43 @@ fed_license %>%
 
 ```
 
-*If Commercial black sea pass permits have been under limited entry since 1996, why are there increases in the number of permits held in some years. Should they all be declining?*
+*If Commercial black sea pass permits have been under limited entry since 1996, why are there increases in the number of permits held in some years. Should they all be declining? Are some transferring across state lines*
 
-## Concentration of licenses & landings
+Given that licenses are attached to a vessel (and potentially other license types?) and we are reporting location based on principal ports, we cannot definitely say that black sea bass licenses are increasing/decreasing in certain states. We can, however, say that the number of vessels that hold bsb licenses are landing more/less in a particular state. 
 
 ```{r}
-#| label: concentrations
+#| label: bsb vessels
 #| echo: false
 #| message: false
 #| warning: false
-#| fig-align: center
-#| fig-width: 13
-#| fig-height: 9
 
-world <- ne_states(country = "united states of america", returnclass = "sf")
+bsb_vessels <- garfo_clean %>% 
+  filter(BLACK_SEA_BASS_1 == 1) %>% 
+  pivot_longer(cols = BLACK_SEA_BASS_1:TILEFISH_D, names_to = "license", values_to = "count") %>%
+  filter(!count == 0) %>% 
+  arrange(VP_NUM) %>% 
+  left_join(garfo_licenses)
 
-biomass %>%
-  filter(est_year >= 2011) %>%
-  group_by(est_year, season) %>%
-  summarise(avg_lat = mean(avg_lat),
-            avg_lon = mean(avg_lon),
-            avg_biomass = mean(avg_biomass)) -> recent
-  
-ggplot() +
-  geom_sf(data = world)+
-  coord_sf(xlim = c(-75, -69), ylim = c(38,42)) +
-  geom_point(data = recent, aes(x = avg_lon, y = avg_lat, color = season)) +
-  scale_x_continuous(breaks = c(-70,-74)) +
-  scale_y_continuous(breaks = c(38, 40, 42)) +
-  facet_wrap(~est_year, ncol = 5) +
-  guides(size = guide_legend(title = "Average biomass (kg)"),
-         color = guide_legend(title = "Year")) +
-  ggtitle("Recent centers of biomass") +
-  xlab("Lat") + ylab("Lon") +
-  theme_gmri(strip.background = element_rect(fill = "transparent"),
-             strip.text = element_text(color = "black")) +
-  scale_color_gmri(palette = "mixed")
-  
-# Look at concentration (center of gravity) of landings in recent years
-# use ports.geocoded.csv for this
-
-# library(tidygeocoder)
+## Adjacency matrix? 
+# bsb_adjacency <- garfo_clean %>% 
+#   filter(BLACK_SEA_BASS_1 == 1) %>% 
+#   select(BLACK_SEA_BASS_1:TILEFISH_D)
 # 
-# landings %>% 
-#   geocode(city = PORT.NAME, state = STATE) -> landings
+# bsb_adjacency <- crossprod(as.matrix(bsb_adjacency))
 
-geocodes <- read.csv(here("Data", "ports.geocoded.csv")) %>% 
-  rename("PORT.NAME" = "PORT") %>% 
-  select(PORT.NAME, STATE, lon, lat)
+# library(chorddiag)
+# 
+# palette <- c("#773891", "#535353", "#363b45", "#004966", "#00608a", "#07a3b7", "#057872", "#38431d", "#abb400", "#ebcb27", "#ea4f12", "#b94a40")
+# 
+# chorddiag(data = as.matrix(bsb_adjacency),
+#           type = "directional",
+#           showTicks = FALSE,
+#           groupPadding = 5,
+#           groupColors = palette,
+#           chordedgeColor = palette,
+#           groupnameFontsize = 12)
 
-landings %>% 
-  left_join(geocodes) -> landings
-
-landings_conc <- landings %>% 
-  group_by(YEAR) %>% 
-  summarise(
-    avg_lat = weightedMean(lat, w = LANDED.LBS, na.rm = T), # maybe not
-    avg_lon = weightedMean(lon, w = LANDED.LBS, na.rm = T)
-  ) %>% 
-  filter(YEAR >= 1996) %>% 
-  mutate(avg_lat = round(avg_lat, digits = 1),
-         avg_lon = round(avg_lon, digits = 1)) 
-
-ggplot(landings_conc) +
-  geom_line(aes(x = YEAR, y = avg_lat)) +
-  ylim(c(36, 45)) +
-  ggtitle("Concentration of landings", subtitle = "Since limited entry access") +
-  xlab("Year") + ylab("Latitude") +
-  theme_gmri()
-
-# landings %>% 
-#   select(PORT.NAME, STATE, lat, lon) %>% 
-#   drop_na() %>% 
-#   distinct() %>% 
-#   mutate(avg_lat = round(lat, digits = 1)) %>% 
-#   right_join(landings_conc) %>% 
-#   drop_na() %>% 
-#   arrange(YEAR) -> map
 ```
 
-The concentration of landings are weighted mean of latitude and longitude weighted by landed pounds. The majority of black sea bass landings are concentrated in southeastern New Jersey.
+
+
