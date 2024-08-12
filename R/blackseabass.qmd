@@ -36,7 +36,8 @@ library(matrixStats)
 library(rnaturalearth)
 
 garfo_clean    <- read.csv(here("Data", "all_GARFO_data.csv"))
-garfo_landings <- read.csv(here("Data", "landings.csv"))
+# garfo_landings <- read.csv(here("Data", "landings.csv"))
+garfo_landings <- read.csv(here("Data", "FOSS_landings.csv"), header = TRUE)
 garfo_licenses <- read.csv(here("Data", "garfo_license_list.csv"))
 maine_licenses <- ind_lic_portfolio
 maine_codes    <- read.csv(here("Data", "updated_license_codes.csv"))
@@ -98,11 +99,17 @@ weighted_data <- grouped_center_bio(clean_survey, est_year, season) %>%
 biomass <- weighted_data %>% 
   filter(comname == "black sea bass" & est_year >= 1970 & !season %in% c("Winter", "Summer")) 
 
-landings <- garfo_landings %>% 
-  filter(SPPNAME == "SEA BASS, BLACK" & YEAR >= 1970) %>% 
-  select(PORT.NAME, STATE, YEAR, LANDED.LBS, VALUE) %>% 
-  mutate(LANDED.LBS = parse_number(LANDED.LBS),
-         VALUE = parse_number(VALUE))
+# landings <- garfo_landings %>% 
+#   filter(SPPNAME == "SEA BASS, BLACK" & YEAR >= 1970) %>% 
+#   select(PORT.NAME, STATE, YEAR, LANDED.LBS, VALUE) %>% 
+#   mutate(LANDED.LBS = parse_number(LANDED.LBS),
+#          VALUE = parse_number(VALUE))
+
+landings <- garfo_landings %>%
+  filter(Year >= 1970) %>%
+  select(Year, State, NMFS.Name, Pounds, Dollars, Confidentiality) %>% 
+  mutate(Pounds  = parse_number(Pounds),
+         Dollars = parse_number(Dollars))
 
 fed_license <- garfo_clean %>% 
   pivot_longer(cols = BLACK_SEA_BASS_1:TILEFISH_D, names_to = "license", values_to = "count") %>% 
@@ -235,14 +242,27 @@ Dealer data provided by Greater Atlantic Regional Fisheries Office
 #| fig-width: 11
 #| fig-height: 9
 
-landings$coast <- factor(landings$STATE, levels = c("ME", "NH", "MA", "RI", "CT", "NY", "NJ", "DE", "MD", "VA", "NC" ))
+landings$State_Abbr <- NA
+landings$State_Abbr[landings$State == "MAINE"] = "ME"
+landings$State_Abbr[landings$State == "NEW HAMPSHIRE"] = "NH"
+landings$State_Abbr[landings$State == "MASSACHUSETTS"] = "MA"
+landings$State_Abbr[landings$State == "RHODE ISLAND"] = "RI"
+landings$State_Abbr[landings$State == "CONNECTICUT"] = "CT"
+landings$State_Abbr[landings$State == "NEW YORK"] = "NY"
+landings$State_Abbr[landings$State == "NEW JERSEY"] = "NJ"
+landings$State_Abbr[landings$State == "DELAWARE"] = "DE"
+landings$State_Abbr[landings$State == "MARYLAND"] = "MD"
+landings$State_Abbr[landings$State == "VIRGINIA"] = "VA"
+landings$State_Abbr[landings$State == "NORTH CAROLINA"] = "NC"
+
+landings$Coast <- factor(landings$State_Abbr, levels = c("ME", "NH", "MA", "RI", "CT", "NY", "NJ", "DE", "MD", "VA", "NC" ))
 
 landings %>%
-  group_by(STATE, YEAR, coast) %>% 
-  summarise(total_volume = sum(LANDED.LBS)/1000000) %>%
+  group_by(State, Year, Coast) %>% 
+  summarise(total_volume = sum(Pounds)/1000000) %>%
   ggplot() +
-  geom_col(aes(x = YEAR, y = total_volume), fill = "#07a3b7", alpha = 0.7) +
-  facet_wrap(~coast, ncol = 3, scales = "free_y") +
+  geom_col(aes(x = Year, y = total_volume), fill = "#07a3b7", alpha = 0.7) +
+  facet_wrap(~Coast, ncol = 3, scales = "free_y") +
   ylim(c(0,NA)) +
   ggtitle("Landed volume") +
   ylab("Total landings (million lbs)") +
@@ -251,11 +271,11 @@ landings %>%
               strip.text = element_text(color = "black")) 
 
 landings %>%
-  group_by(STATE, YEAR, coast) %>% 
-  summarise(total_value = sum(VALUE)/1000000) %>%
+  group_by(State, Year, Coast) %>% 
+  summarise(total_value = sum(Dollars)/1000000) %>%
   ggplot() +
-  geom_line(aes(x = YEAR, y = total_value), color = "#057872") +
-  facet_wrap(~coast, ncol = 3, scales = "free_y") +
+  geom_line(aes(x = Year, y = total_value), color = "#057872") +
+  facet_wrap(~Coast, ncol = 3, scales = "free_y") +
   ylim(c(0, NA)) +
   ggtitle("Landed value") +
   ylab("Total landings (million $USD)") +
@@ -273,35 +293,37 @@ landings %>%
 #| fig-align: center
 #| fig-height: 5
 #| fig-width: 7
-landings %>%
-  group_by(YEAR) %>% 
-  summarise(mean_volume = mean(LANDED.LBS)/1000000) %>%
-  ggplot() +
-  geom_col(aes(x = YEAR, y = mean_volume), fill = "#07a3b7", alpha = 0.7) + 
-  geom_smooth(aes(x = YEAR, y = mean_volume), method = "lm", se = FALSE, linewidth = 1, color = "#535353", alpha = 0.8) +
-  theme_gmri() +
-  ggtitle("Average landed volume", subtitle = "Across all ports") +
-  xlab("Year") + ylab("Landed pounds (million)") -> mean
 
-landings %>%
-  group_by(YEAR) %>% 
-  summarise(total_volume = sum(LANDED.LBS)/1000000) %>%
-  ggplot() +
-  geom_col(aes(x = YEAR, y = total_volume), fill = "#07a3b7", alpha = 0.7) + 
-  geom_smooth(aes(x = YEAR, y = total_volume), method = "lm", se = FALSE, linewidth = 1, color = "#535353", alpha = 0.8) +
-  theme_gmri() + 
-  ggtitle("Total landed volume", subtitle = "Across all ports") +
-  xlab("Year") + ylab("Landed pounds (million)") -> total
-
-
-patchwork::wrap_plots(total, mean, ncol = 2)
+# landings %>%
+#   drop_na() %>% 
+#   group_by(Year) %>% 
+#   summarise(mean_volume = mean(Pounds)/1000000,
+#             total_volume = sum(Pounds)/1000000) -> totals
+# 
+# ggplot(data = totals) +
+#   geom_col(aes(x = Year, y = mean_volume), fill = "#07a3b7", alpha = 0.7) + 
+#   geom_smooth(aes(x = Year, y = mean_volume), method = "lm", se = FALSE, linewidth = 1, color = "#535353", alpha = 0.8) +
+#   theme_gmri() +
+#   ggtitle("Average landed volume", subtitle = "Across all ports") +
+#   xlab("Year") + ylab("Landed pounds (million)") -> mean
+# 
+# ggplot(data = totals) +
+#   geom_col(aes(x = Year, y = total_volume), fill = "#07a3b7", alpha = 0.7) + 
+#   geom_smooth(aes(x = Year, y = total_volume), method = "lm", se = FALSE, linewidth = 1, color = "#535353", alpha = 0.8) +
+#   theme_gmri() + 
+#   ggtitle("Total landed volume", subtitle = "Across all ports") +
+#   xlab("Year") + ylab("Landed pounds (million)") -> total
+# 
+# 
+# patchwork::wrap_plots(total, mean, ncol = 2)
 
 # Total by state
 landings %>% 
-  group_by(YEAR, STATE, coast) %>% 
-  summarise(total_volume = sum(LANDED.LBS)/1000000) %>% 
+  drop_na() %>% 
+  group_by(Year, State, Coast) %>% 
+  summarise(total_volume = sum(Pounds)/1000000) %>% 
 ggplot() +
-  geom_col(aes(x = YEAR, y = total_volume, group = coast, fill = coast), color = "white", linewidth = 0.25) +
+  geom_col(aes(x = Year, y = total_volume, group = Coast, fill = Coast), color = "white", linewidth = 0.25) +
   ggtitle("Total landings by state") +
   xlab("Year") + ylab("Landed pounds (million)") +
   guides(fill = guide_legend("States")) +
@@ -311,7 +333,7 @@ ggplot() +
 
 ### Ex-vessel price of black sea bass
 
-Despite a general upward trend in landed volume and value, the price per pound has dropped significantly in all regions.
+Despite a general upward trend in landed volume and value, the price per pound has dropped significantly in all regions. Maine is leftout due to lack of data. 
 
 ```{r}
 #| label: ex-vessel price
@@ -319,31 +341,29 @@ Despite a general upward trend in landed volume and value, the price per pound h
 #| message: false
 #| warning: false
 #| fig-align: center
+#| fig-height: 6
+#| fig-width: 9
 
 ex_vessel <- landings %>% 
-  mutate(EX.VESSEL = LANDED.LBS/VALUE) 
+  mutate(ex.vessel = Pounds/Dollars) 
 
 ex_vessel %>% 
-  group_by(STATE, YEAR, coast) %>% 
-  summarise(AVG.EX.VESSEL = mean(EX.VESSEL)) %>% 
-  filter(!STATE == "ME") %>% # major outlier
+  group_by(State, Year, Coast) %>% 
+  summarise(avg.ex.vessel = mean(ex.vessel)) %>% 
+  filter(!State == "MAINE") %>% # major outlier
   ggplot() + 
-  geom_line(aes(x = YEAR, y = AVG.EX.VESSEL, color = coast)) +
+  geom_line(aes(x = Year, y = avg.ex.vessel, color = Coast)) +
   ggtitle("Average ex-vessel price") + 
   xlab("Year") + ylab("Price per pound (USD)") + 
   guides(color = guide_legend("States")) +
   theme_gmri() +
   scale_color_gmri()  
 
-s_and_d <- ex_vessel %>% 
-  group_by(YEAR) %>%
-  summarise(AVG.LANDED.LBS = mean(LANDED.LBS/100000),
-            AVG.EX.VESSEL  = mean(EX.VESSEL))
+# s_and_d <- ex_vessel %>% 
+#   group_by(YEAR) %>%
+#   summarise(AVG.LANDED.LBS = mean(LANDED.LBS/100000),
+#             AVG.EX.VESSEL  = mean(EX.VESSEL))
 ```
-
-## Concentration of landings
-
-The concentration of landings are weighted mean of latitude and longitude weighted by landed pounds. The majority of black sea bass landings are concentrated in southeastern New Jersey.
 
 ```{r}
 #| label: concentrations
@@ -352,31 +372,36 @@ The concentration of landings are weighted mean of latitude and longitude weight
 #| warning: false
 #| fig-align: center
 
-world <- ne_states(country = "united states of america", returnclass = "sf")
+## Concentration of landings
 
-geocodes <- read.csv(here("Data", "ports.geocoded.csv")) %>% 
-  rename("PORT.NAME" = "PORT") %>% 
-  select(PORT.NAME, STATE, lon, lat)
+# The concentration of landings are weighted mean of latitude and longitude weighted by landed pounds. The majority of black sea bass landings are concentrated in southeastern New Jersey.
 
-landings %>% 
-  left_join(geocodes) -> landings
 
-landings_conc <- landings %>% 
-  group_by(YEAR) %>% 
-  summarise(
-    avg_lat = weightedMean(lat, w = LANDED.LBS, na.rm = T), # maybe not
-    avg_lon = weightedMean(lon, w = LANDED.LBS, na.rm = T)
-  ) %>% 
-  filter(YEAR >= 1996) %>% 
-  mutate(avg_lat = round(avg_lat, digits = 1),
-         avg_lon = round(avg_lon, digits = 1)) 
-
-ggplot(landings_conc) +
-  geom_line(aes(x = YEAR, y = avg_lat)) +
-  ylim(c(36, 45)) +
-  ggtitle("Concentration of landings", subtitle = "Since limited entry access") +
-  xlab("Year") + ylab("Latitude") +
-  theme_gmri()
+# world <- ne_states(country = "united states of america", returnclass = "sf")
+# 
+# geocodes <- read.csv(here("Data", "ports.geocoded.csv")) %>% 
+#   rename("PORT.NAME" = "PORT") %>% 
+#   select(PORT.NAME, STATE, lon, lat)
+# 
+# landings %>% 
+#   left_join(geocodes) -> landings
+# 
+# landings_conc <- landings %>% 
+#   group_by(YEAR) %>% 
+#   summarise(
+#     avg_lat = weightedMean(lat, w = LANDED.LBS, na.rm = T), # maybe not
+#     avg_lon = weightedMean(lon, w = LANDED.LBS, na.rm = T)
+#   ) %>% 
+#   filter(YEAR >= 1996) %>% 
+#   mutate(avg_lat = round(avg_lat, digits = 1),
+#          avg_lon = round(avg_lon, digits = 1)) 
+# 
+# ggplot(landings_conc) +
+#   geom_line(aes(x = YEAR, y = avg_lat)) +
+#   ylim(c(36, 45)) +
+#   ggtitle("Concentration of landings", subtitle = "Since limited entry access") +
+#   xlab("Year") + ylab("Latitude") +
+#   theme_gmri()
 
 ```
 
@@ -435,8 +460,8 @@ fed_license %>%
 #| message: false
 #| warning: false
 #| fig-align: center
-#| fig-height: 5
-#| fig-width: 7
+#| fig-height: 6
+#| fig-width: 9
 
 # Proportions
 fed_license %>% 
@@ -492,6 +517,9 @@ Given that licenses are attached to a vessel (and potentially other license type
 #| echo: false
 #| message: false
 #| warning: false
+#| fig-align: center
+#| fig-width: 11
+#| fig-height: 11
 
 bsb_vessels <- garfo_clean %>% 
   filter(BLACK_SEA_BASS_1 == 1) %>% 
@@ -524,5 +552,11 @@ chorddiag::chorddiag(data = as.matrix(bsb_adjacency),
 The highest number of co-occurences of black sea bass with another license category is with squid/mackerel/butterfish at 45,736 connections from 1996-2023. 
 
 
+## What do we know so far? 
+Based on the NEFSC bottom trawl survey, the leading, center, and trailing edges of black sea bass distributions have been moving further and further north into the Gulf of Maine. Survey biomass appears to cycle through periods of growth and decline, with a recent decline in the average biomass. 
 
+Access into emerging fisheries is a pillar of fisheries climate adaptation. The licensing data shows little evidence of licenses trailing species northwards or transfers across state lines. The overall number of licenses has decreased over time while the relative proportions of which states hold licenses as remained roughly the same. 
 
+All the while, landings of black sea bass continue to increase, potentially prompting a drop in ex-vessel price across the northeast. 
+
+These pieces together suggest that while black sea bass has the potential to be a viable fishery in New England, quota allocation and limited entry impedes the ability for harvesters to invest in and explore this opportunity. This inaccessability to diversification leaves harvesters susceptible to climate-fisheries change. 
