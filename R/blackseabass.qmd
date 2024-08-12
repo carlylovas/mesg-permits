@@ -10,7 +10,7 @@ editor: visual
 
 ## What is happening with black sea bass?
 
-![](images/bsb.png){fig-align="left" width="134"} 
+![](images/bsb.png){fig-align="left" width="134"}
 
 Pulling together bottom trawl survey data, federal landings, and federal license data, here we explore black sea bass access and exploitation.
 
@@ -18,6 +18,7 @@ Pulling together bottom trawl survey data, federal landings, and federal license
 
 -   [Atlantic States Marine Fisheries Commission](https://www.asmfc.org/species/black-sea-bass)
 -   [NOAA Fisheries](https://www.fisheries.noaa.gov/species/black-sea-bass)
+
 
 ```{r}
 #| label: load data and dependencies 
@@ -105,6 +106,7 @@ landings <- garfo_landings %>%
 
 fed_license <- garfo_clean %>% 
   pivot_longer(cols = BLACK_SEA_BASS_1:TILEFISH_D, names_to = "license", values_to = "count") %>% 
+  filter(!PPST %in% c("FL", "GA", "PA", "WA")) %>%  
   filter(!count == 0 & license == "BLACK_SEA_BASS_1") 
  
 
@@ -294,6 +296,17 @@ landings %>%
 
 patchwork::wrap_plots(total, mean, ncol = 2)
 
+# Total by state
+landings %>% 
+  group_by(YEAR, STATE, coast) %>% 
+  summarise(total_volume = sum(LANDED.LBS)/1000000) %>% 
+ggplot() +
+  geom_col(aes(x = YEAR, y = total_volume, group = coast, fill = coast), color = "white", linewidth = 0.25) +
+  ggtitle("Total landings by state") +
+  xlab("Year") + ylab("Landed pounds (million)") +
+  guides(fill = guide_legend("States")) +
+  scale_fill_gmri() +
+  theme_gmri() 
 ```
 
 ### Ex-vessel price of black sea bass
@@ -311,13 +324,14 @@ ex_vessel <- landings %>%
   mutate(EX.VESSEL = LANDED.LBS/VALUE) 
 
 ex_vessel %>% 
-  group_by(STATE, YEAR) %>% 
+  group_by(STATE, YEAR, coast) %>% 
   summarise(AVG.EX.VESSEL = mean(EX.VESSEL)) %>% 
   filter(!STATE == "ME") %>% # major outlier
   ggplot() + 
-  geom_line(aes(x = YEAR, y = AVG.EX.VESSEL, color = STATE)) +
+  geom_line(aes(x = YEAR, y = AVG.EX.VESSEL, color = coast)) +
   ggtitle("Average ex-vessel price") + 
   xlab("Year") + ylab("Price per pound (USD)") + 
+  guides(color = guide_legend("States")) +
   theme_gmri() +
   scale_color_gmri()  
 
@@ -326,8 +340,11 @@ s_and_d <- ex_vessel %>%
   summarise(AVG.LANDED.LBS = mean(LANDED.LBS/100000),
             AVG.EX.VESSEL  = mean(EX.VESSEL))
 ```
+
 ## Concentration of landings
-The concentration of landings are weighted mean of latitude and longitude weighted by landed pounds. The majority of black sea bass landings are concentrated in southeastern New Jersey. 
+
+The concentration of landings are weighted mean of latitude and longitude weighted by landed pounds. The majority of black sea bass landings are concentrated in southeastern New Jersey.
+
 ```{r}
 #| label: concentrations
 #| echo: false
@@ -362,6 +379,7 @@ ggplot(landings_conc) +
   theme_gmri()
 
 ```
+
 ## Licensing
 
 ### Federal Licenses
@@ -391,7 +409,7 @@ fed_license$states <- factor(fed_license$PPST, levels = c("ME", "NH", "MA", "RI"
 
 fed_license %>% 
   group_by(PPST, AP_YEAR, states) %>% 
-  filter(!PPST %in% c("FL", "GA", "PA", "WA")) %>% 
+  # filter(!PPST %in% c("FL", "GA", "PA", "WA")) %>% 
   summarise(total_count = sum(count)) %>%
   ggplot() +
   geom_col(aes(x = AP_YEAR, y = total_count), fill = gmri_cols("seafood purple")) +
@@ -410,10 +428,64 @@ fed_license %>%
 #   summarise(total_count = sum(count)) # 669, figure this out
 
 ```
-
 *If Commercial black sea pass permits have been under limited entry since 1996, why are there increases in the number of permits held in some years. Should they all be declining? Are some transferring across state lines*
+```{r}
+#| label: proportions and z score
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-align: center
+#| fig-height: 5
+#| fig-width: 7
 
-Given that licenses are attached to a vessel (and potentially other license types?) and we are reporting location based on principal ports, we cannot definitely say that black sea bass licenses are increasing/decreasing in certain states. We can, however, say that the number of vessels that hold bsb licenses are landing more/less in a particular state. 
+# Proportions
+fed_license %>% 
+  group_by(AP_YEAR, PPST, states) %>% 
+  summarise(count = sum(count)) %>% 
+ggplot() +
+  geom_col(aes(x = AP_YEAR, y = count, group = states, fill = states), color = "white", linewidth = 0.25) +
+  guides(fill = guide_legend("States")) +
+  ggtitle("Total count by state") +
+  xlab("Year") + ylab("Count") +
+  scale_fill_gmri() +
+  theme_gmri() 
+
+
+# z-score for license numbers
+# need mean & sd of licenses issued per year (across all states)
+# individual means per state 
+fed_license %>% 
+  group_by(AP_YEAR, states) %>% 
+  summarise(count = sum(count)) %>% 
+  group_by(states) %>%
+  summarise(annual_mean = mean(count)) -> mean_fed
+
+mean_fed %>% 
+  mutate(mean = mean(annual_mean),
+         sd = sd(annual_mean),
+         z = (annual_mean - mean)/sd) -> mean_fed
+
+ggplot(data = mean_fed)+
+  # geom_point(aes(x = states, y = z, color = states)) +
+  geom_label(aes(x = states, y = z, label = states, fill = states)) +
+  geom_hline(aes(yintercept=0)) +
+  ggtitle("Standardized license counts") +
+  xlab("States") + ylab("z-score") +
+  # scale_color_gmri() +
+  scale_fill_gmri() +
+  ylim(c(-2,2)) +
+  theme_gmri(legend.position = "none",
+             axis.text.x = element_blank(),
+             axis.ticks.x = element_blank(),
+             axis.line.x = element_line(color = "#e9e9e9")) 
+
+```
+While it seems the overall number of commercial black sea bass licenses has declined, the relative proportions of state holdings doesn't seem to change all that dramatically. The majority of licenses are held/attached to vessels landing in NY/NJ with comparable numbers in MA/RI. This is validated by calculating the z-score of the mean numbers of licenses held in each state compared to the annual mean number of licenses issued across all states. NY, NJ, RI, and MA are all 1-2 standard deviations above the mean: VA and NC hug the mean while ME, NH, CT, DE, MD hover below.
+
+### Vessels & Multiple licenses
+Given that licenses are attached to a vessel (and potentially other license types?) and we are reporting location based on principal ports, we cannot definitely say that black sea bass licenses are increasing/decreasing in certain states. We can, however, say that the number of vessels that hold bsb licenses are landing more/less in a particular state. Therefore, we need to explore what other license are co-held with black sea bass and explore the trends with those license types. 
+
+*Black sea bass is managed under one FMP with summer flounder and scup*
 
 ```{r}
 #| label: bsb vessels
@@ -424,30 +496,33 @@ Given that licenses are attached to a vessel (and potentially other license type
 bsb_vessels <- garfo_clean %>% 
   filter(BLACK_SEA_BASS_1 == 1) %>% 
   pivot_longer(cols = BLACK_SEA_BASS_1:TILEFISH_D, names_to = "license", values_to = "count") %>%
-  filter(!count == 0) %>% 
+  # filter(!count == 0) %>% 
   arrange(VP_NUM) %>% 
   left_join(garfo_licenses)
 
-## Adjacency matrix? 
-# bsb_adjacency <- garfo_clean %>% 
-#   filter(BLACK_SEA_BASS_1 == 1) %>% 
-#   select(BLACK_SEA_BASS_1:TILEFISH_D)
-# 
-# bsb_adjacency <- crossprod(as.matrix(bsb_adjacency))
+## Adjacency matrix?
+bsb_adjacency <- bsb_vessels %>% 
+  group_by(VP_NUM, AP_YEAR, category) %>%
+  summarise(count = sum(count)) %>% 
+  pivot_wider(names_from = "category", values_from = "count") %>% 
+  ungroup() %>% 
+  select(!c(VP_NUM, AP_YEAR))
 
-# library(chorddiag)
-# 
-# palette <- c("#773891", "#535353", "#363b45", "#004966", "#00608a", "#07a3b7", "#057872", "#38431d", "#abb400", "#ebcb27", "#ea4f12", "#b94a40")
-# 
-# chorddiag(data = as.matrix(bsb_adjacency),
-#           type = "directional",
-#           showTicks = FALSE,
-#           groupPadding = 5,
-#           groupColors = palette,
-#           chordedgeColor = palette,
-#           groupnameFontsize = 12)
+bsb_adjacency <- crossprod(as.matrix(bsb_adjacency))
+ 
+palette <- c("#773891", "#535353", "#363b45", "#004966", "#00608a", "#07a3b7", "#057872", "#38431d", "#abb400", "#ebcb27", "#ea4f12", "#b94a40")
+
+chorddiag::chorddiag(data = as.matrix(bsb_adjacency),
+          type = "directional",
+          showTicks = FALSE,
+          groupPadding = 5,
+          groupColors = palette,
+          chordedgeColor = palette,
+          groupnameFontsize = 12)
 
 ```
+The highest number of co-occurences of black sea bass with another license category is with squid/mackerel/butterfish at 45,736 connections from 1996-2023. 
+
 
 
 
