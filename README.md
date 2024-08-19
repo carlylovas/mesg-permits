@@ -23,3 +23,4 @@ This is the public repository containing the necessary data and code for network
 ### Species-specific case studies
 
 1.  [Black sea bass](https://carlylovas.github.io/mesg-permits/R/blackseabass.html)
+2.  [Squid](https://carlylovas.github.io/mesg-permits/R/squid.html) *in progress*

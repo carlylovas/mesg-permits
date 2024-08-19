@@ -19,7 +19,6 @@ Pulling together bottom trawl survey data, federal landings, and federal license
 -   [Atlantic States Marine Fisheries Commission](https://www.asmfc.org/species/black-sea-bass)
 -   [NOAA Fisheries](https://www.fisheries.noaa.gov/species/black-sea-bass)
 
-
 ```{r}
 #| label: load data and dependencies 
 #| echo: false
@@ -37,7 +36,7 @@ library(rnaturalearth)
 
 garfo_clean    <- read.csv(here("Data", "all_GARFO_data.csv"))
 # garfo_landings <- read.csv(here("Data", "landings.csv"))
-garfo_landings <- read.csv(here("Data", "FOSS_landings.csv"), header = TRUE)
+garfo_landings <- read.csv(here("Data", "FOSS_landings_BSB.csv"), header = TRUE)
 garfo_licenses <- read.csv(here("Data", "garfo_license_list.csv"))
 maine_licenses <- ind_lic_portfolio
 maine_codes    <- read.csv(here("Data", "updated_license_codes.csv"))
@@ -333,7 +332,7 @@ ggplot() +
 
 ### Ex-vessel price of black sea bass
 
-Despite a general upward trend in landed volume and value, the price per pound has dropped significantly in all regions. Maine is leftout due to lack of data. 
+Despite a general upward trend in landed volume and value, the price per pound has dropped significantly in all regions. Maine is leftout due to lack of data.
 
 ```{r}
 #| label: ex-vessel price
@@ -453,7 +452,9 @@ fed_license %>%
 #   summarise(total_count = sum(count)) # 669, figure this out
 
 ```
+
 *If Commercial black sea pass permits have been under limited entry since 1996, why are there increases in the number of permits held in some years. Should they all be declining? Are some transferring across state lines*
+
 ```{r}
 #| label: proportions and z score
 #| echo: false
@@ -505,10 +506,12 @@ ggplot(data = mean_fed)+
              axis.line.x = element_line(color = "#e9e9e9")) 
 
 ```
+
 While it seems the overall number of commercial black sea bass licenses has declined, the relative proportions of state holdings doesn't seem to change all that dramatically. The majority of licenses are held/attached to vessels landing in NY/NJ with comparable numbers in MA/RI. This is validated by calculating the z-score of the mean numbers of licenses held in each state compared to the annual mean number of licenses issued across all states. NY, NJ, RI, and MA are all 1-2 standard deviations above the mean: VA and NC hug the mean while ME, NH, CT, DE, MD hover below.
 
 ### Vessels & Multiple licenses
-Given that licenses are attached to a vessel (and potentially other license types?) and we are reporting location based on principal ports, we cannot definitely say that black sea bass licenses are increasing/decreasing in certain states. We can, however, say that the number of vessels that hold bsb licenses are landing more/less in a particular state. Therefore, we need to explore what other license are co-held with black sea bass and explore the trends with those license types. 
+
+Given that licenses are attached to a vessel (and potentially other license types?) and we are reporting location based on principal ports, we cannot definitely say that black sea bass licenses are increasing/decreasing in certain states. We can, however, say that the number of vessels that hold bsb licenses are landing more/less in a particular state. Therefore, we need to explore what other license are co-held with black sea bass and explore the trends with those license types.
 
 *Black sea bass is managed under one FMP with summer flounder and scup*
 
@@ -549,14 +552,15 @@ chorddiag::chorddiag(data = as.matrix(bsb_adjacency),
           groupnameFontsize = 12)
 
 ```
-The highest number of co-occurences of black sea bass with another license category is with squid/mackerel/butterfish at 45,736 connections from 1996-2023. 
 
+The highest number of co-occurences of black sea bass with another license category is with squid/mackerel/butterfish at 45,736 connections from 1996-2023.
 
-## What do we know so far? 
-Based on the NEFSC bottom trawl survey, the leading, center, and trailing edges of black sea bass distributions have been moving further and further north into the Gulf of Maine. Survey biomass appears to cycle through periods of growth and decline, with a recent decline in the average biomass. 
+## What do we know so far?
 
-Access into emerging fisheries is a pillar of fisheries climate adaptation. The licensing data shows little evidence of licenses trailing species northwards or transfers across state lines. The overall number of licenses has decreased over time while the relative proportions of which states hold licenses as remained roughly the same. 
+Based on the NEFSC bottom trawl survey, the leading, center, and trailing edges of black sea bass distributions have been moving further and further north into the Gulf of Maine. Survey biomass appears to cycle through periods of growth and decline, with a recent decline in the average biomass.
 
-All the while, landings of black sea bass continue to increase, potentially prompting a drop in ex-vessel price across the northeast. 
+Access into emerging fisheries is a pillar of fisheries climate adaptation. The licensing data shows little evidence of licenses trailing species northwards or transfers across state lines. The overall number of licenses has decreased over time while the relative proportions of which states hold licenses as remained roughly the same.
 
-These pieces together suggest that while black sea bass has the potential to be a viable fishery in New England, quota allocation and limited entry impedes the ability for harvesters to invest in and explore this opportunity. This inaccessability to diversification leaves harvesters susceptible to climate-fisheries change. 
+All the while, landings of black sea bass continue to increase, potentially prompting a drop in ex-vessel price across the northeast.
+
+These pieces together suggest that while black sea bass has the potential to be a viable fishery in New England, quota allocation and limited entry impedes the ability for harvesters to invest in and explore this opportunity. This inaccessability to diversification leaves harvesters susceptible to climate-fisheries change.

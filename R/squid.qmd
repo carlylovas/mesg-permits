@@ -1,0 +1,370 @@
+---
+title: "Squid"
+author: "cslovas"
+format: 
+  html:
+    toc: true
+    self-contained: true
+editor: visual
+---
+
+## What is happening with squid
+
+#### Helpful information on longfin and shortfin squid
+
+-   [Atlantic States Marine Fisheries Commission](https://www.asmfc.org/species/black-sea-bass)
+-   [NOAA Fisheries](https://www.fisheries.noaa.gov/species/black-sea-bass)
+-   [Federal permits](https://www.fisheries.noaa.gov/permit/mackerel-squid-and-butterfish)
+
+```{r}
+#| label: load data and dependencies 
+#| echo: false
+#| message: false
+#| warning: false
+
+library(tidyverse)
+# devtools::install_github("https://github.com/gulfofmaine/gmRi")
+library(gmRi)
+library(here)
+library(grid)
+library(gomfish)
+library(matrixStats)
+library(rnaturalearth)
+
+garfo_clean    <- read.csv(here("Data", "all_GARFO_data.csv"))
+garfo_landings <- read.csv(here("Data", "FOSS_landings_squid.csv"), header = TRUE)
+garfo_licenses <- read.csv(here("Data", "garfo_license_list.csv"))
+maine_licenses <- ind_lic_portfolio
+maine_codes    <- read.csv(here("Data", "updated_license_codes.csv"))
+
+```
+
+```{r}
+#| label: load trawl data
+#| echo: false
+#| message: false
+#| warning: false
+
+# Load NEFSC Bottom Trawl Survey data ####
+clean_survey <- gmri_survdat_prep(
+  survdat_source ="most recent",
+  box_location ="cloudstorage"
+)
+
+clean_survey  <- clean_survey %>% 
+  distinct(est_year, survey_area, stratum, tow, est_towdate, season, comname, catchsex, .keep_all = T) %>%
+  filter(!season %in% c("Summer", "Winter") & est_year >= 1970) %>%
+  group_by(est_year, survey_area, stratum, tow, est_towdate, season, 
+           avgdepth, surftemp, bottemp, decdeg_beglat, decdeg_beglon, comname, abundance) %>% 
+  summarise(biomass_kg = sum(biomass_kg, na.rm = T), .groups = "drop") 
+
+# Weight by biomass
+grouped_center_bio <- function(clean_survey, ...){
+  clean_survey %>% 
+    group_by(comname, ...) %>% 
+    summarise(
+      # Un-weighted averages
+      total_biomass   = sum(biomass_kg),
+      avg_biomass     = mean(biomass_kg),
+      biomass_sd      = sd(biomass_kg),
+      # All below are weighted by biomass
+      avg_depth       = weightedMean(avgdepth, w = biomass_kg, na.rm = T),
+      avg_bot_temp    = weightedMean(bottemp, w = biomass_kg, na.rm = T),
+      avg_sur_temp    = weightedMean(surftemp, w = biomass_kg, na.rm = T),
+      avg_lat         = weightedMean(decdeg_beglat, w = biomass_kg, na.rm = T),
+      avg_lon         = weightedMean(decdeg_beglon, w = biomass_kg, na.rm = T),
+      depth_sd        = weightedSd(avgdepth, w = biomass_kg, na.rm = T),
+      temp_sd         = weightedSd(bottemp, w = biomass_kg, na.rm = T),
+      lat_sd          = weightedSd(decdeg_beglat, w = biomass_kg, na.rm = T),
+      lon_sd          = weightedSd(decdeg_beglon, w = biomass_kg, na.rm = T),
+      .groups = "drop") 
+}
+
+weighted_data <- grouped_center_bio(clean_survey, est_year, season) %>%
+  mutate(decade = 10*est_year %/% 10)
+```
+
+```{r}
+#| label: squid
+#| echo: false
+#| warning: false
+#| message: false
+#| fig-align: center
+
+biomass <- weighted_data %>% 
+  filter(comname %in% c("northern shortfin squid", "longfin squid") & est_year >= 1970 & !season %in% c("Winter", "Summer")) 
+
+landings <- garfo_landings %>%
+  filter(Year >= 1970) %>%
+  select(Year, State, NMFS.Name, Pounds, Dollars, Confidentiality) %>% 
+  mutate(Pounds  = parse_number(Pounds),
+         Dollars = parse_number(Dollars))
+
+fed_license <- garfo_clean %>% 
+  select(AP_YEAR, AP_NUM, VP_NUM, PPORT, PPST, starts_with("SQUID_")) %>% # leaving out HMS_Squid
+  pivot_longer(cols = 6:17, names_to = "license", values_to = "count") %>% 
+  filter(PPST %in% c("ME","NH","MA","RI","CT","NY","NJ","DE","MD","VA","NC")) %>%  
+  filter(!count == 0)
+
+```
+
+## Distributions
+
+### Average biomass and center of biomass based on NEFSC bottom trawl survey
+
+```{r}
+#| label: biomass
+#| echo: false
+#| message: false
+#| warnging: false
+#| fig-align: center
+
+ggplot(data = biomass) +
+  geom_line(aes(x = est_year, y = avg_lat, color = season)) +
+  theme_gmri()+
+  scale_color_gmri() +
+  facet_wrap(~comname) +
+  ggtitle("Seasonal center of biomass") +
+  xlab("Year") + ylab("Biomass-weighted average latitude")
+
+biomass %>%
+  group_by(comname, est_year) %>% 
+  summarise(avg_lat = mean(avg_lat)) %>% 
+  ggplot() +
+  geom_line(aes(x = est_year, y = avg_lat)) + 
+  geom_smooth(aes(x = est_year, y = avg_lat), method = "lm", se = FALSE, color = "#07a3b7", linetype = 2, alpha = 0.7) +
+  ylab("Biomass-weighted average latitude") +
+  facet_wrap(~comname) +
+  xlab("Year") +
+  ggtitle("Annual center of biomass") +
+  theme_gmri()
+
+biomass %>% 
+  group_by(est_year, season, comname) %>%
+  summarise(total_biomass = sum(total_biomass)) %>% 
+  ggplot()+
+  geom_col(aes(x = est_year, y = total_biomass, fill = season), position = "dodge") + #fill = "#07a3b7") +
+  scale_fill_gmri(palette = "main") +
+  theme_gmri() +
+  facet_wrap(~comname) +
+  ggtitle("Annual surveyed biomass") +
+  ylab("Biomass (kg)") +
+  xlab("Year")
+
+biomass %>% 
+  group_by(est_year, comname) %>%
+  summarise(annual_biomass = mean(total_biomass)) %>% 
+  ggplot()+
+  geom_line(aes(x = est_year, y = annual_biomass)) + #fill = "#07a3b7") +
+  scale_fill_gmri(palette = "main") +
+  theme_gmri() +
+  facet_wrap(~comname) +
+  ggtitle("Annual mean surveyed biomass") +
+  ylab("Biomass (kg)") +
+  xlab("Year")
+
+
+```
+Nothing with shortfin is really jumping out to me, so I'll move forward with just longfin squid (unless Emily tells me otherwise). 
+### Leading and trailing edges
+
+```{r}
+#| label: edges
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-align: center
+
+clean_survey %>% 
+  filter(comname == "longfin squid" & est_year >= 1970) %>%
+  group_by(est_year) %>%  
+  summarise(
+    `10%`  = Hmisc::wtd.quantile(decdeg_beglat, weights = biomass_kg, probs = 0.10, na.rm = T),
+    `90%`  = Hmisc::wtd.quantile(decdeg_beglat, weights = biomass_kg, probs = 0.90, na.rm = T)) %>% 
+  pivot_longer(cols = 2:3, names_to = "quantile", values_to = "lat") %>% 
+  left_join(
+    clean_survey %>% 
+      filter(est_year >= 1970) %>%
+      group_by(est_year) %>%  
+      summarise(
+        `10%`  = Hmisc::wtd.quantile(decdeg_beglon, weights = biomass_kg, probs = 0.10, na.rm = T),
+        `90%`  = Hmisc::wtd.quantile(decdeg_beglon, weights = biomass_kg, probs = 0.90, na.rm = T)) %>%
+     pivot_longer(cols = 2:3, names_to = "quantile", values_to = "lon")
+  ) -> quantiles
+
+quantiles %>% 
+  group_by(quantile) %>% 
+   mutate(rmean_lat = zoo::rollapplyr(lat, width = 5, FUN = mean, align = "center", partial = T),
+          rmean_lon = zoo::rollapplyr(lon, width = 5, FUN = mean, align = "center", partial = T)) %>%
+  mutate(across(where(is.numeric), round, 4)) -> quantiles
+
+ggplot(quantiles) +
+  geom_line( aes(x = est_year, y = rmean_lat, color = quantile)) +
+  geom_smooth(aes(x = est_year, y = rmean_lat, color = quantile), method = "lm", linetype = 2, linewidth = 0.5) +
+  scale_color_gmri()+
+  theme_gmri(plot.subtitle = element_text(size = 10)) +
+  ggtitle("Longfin squid leading and trailing edge", subtitle = "5-year rolling mean latitude") +
+  xlab("Year") + ylab("Latitude") +
+  ylim(c(36,42))+
+  guides(col = guide_legend(title = "Percentile"))
+
+```
+
+## Landings
+
+### Federally reported landings
+
+Dealer data provided by Greater Atlantic Regional Fisheries Office
+
+```{r}
+#| label: landings 
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-align: center
+#| fig-width: 11
+#| fig-height: 9
+
+landings <- landings %>% filter(NMFS.Name == "SQUID, LONGFIN LOLIGO")
+
+landings$State_Abbr <- NA
+landings$State_Abbr[landings$State == "MAINE"] = "ME"
+landings$State_Abbr[landings$State == "NEW HAMPSHIRE"] = "NH"
+landings$State_Abbr[landings$State == "MASSACHUSETTS"] = "MA"
+landings$State_Abbr[landings$State == "RHODE ISLAND"] = "RI"
+landings$State_Abbr[landings$State == "CONNECTICUT"] = "CT"
+landings$State_Abbr[landings$State == "NEW YORK"] = "NY"
+landings$State_Abbr[landings$State == "NEW JERSEY"] = "NJ"
+landings$State_Abbr[landings$State == "DELAWARE"] = "DE"
+landings$State_Abbr[landings$State == "MARYLAND"] = "MD"
+landings$State_Abbr[landings$State == "VIRGINIA"] = "VA"
+landings$State_Abbr[landings$State == "NORTH CAROLINA"] = "NC"
+
+landings$Coast <- factor(landings$State_Abbr, levels = c("ME", "NH", "MA", "RI", "CT", "NY", "NJ", "DE", "MD", "VA", "NC" ))
+
+landings %>%
+  group_by(State, Year, Coast) %>% 
+  summarise(total_volume = sum(Pounds)/1000000) %>%
+  ggplot() +
+  geom_col(aes(x = Year, y = total_volume), fill = "#07a3b7", alpha = 0.7) +
+  facet_wrap(~Coast, ncol = 3, scales = "free_y") +
+  ylim(c(0,NA)) +
+  ggtitle("Landed volume") +
+  ylab("Total landings (million lbs)") +
+  xlab("Year") +
+  theme_gmri(strip.background = element_rect(fill = "transparent"),
+              strip.text = element_text(color = "black")) 
+
+landings %>%
+  group_by(State, Year, Coast) %>% 
+  summarise(total_value = sum(Dollars)/1000000) %>%
+  ggplot() +
+  geom_line(aes(x = Year, y = total_value), color = "#057872") +
+  facet_wrap(~Coast, ncol = 3, scales = "free_y") +
+  ylim(c(0, NA)) +
+  ggtitle("Landed value") +
+  ylab("Total landings (million $USD)") +
+  xlab("Year") +
+  theme_gmri(strip.background = element_rect(fill = "transparent"),
+              strip.text = element_text(color = "black")) 
+
+# Total by state
+landings %>% 
+  drop_na() %>% 
+  group_by(Year, State, Coast) %>% 
+  summarise(total_volume = sum(Pounds)/1000000) %>% 
+ggplot() +
+  geom_col(aes(x = Year, y = total_volume, group = Coast, fill = Coast), color = "white", linewidth = 0.25) +
+  ggtitle("Total landings by state") +
+  xlab("Year") + ylab("Landed pounds (million)") +
+  guides(fill = guide_legend("States")) +
+  scale_fill_gmri() +
+  theme_gmri() 
+```
+
+### Ex-vessel price of black sea bass
+
+Despite a general upward trend in landed volume and value, the price per pound has dropped significantly in all regions. Maine is leftout due to lack of data.
+
+```{r}
+#| label: ex-vessel price
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-align: center
+#| fig-height: 6
+#| fig-width: 9
+
+ex_vessel <- landings %>% 
+  mutate(ex.vessel = Pounds/Dollars) 
+
+ex_vessel %>% 
+  group_by(State, Year, Coast) %>% 
+  summarise(avg.ex.vessel = mean(ex.vessel)) %>% 
+  # filter(!State == "MAINE") %>% # major outlier
+  ggplot() + 
+  geom_line(aes(x = Year, y = avg.ex.vessel, color = Coast)) +
+  ggtitle("Average ex-vessel price") + 
+  xlab("Year") + ylab("Price per pound (USD)") + 
+  guides(color = guide_legend("States")) +
+  theme_gmri() +
+  scale_color_gmri()  
+```
+## Licensing
+
+### Federal Licenses
+
+Squid are managed under on fishery management plan (FMP) with mackerel and butterfish and are co-licensed with the same species. 
+
+-   **Category 1A-C**: Limited access longfin squid (moratorium)
+
+-   **Category 2**: Squid/Mackerel/Butterfish Charter Party
+
+-   **Category 3**: Squid/Butterfish Incidental Catch
+
+-   **Category 4**: Atlantic Mackerel
+
+-   **Category 5**: Limited access Illex squid (moratorium)
+
+-   **Category 6**: Limited access butterfish (moratorium)
+
+-   **Category T1-3**: Limited access mackerel (tier 1-3)
+
+Again, given the focus on longfin squid, we will focus only on *Category 1A-C*, *Category 3*, and *Category 5* licenses. 
+
+```{r}
+#| label: federal licenses
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-align: center
+#| fig-width: 11
+#| fig-height: 9
+
+# arrange north to south
+fed_license <- fed_license %>% 
+  filter(license %in% c("SQUID_MACK_BUTTER_1A","SQUID_MACK_BUTTER_1B", "SQUID_MACK_BUTTER_1C", "SQUID_MACK_BUTTER_3", "SQUID_MACK_BUTTER_5"))
+
+fed_license$category <- NA
+fed_license$category[fed_license$license == "SQUID_MACK_BUTTER_1A"] = "1A"
+fed_license$category[fed_license$license == "SQUID_MACK_BUTTER_1B"] = "1B"
+fed_license$category[fed_license$license == "SQUID_MACK_BUTTER_1C"] = "1C"
+fed_license$category[fed_license$license == "SQUID_MACK_BUTTER_3"]  = "3"
+fed_license$category[fed_license$license == "SQUID_MACK_BUTTER_5"]  = "5"
+
+fed_license$states <- factor(fed_license$PPST, levels = c("ME", "NH", "MA", "RI", "CT", "NY", "NJ", "DE", "MD", "VA", "NC" ))
+
+fed_license %>% 
+  group_by(PPST, AP_YEAR, license, states, category) %>% 
+  summarise(total_count = sum(count)) %>%
+  ggplot() +
+  geom_col(aes(x = AP_YEAR, y = total_count, fill = category)) +
+  facet_wrap(~states, scales = "free_y", ncol = 3) +
+  ggtitle("Commercial harvest licenses") +
+  xlab("Year") + ylab("Total issued") +
+  scale_fill_gmri() +
+  theme_gmri(strip.background = element_rect(fill = "transparent"),
+              strip.text = element_text(color = "black")) 
+
+```
+It seems the majority of license types targeting squid are incidental catch. 
