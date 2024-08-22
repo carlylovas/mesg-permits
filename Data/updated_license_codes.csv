@@ -7,7 +7,7 @@ cpc,Commercial pelagic and anadromous crew,Pelagic/Anadromous
 cps,Commercial pelagic and anadromous single,Pelagic/Anadromous
 cs,Commercial Shellfish,Shellfish
 csc,Commercial shrimp crew,Shrimp
-cso,Commercial shellfish + 70,Shrimp
+cso,Commercial shellfish + 70,Shellfish
 css,Commercial Shrimp Single,Shrimp
 csu,Commercial Shellfish Under 18,Shellfish
 csw,Commercial Shrimp Single,Shrimp
@@ -41,7 +41,7 @@ lc2o,Lobster crab class II + 70,Lobster
 lc3,Lobster crab class III,Lobster
 lc3o,Lobster crab class III + 70,Lobster
 lco,Lobster Crab + 70,Lobster
-lcs,Lobster Crab Student ,Lobster
+lcs,Lobster Crab Student,Lobster
 lcu,Lobster Crab Under 18,Lobster
 lmp,Lobster Meat Permit,Post-Harvest
 lnc,Lobster crab non commerical,Lobster

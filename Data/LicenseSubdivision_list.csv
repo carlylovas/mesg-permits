@@ -1,0 +1,50 @@
+﻿License Type,Target Species,Stoll et al 2016 Name,Stoll et al 2016,Order_ID
+Scallop dragger,Scallop,Scallop (Dragger),A,1
+Scallop with tender,Scallop,Scallop (Tender),B,2
+Scallop diver,Scallop,Scallop (Hand),C,3
+Lobster crab under 18,Lobster,Lobster Apprentice & Student,D,4
+Lobster crab student,Lobster,Lobster Apprentice & Student,D,5
+Lobster crab apprentace under 18,Lobster,Lobster Apprentice & Student,D,6
+Lobster crab + 70,Lobster,Lobster Apprentice & Student,D,7
+Lobster crab apprentice + 70,Lobster,Lobster Apprentice & Student,D,8
+Lobster crab apprentice,Lobster,Lobster Apprentice & Student,D,9
+Lobster crab class i,Lobster,Lobster Class I,E,10
+Lobster crab class ii,Lobster,Lobster Class II,F,11
+Lobster crab class ii + 70,Lobster,Lobster Class II,F,12
+Lobster crab class iii,Lobster,Lobster Class III,G,13
+Lobster crab class iii + 70,Lobster,Lobster Class III,G,14
+Green crab,Green crab,Green crab,H,15
+Marine worm digging,Marine worm,Marine worm,I,16
+Commercial shellfish,Shellfish,Shellfish,J,17
+Commercial shellfish under 18,Shellfish,Shellfish,J,18
+Commercial shellfish + 70,Shellfish,Shellfish,J,19
+Surf clam boat,Surf clam,Surf Clam,K,20
+Mussel dragger,Mussel,Mussel,L,21
+Mussel hand,Mussel,Mussel,L,22
+Quahog (mahogany),Quahog clam,Mahogany Clam,M,23
+Seaweed,Seaweed,Seaweed,N,24
+Seaweed supplemental,Seaweed,Seaweed,N,25
+Sea urchin dragger,Sea urchin,Sea Urchin (Dragger),O,26
+Sea urchin diver,Sea urchin,Sea Urchin (Hand),P,27
+Sea urchin raking,Sea urchin,Sea Urchin (Hand),P,28
+Sea urchin with tender,Sea urchin,Sea Urchin (Tender),Q,29
+Elver dip net,Elver,Elver,R,30
+Elver dip net 1 fyke net,Elver,Elver,R,31
+Elver 1 fyke net,Elver,Elver,R,32
+Elver 2 fyke net,Elver,Elver,R,33
+Elver dip net crew,Elver,Elver,R,34
+Elver dip net 1 fyke net crew,Elver,Elver,R,35
+Elver 1 fyke net crew,Elver,Elver,R,36
+Elver 2 fyke net with crew,Elver,Elver,R,37
+Eel pot,Eel,Eel,S,38
+Commercial shrimp single,Shrimp,Northern Shrimp,T,39
+Commercial shrimp crew,Shrimp,Northern Shrimp,T,40
+Sea cucumber drag,Sea cucumber,Sea Cucumber,U,41
+Commercial pelagic and anadromous single,Pelagic/Anadromous,Pelagic & Anadromous,V,42
+Commercial pelagic and anadromous crew,Pelagic/Anadromous,Pelagic & Anadromous,V,43
+Commercial fishing single,Finfish,Commercial Fishing,W,44
+Commercial fishing crew,Finfish,Commercial Fishing,W,45
+Aquaculture license,Aquaculture,(Aquaculture),X,46
+Spat,Spat,(Spat),Y,47
+Menhaden commercial,Menhaden,(Menhaden),Z,48
+Menhaden non commercial,Menhaden,(Menhaden),Z,49

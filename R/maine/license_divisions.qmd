@@ -37,13 +37,12 @@ updated_license_codes <- read.csv(here("Data", "updated_license_codes.csv")) %>%
   rename("license_type" = "code")
 
 # Add Stoll et al 2016 license subdivisions
-license_divisions <- read.csv(here("Data", "stoll_license_divisions.csv")) %>%
+license_divisions <- read.csv(here("Data", "LicenseSubdivision_list.csv")) %>%
   # select(License.Type, Target.Species, Stoll.et.al..2016.Name) %>%
   rename("description" = "License.Type",
          "group" = "Target.Species",
-         "license_group" = "Stoll.et.al..2016.Name",
-         "divisions" = "Stoll.et.al..2016") %>%
-  select(description, group, license_group, divisions)
+         "license_group" = "Stoll.et.al.2016.Name",
+         "divisions" = "Stoll.et.al.2016")
 ```
 
 ```{r}
@@ -75,7 +74,7 @@ license_types %>%
 
 license_types %>% 
   gt() %>% 
-  cols_hide(c(license_type, divisions)) %>%
+  cols_hide(c(license_type, divisions, Order_ID)) %>%
   cols_label(
     description    = md("**License Type**"),
     license_group  = md("**Stoll 2016 Grouping**"),
@@ -95,8 +94,8 @@ ind_lic_portfolio %>%
   filter(!licensed == 0) %>%
   left_join(license_types) %>%
   mutate(row = row_number()) %>%
-  select(license_year, landings_number, licensed, license_group, row) %>%
-  pivot_wider(names_from=license_group,values_from=licensed,names_expand=TRUE,values_fill = list(licensed=0)) %>%
+  select(license_year, landings_number, licensed, divisions, row) %>%
+  pivot_wider(names_from=divisions,values_from=licensed,names_expand=TRUE,values_fill = list(licensed=0)) %>%
   select(-row)%>%
   group_by(landings_number,license_year)%>%
   summarise(across(everything(),sum))-> species_portfolio
@@ -116,9 +115,9 @@ ind_lic_portfolio %>%
 species_portfolio %>%
   ungroup() %>%
   select(!landings_number) %>%
-  pivot_longer(cols = 2:28, names_to = "license_group", values_to = "count") %>%
+  pivot_longer(cols = 2:27, names_to = "divisions", values_to = "count") %>%
   filter(!count == 0) %>% 
-  select(license_year, license_group) %>% 
+  select(license_year, divisions) %>% 
   distinct() %>%
   group_by(license_year) %>%
   nest() %>% 
@@ -129,9 +128,10 @@ species_portfolio %>%
 ggplot(unique_license_groups) +
   geom_line(aes(x = license_year, y = unique_license_groups)) +
   ggtitle("Number of Unique License Groups") +
-  theme_gmri(plot.title = element_text(size = 10),
-             axis.text  = element_text(size = 10),
-             axis.title = element_blank())
+  theme_gmri(plot.title   = element_text(size = 10),
+             axis.text    = element_text(size = 10),
+             axis.line.y  = element_line(color = "black"),
+             axis.title   = element_blank())
 ```
 
 ## Time Series
@@ -151,95 +151,31 @@ Total number of a particular license group issued per year.
 species_portfolio %>%
   ungroup() %>%
   select(!landings_number) %>%
-  pivot_longer(cols = 2:28, names_to = "license_group", values_to = "count") %>%
-  group_by(license_year, license_group) %>%
+  pivot_longer(cols = 2:27, names_to = "divisions", values_to = "count") %>%
+  group_by(license_year, divisions) %>%
   summarise(total = sum(count)) %>%
-  group_by(license_group) %>%
-  nest() -> license_time_series
+  group_by(divisions) %>%
+  nest() %>%
+  left_join(license_divisions %>% select(divisions, license_group) %>% distinct())-> license_time_series
 
 # plot
 license_time_series %>% 
-  mutate(time_series = map2(data, license_group, function(x,y){
+  mutate(title = paste(divisions, license_group, sep = " - ")) %>%
+  mutate(time_series = map2(data, title, function(x,y){
     out <- ggplot(data = x)+
       geom_line(aes(x = license_year, y = total)) +
       ylim(c(0, 3500)) +
       xlim(c(1990, NA)) +
       theme_gmri(plot.title = element_text(size = 8),
                  axis.text  = element_text(size = 8),
+                 axis.line.y  = element_line(color = "black"),
                  axis.title = element_blank()) + 
-      ggtitle(license_group)
+      ggtitle(title)
     return(out)
   })) -> license_time_series
 
 gridExtra::marrangeGrob(license_time_series$time_series, layout_matrix = matrix(1:9, ncol = 3, nrow = 3, byrow = TRUE), top = NULL,  left = textGrob(
   expression(bold("Total Annual")), rot = 90, gp = gpar(col = "black", fontsize = 10)))
-```
-
-```{r}
-#| label: species proportion
-#| echo: false
-#| message: false
-#| warning: false
-#| column: page
-#| fig-align: center
-#| fig-height: 7
-#| fig-width: 9
-
-species_portfolio %>% 
-  pivot_longer(cols = 3:29, names_to = "species", values_to = "count") %>%
-  group_by(license_year, species) %>%
-  summarise(count = sum(count)) %>%
-  group_by(license_year) %>%
-  nest() %>%
-  mutate(total = map_dbl(data, function(x){sum(x$count)})) %>%
-  unnest(data) %>%
-  group_by(license_year, species) %>%
-  summarise(proportion = count/total) -> species_proportions
-
-
-ggplot(data = species_proportions, aes(x = license_year, y = proportion, fill = species)) +
-  geom_col(position = "stack") +
-  theme_gmri(plot.title = element_text(size = 10),
-             axis.text  = element_text(size = 10),
-             axis.title = element_text(size = 8),
-             legend.title = element_blank(),
-             legend.position = "bottom") +
-  xlab("Year") + ylab("Proportion") + ggtitle("Proportion of Targeted Species") +
-  scale_fill_viridis_d() +
-  guides(fill = guide_legend(ncol = 4))
-```
-
-```{r}
-#| label: average number of species targeted
-#| echo: false
-#| message: false
-#| warning: false
-#| column: page
-#| fig-align: center
-#| fig-height: 6
-#| fig-width: 8
-
-species_portfolio %>% 
-  pivot_longer(cols = 3:29, names_to = "species", values_to = "count") %>%
-  filter(!count == 0) %>%
-  group_by(license_year, landings_number) %>% 
-  nest() %>%
-  mutate(num_spp = map_dbl(data, function(x){nrow(x)})) %>% 
-  select(landings_number, license_year, num_spp) %>%
-  group_by(license_year) %>%
-  summarise(average_num_spp = mean(num_spp)) -> avg_targeted_spp
-
-ggplot(avg_targeted_spp) +
-  geom_point(aes(x = license_year, y = average_num_spp)) +
-  geom_line(aes(x = license_year, y = average_num_spp), linewidth = 0.5) +
-  stat_smooth(aes(x = license_year, y = average_num_spp), method = "lm") +
-  ylim(c(1,2)) +
-  ggtitle("Average number of licenses per individual") +
-  theme_gmri(plot.title = element_text(size = 10),
-             axis.text  = element_text(size = 10),
-             axis.title = element_blank())
-
-
 ```
 
 ## Annual Species Metrics
@@ -262,7 +198,6 @@ Commercial fishing and lobster licenses (Class I-III) are the most central licen
 
 annual_co_matrix <- species_portfolio %>%
   arrange(license_year) %>%
-  # filter(!is.na(landings_number)) %>%
   ungroup(landings_number) %>%
   select(!landings_number) %>%
   group_by(license_year)%>%
@@ -270,7 +205,7 @@ annual_co_matrix <- species_portfolio %>%
   left_join(unique_license_groups) %>%
   select(license_year, data, license_groups) %>% 
   mutate(co_matrix = map2(data, license_groups, function(x, y){
-    df <- x %>% select(y$license_group) # this filters the portfolio to feature only species harvested in that year. If you want to run with all species, command out this line
+    df <- x %>% select(y$divisions) # this filters the portfolio to feature only species harvested in that year. If you want to run with all species, command out this line
     out <- crossprod(as.matrix(df)) 
     diag(out) <- 0
     return(out)
@@ -292,18 +227,21 @@ metrics_series <- annual_metrics %>%
   select(license_year, degree) %>% 
   unnest_longer(degree) %>% 
   group_by(degree_id) %>%
-  rename("license_group" = "degree_id") %>%
+  rename("divisions" = "degree_id") %>%
   full_join(annual_metrics %>% 
               select(license_year, betweeness) %>% 
               unnest_longer(betweeness) %>% 
               group_by(betweeness_id) %>%
-              rename("license_group" = "betweeness_id")) %>% 
-  relocate("license_group", .after = "license_year") %>%
+              rename("divisions" = "betweeness_id")) %>% 
+  relocate("divisions", .after = "license_year") %>%
   nest() %>%
-  arrange(license_group)
+  arrange(divisions) %>% 
+  left_join(license_divisions %>% select(divisions, license_group) %>% distinct()) %>% 
+  mutate(title = paste(divisions, license_group, sep = "-"))
+
 
 degree_plots <- metrics_series %>% 
-  mutate(time_series = map2(data, license_group, function(x, license_group){
+  mutate(time_series = map2(data, title, function(x, license_group){
     out <- ggplot(data = x)+
       geom_line(aes(x=license_year, y=degree)) +
       ylim(c(0, 30)) + 
@@ -311,9 +249,10 @@ degree_plots <- metrics_series %>%
       theme_gmri(plot.title = element_text(size = 8),
                  axis.text  = element_text(size = 6),
                  axis.title = element_blank(),
+                 axis.line.y  = element_line(color = "black"),
                  strip.text = element_text(size = 8, color = "black"),
                  strip.background = element_blank()) +
-      ggtitle(license_group)
+      ggtitle(title)
     return(out)
   })) 
 
@@ -338,7 +277,7 @@ Initially, we had interpreted license types high betweenness and relatively low 
 #| fig-align: center
 
 betweeness_plots <- metrics_series %>% 
-  mutate(time_series = map2(data, license_group, function(x, license_group){
+  mutate(time_series = map2(data, title, function(x, title){
     out <- ggplot(data = x)+
       geom_line(aes(x=license_year, y= as.numeric(betweeness))) +
       ylim(c(0, 150)) + 
@@ -347,8 +286,9 @@ betweeness_plots <- metrics_series %>%
                  axis.text  = element_text(size = 6),
                  axis.title = element_blank(),
                  strip.text = element_text(size = 8, color = "black"),
+                 axis.line.y  = element_line(color = "black"),
                  strip.background = element_blank()) +
-      ggtitle(license_group)
+      ggtitle(title)
     return(out)
   })) 
 
@@ -429,14 +369,14 @@ ggplot(annual_metrics) +
   geom_line(aes(x = license_year, y = density)) +
   geom_smooth(aes(x = license_year, y = density), method = "lm") +
   xlab("Year") + ylab("Density") + ggtitle("Edge Density") +
-  theme_gmri() +
+  theme_gmri(axis.line.y  = element_line(color = "black")) +
   ylim(c(0.5,1))
 
 ggplot(annual_metrics) +
   geom_line(aes(x = license_year, y = modularity)) +
   geom_smooth(aes(x = license_year, y = modularity), method = "lm") +
   xlab("Year") + ylab("Modularity") + ggtitle("Modularity") +
-  theme_gmri() +
+  theme_gmri(axis.line.y  = element_line(color = "black")) +
   ylim(c(0,0.15))
 
 ```
