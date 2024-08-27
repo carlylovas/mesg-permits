@@ -130,7 +130,9 @@ ggplot(unique_license_groups) +
   ggtitle("Number of Unique License Groups") +
   theme_gmri(plot.title   = element_text(size = 10),
              axis.text    = element_text(size = 10),
-             axis.line.y  = element_line(color = "black"),
+             panel.border = element_rect(color = "black", linetype = 1),
+             panel.grid.major = element_line(color = "#e9e9e9", linetype = 1),
+             panel.grid.minor = element_line(color = "#e9e9e9", linetype = 1),
              axis.title   = element_blank())
 ```
 
@@ -160,7 +162,7 @@ species_portfolio %>%
 
 # plot
 license_time_series %>% 
-  mutate(title = paste(divisions, license_group, sep = " - ")) %>%
+  mutate(title = paste(divisions, license_group, sep = "-")) %>%
   mutate(time_series = map2(data, title, function(x,y){
     out <- ggplot(data = x)+
       geom_line(aes(x = license_year, y = total)) +
@@ -168,12 +170,14 @@ license_time_series %>%
       xlim(c(1990, NA)) +
       theme_gmri(plot.title = element_text(size = 8),
                  axis.text  = element_text(size = 8),
-                 axis.line.y  = element_line(color = "black"),
+                 panel.border = element_rect(color = "black", linetype = 1),
+                 panel.grid.major = element_line(color = "#e9e9e9", linetype = 1),
+                 panel.grid.minor = element_line(color = "#e9e9e9", linetype = 1),
                  axis.title = element_blank()) + 
       ggtitle(title)
     return(out)
   })) -> license_time_series
-
+  
 gridExtra::marrangeGrob(license_time_series$time_series, layout_matrix = matrix(1:9, ncol = 3, nrow = 3, byrow = TRUE), top = NULL,  left = textGrob(
   expression(bold("Total Annual")), rot = 90, gp = gpar(col = "black", fontsize = 10)))
 ```
@@ -249,7 +253,9 @@ degree_plots <- metrics_series %>%
       theme_gmri(plot.title = element_text(size = 8),
                  axis.text  = element_text(size = 6),
                  axis.title = element_blank(),
-                 axis.line.y  = element_line(color = "black"),
+                 panel.border = element_rect(color = "black", linetype = 1),
+                 panel.grid.major = element_line(color = "#e9e9e9", linetype = 1),
+                 panel.grid.minor = element_line(color = "#e9e9e9", linetype = 1),
                  strip.text = element_text(size = 8, color = "black"),
                  strip.background = element_blank()) +
       ggtitle(title)
@@ -280,13 +286,15 @@ betweeness_plots <- metrics_series %>%
   mutate(time_series = map2(data, title, function(x, title){
     out <- ggplot(data = x)+
       geom_line(aes(x=license_year, y= as.numeric(betweeness))) +
-      ylim(c(0, 150)) + 
-      xlim(c(1990, 2021)) +
+      ylim(c(0, 125)) + 
+      xlim(c(1990, 2023)) +
       theme_gmri(plot.title = element_text(size = 8),
                  axis.text  = element_text(size = 6),
                  axis.title = element_blank(),
                  strip.text = element_text(size = 8, color = "black"),
-                 axis.line.y  = element_line(color = "black"),
+                 panel.border = element_rect(color = "black", linetype = 1),
+                 panel.grid.major = element_line(color = "#e9e9e9", linetype = 1),
+                 panel.grid.minor = element_line(color = "#e9e9e9", linetype = 1),
                  strip.background = element_blank()) +
       ggtitle(title)
     return(out)
@@ -369,14 +377,18 @@ ggplot(annual_metrics) +
   geom_line(aes(x = license_year, y = density)) +
   geom_smooth(aes(x = license_year, y = density), method = "lm") +
   xlab("Year") + ylab("Density") + ggtitle("Edge Density") +
-  theme_gmri(axis.line.y  = element_line(color = "black")) +
+  theme_gmri(panel.border = element_rect(color = "black", linetype = 1),
+                 panel.grid.major = element_line(color = "#e9e9e9", linetype = 1),
+                 panel.grid.minor = element_line(color = "#e9e9e9", linetype = 1)) +
   ylim(c(0.5,1))
 
 ggplot(annual_metrics) +
   geom_line(aes(x = license_year, y = modularity)) +
   geom_smooth(aes(x = license_year, y = modularity), method = "lm") +
   xlab("Year") + ylab("Modularity") + ggtitle("Modularity") +
-  theme_gmri(axis.line.y  = element_line(color = "black")) +
+  theme_gmri(panel.border = element_rect(color = "black", linetype = 1),
+                 panel.grid.major = element_line(color = "#e9e9e9", linetype = 1),
+                 panel.grid.minor = element_line(color = "#e9e9e9", linetype = 1)) +
   ylim(c(0,0.15))
 
 ```
