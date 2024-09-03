@@ -94,8 +94,8 @@ ind_lic_portfolio %>%
   filter(!licensed == 0) %>%
   left_join(license_types) %>%
   mutate(row = row_number()) %>%
-  select(license_year, landings_number, licensed, divisions, row) %>%
-  pivot_wider(names_from=divisions,values_from=licensed,names_expand=TRUE,values_fill = list(licensed=0)) %>%
+  select(license_year, landings_number, licensed, license_group, row) %>% # divisions
+  pivot_wider(names_from=license_group,values_from=licensed,names_expand=TRUE,values_fill = list(licensed=0)) %>%
   select(-row)%>%
   group_by(landings_number,license_year)%>%
   summarise(across(everything(),sum))-> species_portfolio
@@ -153,12 +153,13 @@ Total number of a particular license group issued per year.
 species_portfolio %>%
   ungroup() %>%
   select(!landings_number) %>%
-  pivot_longer(cols = 2:27, names_to = "divisions", values_to = "count") %>%
-  group_by(license_year, divisions) %>%
+  pivot_longer(cols = 2:27, names_to = "license_group", values_to = "count") %>%
+  group_by(license_year, license_group) %>%
   summarise(total = sum(count)) %>%
-  group_by(divisions) %>%
+  group_by(license_group) %>%
   nest() %>%
-  left_join(license_divisions %>% select(divisions, license_group) %>% distinct())-> license_time_series
+  left_join(license_divisions %>% select(divisions, license_group) %>% distinct()) %>% 
+arrange(divisions)-> license_time_series
 
 # plot
 license_time_series %>% 
@@ -231,16 +232,16 @@ metrics_series <- annual_metrics %>%
   select(license_year, degree) %>% 
   unnest_longer(degree) %>% 
   group_by(degree_id) %>%
-  rename("divisions" = "degree_id") %>%
+  rename("license_group" = "degree_id") %>%
   full_join(annual_metrics %>% 
               select(license_year, betweeness) %>% 
               unnest_longer(betweeness) %>% 
               group_by(betweeness_id) %>%
-              rename("divisions" = "betweeness_id")) %>% 
-  relocate("divisions", .after = "license_year") %>%
+              rename("license_group" = "betweeness_id")) %>% 
+  relocate("license_group", .after = "license_year") %>%
   nest() %>%
-  arrange(divisions) %>% 
   left_join(license_divisions %>% select(divisions, license_group) %>% distinct()) %>% 
+  arrange(divisions) %>% 
   mutate(title = paste(divisions, license_group, sep = "-"))
 
 
@@ -351,9 +352,16 @@ annual_graphs <- annual_metrics %>%
   })) %>%
   select(license_year, density, modularity, ggraph, ggraph_circular)
 
-gridExtra::marrangeGrob(annual_graphs$ggraph, layout_matrix = matrix(1:2, ncol = 2, nrow = 1, byrow= TRUE), top = NULL)
+# gridExtra::marrangeGrob(annual_graphs$ggraph, layout_matrix = matrix(1:2, ncol = 2, nrow = 1, byrow= TRUE), top = NULL)
 
-# gridExtra::marrangeGrob(annual_graphs$ggraph_circular, layout_matrix = matrix(1:2, ncol = 2, nrow = 1, byrow= TRUE), top = NULL)
+gridExtra::marrangeGrob(annual_graphs$ggraph_circular, layout_matrix = matrix(1:2, ncol = 2, nrow = 1, byrow= TRUE), top = NULL)
+
+
+plot1 <- annual_graphs$ggraph_circular[[7]]
+ggsave(filename = "1996.svg", plot = plot1)
+
+plot2 <- annual_graphs$ggraph_circular[[34]]
+ggsave(filename = "2023.svg", plot = plot2)
 
 ```
 
