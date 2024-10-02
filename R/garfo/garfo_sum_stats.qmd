@@ -42,6 +42,7 @@ garfo_clean %>%
   filter(PPST %in% c("ME", "NH", "MA", "RI", "CT", "NY", "NJ", "DE", "MD", "VA", "NC")) %>%
   filter(!is.na(COUNT)) %>%
   filter(!COUNT == 0) %>%
+  filter(!AP_YEAR == 2009 | !PERMIT_TYPE == "TILEFISH_D") %>%
   left_join((license_list %>% rename("PERMIT_TYPE" = "license"))) -> garfo_holdings
 
 # unique(garfo_holdings$PERMIT_TYPE)
@@ -532,3 +533,74 @@ ggplot(holdings_prop)+
              strip.text = element_text(color = "black"))
 
 ```
+
+# Z-score
+
+```{r}
+#| label: z score
+#| echo: true
+#| message: false
+#| warning: false
+#| fig-align: center
+#| fig-width: 13
+#| fig-height: 13
+
+# totals of license categories issued per year per state
+garfo_holdings %>%
+  group_by(PPST, AP_YEAR, category) %>%
+  summarise(count = sum(COUNT)) -> total 
+
+# by state
+total %>% 
+  group_by(PPST) %>% # grouped counts by state (i.e. all licenses issued in Connecticut)
+  mutate(z_score = scale(count, center = T, scale = T)) -> z_by_state # calculate z-score across all license categories for each state 
+
+ggplot(z_by_state) +
+  geom_line(aes(x = AP_YEAR, y = z_score, color = category)) +
+  scale_color_gmri() +
+  facet_wrap(~PPST, ncol = 4) +
+  ylim(c(-8,8)) +
+  theme_gmri(strip.background = element_rect(fill = "transparent"),
+             strip.text = element_text(color = "black"))
+
+# by species
+total %>%
+  group_by(category) %>% # grouped counts by category (i.e. all multispecies permits issued in GARFO jusridiction)
+  mutate(z_score = scale(count, center = T, scale = T)) -> z_by_category # calculate z-score across all states for each license category
+
+ggplot(z_by_category) +
+  geom_line(aes(x = AP_YEAR, y = z_score, color = PPST)) +
+  scale_color_gmri() +
+  facet_wrap(~category, ncol = 3) +
+  ylim(c(-8,8)) +
+  theme_gmri(strip.background = element_rect(fill = "transparent"),
+             strip.text = element_text(color = "black"))
+
+# manual calculation for comparison (x - xmean / sd)
+
+calc_z <- function(x, x_mean, sd){
+  return((x-x_mean)/sd)
+}
+
+# by state
+total %>% 
+  group_by(PPST) %>% 
+  mutate(z_score_manual = calc_z(count,
+                mean(count),
+                sd(count))) -> manual_state
+
+manual_state %>% 
+  left_join(z_by_state) # -> z_by_state
+
+# by category
+total %>% 
+  group_by(category) %>% 
+  mutate(z_score_manual = calc_z(count,
+                mean(count),
+                sd(count))) -> manual_category
+
+manual_category %>% 
+  left_join(z_by_category) # -> z_by_category
+
+```
+
