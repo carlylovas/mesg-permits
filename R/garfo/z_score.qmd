@@ -1,0 +1,148 @@
+---
+title: "z-score"
+subtitle: "deeper dive into results"
+author: "cslovas"
+format: 
+  html:
+    toc: true
+    self-contained: true
+editor: visual
+---
+
+```{r}
+#| label: read in clean (ish) GARFO data
+#| echo: false
+#| message: false
+
+library(tidyverse)
+library(gmRi)
+library(here)
+library(grid)
+
+garfo_clean    <- read.csv(here("Data", "all_GARFO_data.csv"))
+garfo_landings <- read.csv(here("Data", "landings.csv"))
+license_list   <- read.csv(here("Data", "garfo_license_list.csv"))
+
+garfo_clean %>%
+  pivot_longer(cols = BLACK_SEA_BASS_1:TILEFISH_D, names_to = "PERMIT_TYPE", values_to = "COUNT") %>%
+  select(PPORT, PPST, AP_NUM, AP_YEAR, VP_NUM, PERMIT_TYPE, COUNT) %>%
+  filter(PPST %in% c("ME", "NH", "MA", "RI", "CT", "NY", "NJ", "DE", "MD", "VA", "NC")) %>%
+  filter(!is.na(COUNT)) %>%
+  filter(!COUNT == 0) %>%
+  filter(!AP_YEAR == 2009 | !PERMIT_TYPE == "TILEFISH_D") %>%
+  left_join((license_list %>% rename("PERMIT_TYPE" = "license"))) -> garfo_holdings
+```
+
+```{r}
+#| label: z score
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-align: center
+#| fig-width: 13
+#| fig-height: 9
+
+# totals of license categories issued per year per state
+garfo_holdings %>%
+  group_by(PPST, AP_YEAR, category) %>%
+  summarise(count = sum(COUNT)) -> total 
+
+# by state
+total %>% 
+  group_by(PPST, category) %>% 
+  mutate(z_score = scale(count, center = T, scale = T)) -> z_score 
+
+# manual calculation for comparison (x - xmean / sd)
+
+calc_z <- function(x, x_mean, sd){
+  return((x-x_mean)/sd)
+}
+
+# by state
+total %>%
+  group_by(PPST, category) %>%
+  mutate(z_score_manual = calc_z(count,
+                mean(count),
+                sd(count))) %>% 
+  left_join(z_score) -> z_score
+
+ggplot(z_score) +
+  geom_line(aes(x = AP_YEAR, y = z_score, color = category)) +
+  scale_color_gmri() +
+  facet_wrap(~factor(PPST, levels = c("ME", "NH", "MA", "CT", "RI", "NY", "NJ", "DE", "MD", "VA", "NC")), scales = "free_y", ncol = 3) +
+  ggtitle("By state") + ylab("z-score") + xlab("Year") +
+  theme_gmri(strip.background = element_rect(fill = "transparent"),
+             strip.text = element_text(color = "black"))
+
+
+ggplot(z_score) +
+  geom_line(aes(x = AP_YEAR, y = z_score, color = factor(PPST, levels = c("ME", "NH", "MA", "CT", "RI", "NY", "NJ", "DE", "MD", "VA", "NC")))) +
+  scale_color_gmri() +
+  ggtitle("By category") + ylab("z-score") + xlab("Year") +
+  facet_wrap(~category, ncol = 3, scales = "free_y") +
+  theme_gmri(strip.background = element_rect(fill = "transparent"),
+             strip.text = element_text(color = "black"),
+             legend.title = element_blank())
+```
+
+### Z score by state 
+```{r}
+#| label: z score by state 
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-align: center
+#| fig-width: 13
+#| fig-height: 9
+
+z_score_by_state <- z_score %>% 
+  mutate(factor = factor(PPST, levels = c("ME", "NH", "MA", "CT", "RI", "NY", "NJ", "DE", "MD", "VA", "NC"))) %>%
+  arrange(factor) %>% 
+  group_by(factor) %>% 
+  nest() %>% 
+  mutate(plot = map2(data, factor, function(x,y){
+     ggplot(data = x) +
+      geom_line(aes(x = AP_YEAR, y = z_score, color = category)) +
+      scale_color_gmri() +
+      ggtitle(factor) + ylab("z-score") + xlab("Year") +
+      facet_wrap(~category, ncol = 3, scales = "free_y") +
+      theme_gmri(strip.background = element_rect(fill = "transparent"),
+                strip.text = element_text(color = "black"),
+                legend.position = "none",
+                panel.border = element_rect(color = "black", linetype = 1),
+                panel.grid.major = element_line(color = "#e9e9e9", linetype = 1),
+                panel.grid.minor = element_line(color = "#e9e9e9", linetype = 1))}))
+ 
+gridExtra::marrangeGrob(z_score_by_state$plot, layout_matrix = matrix(1:1, nrow = 1, ncol = 1), top = NULL)
+
+```
+
+### By license category
+```{r}
+#| label: z score by category
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-align: center
+#| fig-width: 13
+#| fig-height: 9
+
+z_score_by_cat <- z_score %>% 
+  group_by(category) %>% 
+  nest() %>% 
+  mutate(plot = map2(data, category, function(x,y){
+     ggplot(data = x) +
+      geom_line(aes(x = AP_YEAR, y = z_score, color = PPST)) +
+      scale_color_gmri() +
+      ggtitle(category)  + ylab("z-score") + xlab("Year")+
+      facet_wrap(~factor(PPST, levels = c("ME", "NH", "MA", "CT", "RI", "NY", "NJ", "DE", "MD", "VA", "NC")), ncol = 3, scales = "free_y") +
+      theme_gmri(strip.background = element_rect(fill = "transparent"),
+                strip.text = element_text(color = "black"),
+                legend.position = "none", 
+                panel.border = element_rect(color = "black", linetype = 1),
+                panel.grid.major = element_line(color = "#e9e9e9", linetype = 1),
+                panel.grid.minor = element_line(color = "#e9e9e9", linetype = 1))}))
+ 
+gridExtra::marrangeGrob(z_score_by_cat$plot, layout_matrix = matrix(1:1, nrow = 1, ncol = 1), top = NULL)
+```
+
