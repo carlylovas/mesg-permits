@@ -25,7 +25,7 @@ library(here)
 library(gt)
 
 # Read in gomfish package from Joshua and Theresa
-devtools::install_github("Social-Oceans-Lab/gomfish")
+# devtools::install_github("Social-Oceans-Lab/gomfish")
 library(gomfish)
 
 data(ind_lic_portfolio) 
@@ -368,10 +368,10 @@ gridExtra::marrangeGrob(annual_graphs$ggraph_circular, layout_matrix = matrix(1:
 
 
 # plot1 <- annual_graphs$ggraph_circular[[7]]
-# ggsave(filename = "1996.svg", plot = plot1, bg = "transparent")
+# ggsave(filename = "1996.png", plot = plot1, bg = "transparent")
 # 
 # plot2 <- annual_graphs$ggraph_circular[[34]]
-# ggsave(filename = "2023.svg", plot = plot2, bg = "transparent")
+# ggsave(filename = "2023.png", plot = plot2, bg = "transparent")
 
 ```
 
@@ -399,9 +399,9 @@ ggplot(annual_metrics) +
   theme_gmri(panel.border = element_rect(color = "black", linetype = 1),
                  panel.grid.major = element_line(color = "#e9e9e9", linetype = 1),
                  panel.grid.minor = element_line(color = "#e9e9e9", linetype = 1)) +
-  ylim(c(0.5,1)) # -> edge_density
+  ylim(c(0.5,1)) -> edge_density
 
-# ggsave("edge_density.svg", edge_density, height = 5, width = 7, units = "in")
+# ggsave("edge_density.png", edge_density, height = 5, width = 7, units = "in", bg = "white")
 
 ggplot(annual_metrics) +
   geom_line(aes(x = license_year, y = modularity)) +
@@ -411,33 +411,158 @@ ggplot(annual_metrics) +
   theme_gmri(panel.border = element_rect(color = "black", linetype = 1),
                  panel.grid.major = element_line(color = "#e9e9e9", linetype = 1),
                  panel.grid.minor = element_line(color = "#e9e9e9", linetype = 1)) +
-  ylim(c(0,0.15)) # -> modularity
+  ylim(c(0,0.15))  -> modularity
 
-# ggsave("modularity.svg", modularity, height = 5, width = 7, units = "in")
+# ggsave("modularity.png", modularity, height = 5, width = 7, units = "in", bg = "white")
 
 ```
 
+# Chord Diagrams
 ```{r}
-#| label: dendrogram
+#| label: chord diagram
 #| echo: false
+#| warning: false
+#| message: false
+#| fig-align: center
+#| fig-width: 7
+#| fig-height: 7
 
-# license_divisions %>%
-#   select(group) %>%
-#   distinct() 
+library(chorddiag)
+palette <- c("#773891", "#535353", "#363b45", "#004966", "#00608a", "#07a3b7", "#057872", "#38431d", "#abb400", "#ebcb27", "#ea4f12", "#b94a40")
 
-# # create an edge list data frame giving the hierarchical structure of your individuals
-# d1 <- data.frame(from="origin", to=paste("group", seq(1,5), sep=""))
-# d2 <- data.frame(from=rep(d1$to, each=5), to=paste("subgroup", seq(1,25), sep="_"))
-# edges <- rbind(d1, d2)
-#  
-# # Create a graph object 
-# mygraph <- graph_from_data_frame( edges )
-#  
-# # Basic tree
-# ggraph(mygraph, layout = 'dendrogram', circular = FALSE) + 
-#   geom_edge_diagonal() +
-#   geom_node_point() +
-#   theme_void()
+chord1 <- annual_co_matrix$co_matrix[[7]] # [annual_co_matrix$license_year == "1996"]
+chord2 <- annual_co_matrix$co_matrix[[34]] # [annual_co_matrix$license_year == "2023"]
 
+chorddiag(data = as.matrix(chord1),
+          type = "directional",
+          showTicks = FALSE,
+          groupPadding = 5,
+          groupColors = palette,
+          chordedgeColor = palette,          
+          groupnameFontsize = 10) 
+
+chorddiag(data = as.matrix(chord2),
+          type = "directional",
+          showTicks = FALSE,
+          groupPadding = 5,
+          groupColors = palette,
+          chordedgeColor = palette,          
+          groupnameFontsize = 10)
+```
+# Clustering
+```{r}
+#| label: cluster
+#| echo: false
+#| message: false
+#| warning: false
+
+library(dendextend)
+library(rioja) #chclust()
+library(vegan) #bstick()
+library(factoextra) #fviz_dist()
+
+species_portfolio %>% 
+  ungroup() %>%
+  select(!landings_number) %>%
+  pivot_longer(cols = 2:27, names_to = "category", values_to = "count") %>% 
+  filter(!count == 0) %>% 
+  group_by(license_year, category) %>% 
+  summarise(count = sum(count)) %>% 
+  pivot_wider(names_from = "category", values_from = "count") %>% 
+  arrange(license_year) %>% 
+  select(!license_year) -> dend
+
+years     <- 1990:2025
+
+# distance
+eucdist<-vegdist(as.matrix(dend),method="euclidean",binary=FALSE,diag=FALSE,upper=FALSE,na.rm=TRUE)
+
+# plot distance
+fviz_dist(eucdist,order=FALSE,gradient=list(low="blue",mid="white",high="red"))
+
+# clustering
+cl<-chclust(eucdist,method="coniss")
+
+# eucdist %>%
+#   hclust(method = "ward.D") %>%
+#   as.dendrogram() %>% 
+#   plot(horiz=T, axes=F)
+
+# plot
+# plot(cl,labels=years,hang=-0.1,axes=FALSE,cex=1.2)
+# axis(side=2,cex.axis=1.3)
+# title("License splitting",cex=1.1)
+# mtext(side=2,line=2.3,"Sum of squares",cex=1,las=0)
+
+dendrogram <- as.dendrogram(cl)
+ 
+# dendrogram %>%
+#   set("labels", years) %>%
+#   set("labels_col", value = c("#07a3b7", "#ea4f12", "#767676"), k=3) %>%
+#   set("branches_k_color",value = c("#07a3b7", "#ea4f12", "#767676"), k=3) %>%
+#   plot(main = "Constrained hierarchical clustering", xlab = "Year", ylab = "Sum of squares")
 
 ```
+# Heatmap
+```{r}
+#| label: heatmap
+#| echo: false
+#| warning: false
+#| message: false
+#| fig-align: center
+#| fig-width: 7
+#| fig-height: 7
+#| layout-ncol: 2
+
+order <- c("Scallop (Dragger)",
+           "Scallop (Tender)",
+           "Scallop (Hand)",
+           "Lobster Apprentice & Student", 
+           "Lobster Class I",
+           "Lobster Class II",
+           "Lobster Class III",
+           "Green crab",
+           "Marine worm",
+           "Shellfish",
+           "Surf Clam",
+           "Mussel",
+           "Mahogany Clam",
+           "Seaweed",
+           "Sea Urchin (Dragger)",
+           "Sea Urchin (Hand)",
+           "Sea Urchin (Tender)",
+           "Elver",
+           "Eel",
+           "Northern Shrimp",
+           "Sea Cucumber",
+           "Pelagic & Anadromous",
+           "Commercial Fishing",
+           "Aquaculture",
+           "Spat",
+           "Menhaden")
+rev_order <- rev(order)
+
+license_time_series %>%
+  unnest(data) %>% 
+  ggplot() +
+  geom_tile(aes(x = license_year, y = factor(license_group, levels = rev_order), alpha = total), fill = "#00608A", color = "#FFFFFF") +
+  ylab("License category") + xlab("Year") +
+  guides(alpha = guide_legend(title = "Total number issued")) +
+  geom_vline(aes(xintercept = 1999), linetype = 1, color = "#07a3b7") +
+  geom_vline(aes(xintercept = 2011), linetype = 1, color = "#ea4f12") +
+  theme_gmri(panel.grid.major = element_blank(),
+             axis.line = element_blank()) -> heatmap
+
+# ggsave("heatmap.png", heatmap, height = 9, width = 9, units = "in", bg = "#FFFFFF")
+
+# plot side by side
+dendrogram %>%
+  set("labels", years) %>%
+  set("labels_col", value = c("#07a3b7", "#ea4f12", "#767676"), k=3) %>%
+  set("branches_k_color",value = c("#07a3b7", "#ea4f12", "#767676"), k=3) %>%
+  plot(main = "Constrained hierarchical clustering", xlab = "Year", ylab = "Sum of squares")
+
+heatmap
+
+```
+
