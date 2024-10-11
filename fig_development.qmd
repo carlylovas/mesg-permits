@@ -19,6 +19,7 @@ Consolidating outputs from various different scripts to compile different iterat
 library(tidyverse)
 library(readr)
 library(gmRi)
+library(here)
 
 # All license types
 ## species portfolio
@@ -44,6 +45,22 @@ stoll_portfolio      <- read_rds("R/maine/stoll_portfolio.rds")
 stoll_time_series    <- read_rds("R/maine/stoll_time_series.rds")
 ## annual_metrics
 stoll_metrics_series <- read_rds("R/maine/stoll_metrics_series.rds")
+
+
+## license codes and categories for ordering
+license_codes <- read.csv(here("Data", "updated_license_codes.csv")) %>%
+  rename("license_type" = "code") %>% 
+  mutate(description = str_to_sentence(description))
+
+license_divisions <- read.csv(here("Data", "LicenseSubdivision_list.csv")) %>%
+  # select(License.Type, Target.Species, Stoll.et.al..2016.Name) %>%
+  rename("description" = "License.Type",
+         "group" = "Target.Species",
+         "license_group" = "Stoll.et.al.2016.Name",
+         "divisions" = "Stoll.et.al.2016")
+
+license_divisions %>% 
+  left_join(license_codes %>% select(!group)) -> licenses
 ```
 
 ## Constrained hierarchical clustering
@@ -176,20 +193,34 @@ rev_order <- rev(order)
 
 # All license types
 license_time_series %>%
+  left_join(licenses %>% select(description, Order_ID)) %>% 
+  arrange(desc(Order_ID)) %>% 
+  group_by(data) %>%
+  summarise(description = factor(description)) %>%
   unnest(data) %>% 
   ggplot() +
-  geom_tile(aes(x = license_year, y = description, alpha = total), fill = "#00608A", color = "#FFFFFF") +
+  geom_tile(aes(x = license_year, y = factor(description), alpha = total), fill = "#00608A", color = "#FFFFFF") +
   ylab("License category") + xlab("Year") +
   ggtitle("All license types") +
   guides(alpha = guide_legend(title = "Total number issued")) +
   geom_vline(aes(xintercept = 1998), linetype = 1, color = "#07a3b7") +
   geom_vline(aes(xintercept = 2013), linetype = 1, color = "#ea4f12") +
   theme_gmri(panel.grid.major = element_blank(),
-             axis.line = element_blank()) 
+             axis.line = element_blank(),
+             axis.text.y = element_text(size = 6)) 
 
 # Species level
-species_time_series %>% 
-   unnest(data) %>% 
+licenses %>% 
+  select(group) %>% 
+  distinct() %>% 
+  rename("species" = "group") %>%
+  rowid_to_column() %>% 
+  arrange(desc(rowid)) %>% 
+  left_join(species_time_series) %>% 
+  group_by(data) %>%
+  summarise(species = factor(species, levels = species)) %>%
+  unnest(data) %>% 
+  distinct() %>% 
   ggplot() +
   geom_tile(aes(x = license_year, y = species, alpha = count), fill = "#00608A", color = "#FFFFFF") +
   ylab("License category") + xlab("Year") +
