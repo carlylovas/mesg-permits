@@ -278,11 +278,18 @@ stoll_metrics_series %>%
   mutate(level = "stoll_divisions") -> stoll_degree
 
 ggplot(data = stoll_degree) +
-  geom_line(aes(x = license_year, y = degree, color = factor(license_group, levels = order))) + 
+  geom_line(aes(x = license_year, y = degree)) + # color = factor(license_group, levels = order))) + 
   scale_color_gmri() +
-  xlab("Year") + ylab("Degree centrality") + ggtitle("Stoll et al divisions") +
-  theme_gmri(legend.position = "bottom") +
-  guides(color = guide_legend(title = "License category", nrow = 4))
+  xlab("Year") + ylab("Degree centrality") + ggtitle("Degree centrality", subtitle = "Stoll et al license groupings; Louvain clustering") +
+  theme_gmri(legend.position = "bottom", 
+             plot.subtitle = element_text(size =  11),
+             strip.background = element_rect(fill = "transparent"), 
+             strip.text = element_text(color = "black", hjust = 0),
+             panel.border = element_rect(color = "black", linetype = 1),
+             panel.grid.major = element_line(color = "#e9e9e9", linetype = 1),
+             panel.grid.minor = element_line(color = "#e9e9e9", linetype = 1)) +
+  facet_wrap(~license_group, ncol = 4) 
+  # guides(color = guide_legend(title = "License category", nrow = 4))
   
 
 ```
@@ -293,8 +300,8 @@ ggplot(data = stoll_degree) +
 #| echo: false
 #| message: false
 #| warning: false
-#| fig-width: 11
-#| fig-height: 8.5
+#| fig-width: 7
+#| fig-height: 5
 
 license_metrics_series %>% 
   select(license_year, density, modularity) %>%
@@ -308,24 +315,26 @@ license_metrics_series %>%
               select(license_year, density, modularity) %>%
               mutate(level = "stoll")) -> dens_mod
 
-ggplot(data = dens_mod) +
-  geom_line(aes(x = license_year, y = density, color = level)) +
+ggplot(data = dens_mod, aes(x = license_year, y = density, color = level)) +
+  geom_line(aes(linetype = level)) +
+  # geom_point(aes(shape = level)) +
   theme_gmri(axis.text  = element_text(size = 8),
                  panel.border = element_rect(color = "black", linetype = 1),
                  panel.grid.major = element_line(color = "#e9e9e9", linetype = 1),
                  panel.grid.minor = element_line(color = "#e9e9e9", linetype = 1)) +
-  scale_color_gmri() +
-  xlab("Year") + ylab("Edge density") + ggtitle("Edge Density") 
+  xlab("Year") + ylab("Edge density") + ggtitle("Edge Density") +
+scale_color_manual("License groupings", labels = c("Disaggregate", "Species level", "Stoll et al."), values = c("#00608a", "#ea4f12", "#38431d")) +
+  scale_linetype_discrete("License groupings", labels = c("Disaggregate", "Species level", "Stoll et al."))
 
-ggplot(data = dens_mod) +
-  geom_line(aes(x = license_year, y = modularity, color = level)) +
+ggplot(data = dens_mod, aes(x = license_year, y = modularity, color = level)) +
+  geom_line(aes(linetype = level)) +
   theme_gmri(axis.text  = element_text(size = 8),
                  panel.border = element_rect(color = "black", linetype = 1),
                  panel.grid.major = element_line(color = "#e9e9e9", linetype = 1),
                  panel.grid.minor = element_line(color = "#e9e9e9", linetype = 1)) +
-  scale_color_gmri() +
-  xlab("Year") + ylab("Modularity") + ggtitle("Modularity") 
-
+  xlab("Year") + ylab("Modularity") + ggtitle("Modularity") +
+  scale_color_manual("License groupings", labels = c("Disaggregate", "Species level", "Stoll et al."), values = c("#00608a", "#ea4f12", "#38431d")) +
+  scale_linetype_discrete("License groupings", labels = c("Disaggregate", "Species level", "Stoll et al."))
 
 ```
 
