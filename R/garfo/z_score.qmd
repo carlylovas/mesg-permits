@@ -13,11 +13,13 @@ editor: visual
 #| label: read in clean (ish) GARFO data
 #| echo: false
 #| message: false
+#| warning: false
 
 library(tidyverse)
 library(gmRi)
 library(here)
 library(grid)
+library(ggiraph)
 
 garfo_clean    <- read.csv(here("Data", "all_GARFO_data.csv"))
 garfo_landings <- read.csv(here("Data", "landings.csv"))
@@ -39,8 +41,8 @@ garfo_clean %>%
 #| message: false
 #| warning: false
 #| fig-align: center
-#| fig-width: 13
-#| fig-height: 9
+#| fig-width: 15
+#| fig-height: 15
 
 # totals of license categories issued per year per state
 garfo_holdings %>%
@@ -66,34 +68,18 @@ total %>%
                 sd(count))) %>% 
   left_join(z_score) -> z_score
 
-ggplot(z_score) +
-  geom_line(aes(x = AP_YEAR, y = z_score, color = category)) +
-  scale_color_gmri() +
-  facet_wrap(~factor(PPST, levels = c("ME", "NH", "MA", "CT", "RI", "NY", "NJ", "DE", "MD", "VA", "NC")), scales = "free_y", ncol = 3) +
-  ggtitle("By state") + ylab("z-score") + xlab("Year") +
-  theme_gmri(strip.background = element_rect(fill = "transparent"),
-             strip.text = element_text(color = "black"))
-
-
-ggplot(z_score) +
-  geom_line(aes(x = AP_YEAR, y = z_score, color = factor(PPST, levels = c("ME", "NH", "MA", "CT", "RI", "NY", "NJ", "DE", "MD", "VA", "NC")))) +
-  scale_color_gmri() +
-  ggtitle("By category") + ylab("z-score") + xlab("Year") +
-  facet_wrap(~category, ncol = 3, scales = "free_y") +
-  theme_gmri(strip.background = element_rect(fill = "transparent"),
-             strip.text = element_text(color = "black"),
-             legend.title = element_blank())
 ```
 
-### Z score by state 
+### Z score by state
+
 ```{r}
 #| label: z score by state 
 #| echo: false
 #| message: false
 #| warning: false
 #| fig-align: center
-#| fig-width: 13
-#| fig-height: 9
+#| fig-width: 7
+#| fig-height: 5
 
 z_score_by_state <- z_score %>% 
   mutate(factor = factor(PPST, levels = c("ME", "NH", "MA", "CT", "RI", "NY", "NJ", "DE", "MD", "VA", "NC"))) %>%
@@ -101,23 +87,45 @@ z_score_by_state <- z_score %>%
   group_by(factor) %>% 
   nest() %>% 
   mutate(plot = map2(data, factor, function(x,y){
-     ggplot(data = x) +
-      geom_line(aes(x = AP_YEAR, y = z_score, color = category)) +
+    plot <- ggplot(data = x, aes(x = AP_YEAR, y = z_score, color = category, fill = category, tooltip =         category, data_id = category)) +
+      geom_line_interactive(size = 1) +
       scale_color_gmri() +
       ggtitle(factor) + ylab("z-score") + xlab("Year") +
-      facet_wrap(~category, ncol = 3, scales = "free_y") +
       theme_gmri(strip.background = element_rect(fill = "transparent"),
                 strip.text = element_text(color = "black"),
                 legend.position = "none",
                 panel.border = element_rect(color = "black", linetype = 1),
                 panel.grid.major = element_line(color = "#e9e9e9", linetype = 1),
-                panel.grid.minor = element_line(color = "#e9e9e9", linetype = 1))}))
+                panel.grid.minor = element_line(color = "#e9e9e9", linetype = 1))
+    
+    interactive_plot <- girafe(
+      ggobj = plot,
+      width_svg = 7,
+      height_svg = 5,
+      options = list(
+      opts_hover(css = "fill:category"),
+      opts_hover_inv(css = "opacity:0.1;")))
+    
+    return(interactive_plot)
+    }))
  
-gridExtra::marrangeGrob(z_score_by_state$plot, layout_matrix = matrix(1:1, nrow = 1, ncol = 1), top = NULL)
+# please forgive the following; neither loop nor a function could get these damn things to print
+z_score_by_state$plot[[1]]
+z_score_by_state$plot[[2]]
+z_score_by_state$plot[[3]]
+z_score_by_state$plot[[4]]
+z_score_by_state$plot[[5]]
+z_score_by_state$plot[[6]]
+z_score_by_state$plot[[7]]
+z_score_by_state$plot[[8]]
+z_score_by_state$plot[[9]]
+z_score_by_state$plot[[10]]
+z_score_by_state$plot[[11]]
 
 ```
 
 ### By license category
+
 ```{r}
 #| label: z score by category
 #| echo: false
@@ -131,18 +139,39 @@ z_score_by_cat <- z_score %>%
   group_by(category) %>% 
   nest() %>% 
   mutate(plot = map2(data, category, function(x,y){
-     ggplot(data = x) +
-      geom_line(aes(x = AP_YEAR, y = z_score, color = PPST)) +
+    plot <- ggplot(data = x, aes(x = AP_YEAR, y = z_score, color = PPST, tooltip = PPST, data_id = PPST)) +
+      geom_line_interactive(size = 1) +
       scale_color_gmri() +
-      ggtitle(category)  + ylab("z-score") + xlab("Year")+
-      facet_wrap(~factor(PPST, levels = c("ME", "NH", "MA", "CT", "RI", "NY", "NJ", "DE", "MD", "VA", "NC")), ncol = 3, scales = "free_y") +
+      ggtitle(category) + ylab("z-score") + xlab("Year") +
       theme_gmri(strip.background = element_rect(fill = "transparent"),
                 strip.text = element_text(color = "black"),
-                legend.position = "none", 
+                legend.position = "none",
                 panel.border = element_rect(color = "black", linetype = 1),
                 panel.grid.major = element_line(color = "#e9e9e9", linetype = 1),
-                panel.grid.minor = element_line(color = "#e9e9e9", linetype = 1))}))
+                panel.grid.minor = element_line(color = "#e9e9e9", linetype = 1))
+    
+    interactive_plot <- girafe(
+      ggobj = plot,
+      width_svg = 7,
+      height_svg = 5,
+      options = list(
+      opts_hover(css = "fill:PPST"),
+      opts_hover_inv(css = "opacity:0.1;")))
+    
+    return(interactive_plot)
+    }))
  
-gridExtra::marrangeGrob(z_score_by_cat$plot, layout_matrix = matrix(1:1, nrow = 1, ncol = 1), top = NULL)
-```
+# print
+z_score_by_cat$plot[[1]]
+z_score_by_cat$plot[[2]]
+z_score_by_cat$plot[[3]]
+z_score_by_cat$plot[[4]]
+z_score_by_cat$plot[[5]]
+z_score_by_cat$plot[[6]]
+z_score_by_cat$plot[[7]]
+z_score_by_cat$plot[[8]]
+z_score_by_cat$plot[[9]]
+z_score_by_cat$plot[[10]]
+z_score_by_cat$plot[[11]]
 
+```
