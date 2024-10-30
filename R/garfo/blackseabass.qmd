@@ -141,7 +141,10 @@ ggplot(data = biomass) +
   theme_gmri()+
   scale_color_gmri() +
   ggtitle("Seasonal center of biomass") +
-  xlab("Year") + ylab("Biomass-weighted average latitude")
+  guides(color = guide_legend(title = "Season")) +
+  xlab("Year") + ylab("Biomass-weighted average latitude") # -> seasonalCOB
+
+# ggsave(filename = "seasonalCOB_BSB.svg", plot = seasonalCOB, height = 5, width = 7, units = "in")
 
 biomass %>%
   group_by(est_year) %>% 
@@ -474,8 +477,9 @@ ggplot() +
   ggtitle("Total count by state") +
   xlab("Year") + ylab("Count") +
   scale_fill_gmri() +
-  theme_gmri() 
+  theme_gmri() -> state_prop_bsb
 
+ggsave(filename = "state_prop_bsb.svg", plot = state_prop_bsb, width = 7, height = 5, units = "in")
 
 # z-score for license numbers
 # need mean & sd of licenses issued per year (across all states)

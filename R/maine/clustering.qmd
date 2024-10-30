@@ -27,7 +27,7 @@ library(gt)
 
 portfolio <- read_rds(here("Data", "clean_portfolio.rds"))
 species_portfolio <- read_rds(here("Data", "species_portfolio.rds"))
-years     <- 1990:2021
+years     <- 1990:2025
 
 # reshape portfolio to tally total per license type per year
 portfolio %>%
@@ -43,15 +43,15 @@ portfolio %>%
 portfolio %>% gt()
 
 # species 
-# species_portfolio %>% 
-#   pivot_longer("Aquaculture":"Surf clam", names_to = "target_species", values_to = "count") %>% 
-#   filter(!count == 0) %>% 
-#   group_by(license_year, target_species) %>%
-#   summarise(count = sum(count)) %>%
-#   arrange(license_year) %>%
-#   pivot_wider(names_from = target_species, values_from = count) %>%
-#   ungroup() %>%
-#   select(!license_year) -> portfolio
+species_portfolio %>%
+  pivot_longer("Aquaculture":"Surf clam", names_to = "target_species", values_to = "count") %>%
+  filter(!count == 0) %>%
+  group_by(license_year, target_species) %>%
+  summarise(count = sum(count)) %>%
+  arrange(license_year) %>%
+  pivot_wider(names_from = target_species, values_from = count) %>%
+  ungroup() %>%
+  select(!license_year) -> portfolio
 ```
 
 ```{r}
@@ -66,6 +66,12 @@ fviz_dist(eucdist,order=FALSE,gradient=list(low="blue",mid="white",high="red"))
 
 # clustering
 cl<-chclust(eucdist,method="coniss")
+
+eucdist %>%
+  hclust(method = "ward.D") %>%
+  as.dendrogram() %>% 
+  plot(horiz=TRUE, axes=FALSE)
+
 
 # plot
 plot(cl,labels=years,hang=-0.1,axes=FALSE,cex=1.2)

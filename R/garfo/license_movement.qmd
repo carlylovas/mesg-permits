@@ -399,4 +399,3 @@ garfo_lats %>%
 gridExtra::marrangeGrob(garfo_lats$plot, layout_matrix = matrix(1:1, ncol = 1, nrow = 1, byrow = TRUE), top = NULL)
 
 ```
-
