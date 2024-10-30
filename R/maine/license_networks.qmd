@@ -76,7 +76,7 @@ ind_lic_portfolio %>%
   arrange(license_year) %>%
   select(license_year, landings_number, license_types$license_type) -> clean_portfolio # for future use
 
-saveRDS(clean_portfolio, here("Data", "clean_portfolio.rds"))
+# write_rds(clean_portfolio, here("Data", "clean_portfolio.rds")) ## needed for fig_development.qmd
 ```
 
 ## Licenses Issued
@@ -188,7 +188,7 @@ ind_lic_portfolio %>%
   group_by(description) %>%
   nest() -> license_time_series
 
-# write_rds(license_time_series, "license_time_series.rds")
+# write_rds(license_time_series, here("Data","license_time_series.rds") # needed for fig_development.qmd
 
 # plot
 license_time_series %>% 
@@ -308,7 +308,7 @@ annual_metrics <- annual_co_matrix %>%
          membership    = map(community, function(x){membership(x)}),
          evcent        = map(graph_obj, function(x){evcent(x)}))
 
-# write_rds(annual_metrics, "license_metrics_series.rds")
+# write_rds(annual_metrics, here("Data","license_metrics_series.rds") # needed for fig_development.qmd
 
 metrics_series <- annual_metrics %>% 
   select(license_year, degree) %>% 

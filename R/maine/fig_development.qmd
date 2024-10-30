@@ -24,28 +24,28 @@ library(here)
 
 # All license types
 ## species portfolio
-license_portfolio      <- read_rds("Data/clean_portfolio.rds")
+license_portfolio      <- read_rds(here("Data","clean_portfolio.rds"))
 ## time series (count)
-license_time_series    <- read_rds("R/maine/license_time_series.rds")
+license_time_series    <- read_rds(here("Data","license_time_series.rds"))
 ## annual_metrics
-license_metrics_series <- read_rds("R/maine/license_metrics_series.rds")
+license_metrics_series <- read_rds(here("Data","license_metrics_series.rds"))
 
 # Target species
 ## species_portfolio 
-species_portfolio <- read_rds("R/maine/species_level_portfolio.rds")
+species_portfolio <- read_rds(here("Data","species_level_portfolio.rds"))
 ## time series (count)
-species_time_series <- read_rds("R/maine/species_time_series.rds")
+species_time_series <- read_rds(here("Data","species_time_series.rds"))
 ## annual_metrics
-species_metrics_series <- read_rds("R/maine/species_metrics_series.rds")
+species_metrics_series <- read_rds(here("Data","species_metrics_series.rds"))
 
 # Stoll et all [revised] divisions
 
 ## species portfolio
-stoll_portfolio      <- read_rds("R/maine/stoll_portfolio.rds")
+stoll_portfolio      <- read_rds(here("Data","stoll_portfolio.rds"))
 ## time series (count)
-stoll_time_series    <- read_rds("R/maine/stoll_time_series.rds")
+stoll_time_series    <- read_rds(here("Data","stoll_time_series.rds"))
 ## annual_metrics
-stoll_metrics_series <- read_rds("R/maine/stoll_metrics_series.rds")
+stoll_metrics_series <- read_rds(here("Data","stoll_metrics_series.rds"))
 
 
 ## license codes and categories for ordering
@@ -346,8 +346,11 @@ ggplot(data = dens_mod, aes(x = license_year, y = modularity, color = level)) +
 ```
 
 ## Chord diagrams
+
 #### Pre-closure
+
 2009-2013
+
 ```{r}
 #| label: preclosure
 #| echo: false
@@ -385,8 +388,11 @@ chorddiag(data = as.matrix(pre_closure),
           chordedgeColor = palette,
           groupnameFontsize = 8)
 ```
+
 #### Post-closure
+
 2016-2020
+
 ```{r}
 #| label: postclosure
 #| echo: false

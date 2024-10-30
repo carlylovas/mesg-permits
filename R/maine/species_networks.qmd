@@ -29,8 +29,6 @@ library(gomfish)
 
 data(ind_lic_portfolio) 
 
-# ind_lic_portfolio <- ind_lic_portfolio %>% filter(!license_year == "2022") # unreliable
-
 # Read in updated license codes 
 updated_license_codes <- read.csv(here("Data", "updated_license_codes.csv")) %>%
   rename("license_type" = "code")
@@ -94,8 +92,7 @@ ind_lic_portfolio %>%
   group_by(landings_number,license_year)%>%
   summarise(across(everything(),sum))-> species_portfolio
 
-# write_rds(species_portfolio, "species_level_portfolio.rds")
-
+# write_rds(species_portfolio, here("Data", "species_level_portfolio.rds") ## needed for fig_development.qmd
 ```
 
 ### Targeted Species
@@ -232,7 +229,7 @@ species_portfolio %>%
     return(out)
   })) -> time_series
 
-# write_rds(time_series, "species_time_series.rds")
+# write_rds(time_series, here("Data","species_time_series.rds") # needed for fig_development.qmd
 
 gridExtra::marrangeGrob(time_series$time_series, layout_matrix = matrix(1:9, ncol = 3, nrow = 3, byrow = TRUE), top = NULL,  left = textGrob(
   expression(bold("Total Annual")), rot = 90, gp = gpar(col = "black", fontsize = 10)))
@@ -285,7 +282,7 @@ annual_metrics <- annual_co_matrix %>%
          evcent        = map(graph_obj, function(x){evcent(x)})) %>%
   arrange(license_year)
 
-# write_rds(annual_metrics, "species_metrics_series.rds")
+# write_rds(annual_metrics, here("Data", "species_metrics_series.rds") # needed for fig_development.qmd
 
 metrics_series <- annual_metrics %>% 
   select(license_year, degree) %>% 
@@ -382,7 +379,6 @@ annual_species_graphs <- annual_metrics %>%
     out <- ggraph(x, layout = "kk") + 
       geom_edge_link(aes(width = weight), alpha = 0.25, show.legend = FALSE) + 
       geom_node_point(aes(color = community), size = 7, alpha = .8, show.legend = FALSE) + 
-      # geom_conn_bundle(data = get_con(from = from, to = to), alpha = 0.1, colour="#69b3a2") +
       scale_color_gmri() +
       scale_edge_width(range = c(0.2, 2)) +
       ggtitle(license_year) +
@@ -467,8 +463,6 @@ fishery_entry$entry_year[fishery_entry$group == "Sea urchin"] = "2001"
 fishery_entry$entry_year[fishery_entry$group == "Sea cucumber"] = "2005"
 # fishery_entry$entry_year[fishery_entry$group == "Menhaden"] = "2023" punting menhaden
 fishery_entry$entry_year[fishery_entry$group == "Elver"] = "2005" # lottery ? 
-
-
 
 # license_types %>%
 #   select(group) %>%

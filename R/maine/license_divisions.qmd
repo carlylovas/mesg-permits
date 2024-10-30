@@ -30,15 +30,12 @@ library(gomfish)
 
 data(ind_lic_portfolio) 
 
-# ind_lic_portfolio <- ind_lic_portfolio %>% filter(!license_year == "2022") # unreliable
-
 # Read in updated license codes 
 updated_license_codes <- read.csv(here("Data", "updated_license_codes.csv")) %>%
   rename("license_type" = "code")
 
 # Add Stoll et al 2016 license subdivisions
 license_divisions <- read.csv(here("Data", "LicenseSubdivision_list.csv")) %>%
-  # select(License.Type, Target.Species, Stoll.et.al..2016.Name) %>%
   rename("description" = "License.Type",
          "group" = "Target.Species",
          "license_group" = "Stoll.et.al.2016.Name",
@@ -106,7 +103,7 @@ license_types %>% arrange(divisions) %>% select(license_group) %>%
 species_portfolio %>% 
   select(landings_number, license_year, license_order$license_group) -> species_portfolio
 
-# write_rds(species_portfolio, "stoll_portfolio.rds")
+# write_rds(species_portfolio, here("Data","stoll_portfolio.rds") # needed for fig_development.qmd
 ```
 
 ```{r}
@@ -171,7 +168,7 @@ species_portfolio %>%
   left_join(license_divisions %>% select(divisions, license_group) %>% distinct()) %>% 
 arrange(divisions)-> license_time_series
 
-# write_rds(license_time_series, "stoll_time_series.rds")
+# write_rds(license_time_series, here("Data","stoll_time_series.rds") # needed for fig_development.qmd
 
 # plot
 license_time_series %>% 
@@ -240,7 +237,7 @@ annual_metrics <- annual_co_matrix %>%
          evcent        = map(graph_obj, function(x){evcent(x)})) %>%
   arrange(license_year)
 
-write_rds(annual_metrics, file = "stoll_metrics_series.rds")
+# write_rds(annual_metrics, file = here("Data","stoll_metrics_series.rds") # needed for fig_development.qmd
 
 metrics_series <- annual_metrics %>% 
   select(license_year, degree) %>% 
