@@ -94,6 +94,8 @@ ind_lic_portfolio %>%
   group_by(landings_number,license_year)%>%
   summarise(across(everything(),sum))-> species_portfolio
 
+# write_rds(species_portfolio, "species_level_portfolio.rds")
+
 ```
 
 ### Targeted Species
@@ -230,6 +232,8 @@ species_portfolio %>%
     return(out)
   })) -> time_series
 
+# write_rds(time_series, "species_time_series.rds")
+
 gridExtra::marrangeGrob(time_series$time_series, layout_matrix = matrix(1:9, ncol = 3, nrow = 3, byrow = TRUE), top = NULL,  left = textGrob(
   expression(bold("Total Annual")), rot = 90, gp = gpar(col = "black", fontsize = 10)))
 
@@ -280,6 +284,8 @@ annual_metrics <- annual_co_matrix %>%
          membership    = map(community, function(x){membership(x)}),
          evcent        = map(graph_obj, function(x){evcent(x)})) %>%
   arrange(license_year)
+
+# write_rds(annual_metrics, "species_metrics_series.rds")
 
 metrics_series <- annual_metrics %>% 
   select(license_year, degree) %>% 

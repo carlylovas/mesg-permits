@@ -44,7 +44,7 @@ Commercial pelagic and anadromous single,Pelagic/Anadromous,Pelagic & Anadromous
 Commercial pelagic and anadromous crew,Pelagic/Anadromous,Pelagic & Anadromous,V,43
 Commercial fishing single,Finfish,Commercial Fishing,W,44
 Commercial fishing crew,Finfish,Commercial Fishing,W,45
-Aquaculture license,Aquaculture,(Aquaculture),X,46
-Spat,Spat,(Spat),Y,47
-Menhaden commercial,Menhaden,(Menhaden),Z,48
-Menhaden non commercial,Menhaden,(Menhaden),Z,49
+Aquaculture license,Aquaculture,Aquaculture,X,46
+Spat,Spat,Spat,Y,47
+Menhaden commercial,Menhaden,Menhaden,Z,48
+Menhaden non commercial,Menhaden,Menhaden,Z,49

@@ -188,6 +188,8 @@ ind_lic_portfolio %>%
   group_by(description) %>%
   nest() -> license_time_series
 
+# write_rds(license_time_series, "license_time_series.rds")
+
 # plot
 license_time_series %>% 
   #mutate(license = str_to_title(license)) %>%
@@ -306,6 +308,7 @@ annual_metrics <- annual_co_matrix %>%
          membership    = map(community, function(x){membership(x)}),
          evcent        = map(graph_obj, function(x){evcent(x)}))
 
+# write_rds(annual_metrics, "license_metrics_series.rds")
 
 metrics_series <- annual_metrics %>% 
   select(license_year, degree) %>% 

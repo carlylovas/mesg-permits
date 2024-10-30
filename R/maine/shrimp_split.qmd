@@ -27,6 +27,9 @@ library(gt)
 library(gomfish)
 
 portfolio <- read_rds(here("Data", "clean_portfolio.rds"))
+
+ind_lic_portfolio
+
 ```
 
 ```{r}
@@ -627,43 +630,50 @@ According to the DiD estimator, the closure did negatively impact those shrimper
 #| fig-width: 7
 #| fig-height: 5
 
-library(chorddiag)
-
-palette <- c("#773891", "#535353", "#363b45", "#004966", "#00608a", "#07a3b7", "#057872", "#38431d", "#abb400", "#ebcb27", "#ea4f12", "#b94a40")
-
-participants %>%
-  pivot_longer(cols = al:sws, names_to = "license_type", values_to = "licensed") %>%
-  filter(license_year >= 2009 & license_year <= 2020 & !license_year %in% c(2014,2015)) %>%
-  left_join(license_types) %>% 
-  # left_join(license_divisions) %>% 
-  mutate(row = row_number()) %>%
-  select(license_year, landings_number, participation, licensed, group, row) %>%
-  pivot_wider(names_from=group,values_from=licensed,names_expand=TRUE,values_fill = list(licensed=0)) %>%
-  select(-row)%>%
-  group_by(landings_number, license_year, participation)%>%
-  summarise(across(everything(),sum)) -> shrimpDiag
-
-# pre_closure <- shrimpDiag %>% 
-#   filter(license_year < 2015) %>% 
+# library(chorddiag)
+# 
+# palette <- c("#773891", "#535353", "#363b45", "#004966", "#00608a", "#07a3b7", "#057872", "#38431d", "#abb400", "#ebcb27", "#ea4f12", "#b94a40")
+# 
+# participants %>%
+#   pivot_longer(cols = al:sws, names_to = "license_type", values_to = "licensed") %>%
+#   filter(license_year >= 2009 & license_year <= 2020 & !license_year %in% c(2014,2015)) %>%
+#   left_join(license_types) %>% 
+#   # left_join(license_divisions) %>% 
+#   select(license_year, licensed, landings_number, group) %>%
 #   ungroup() %>% 
+#   group_by(license_year, group, landings_number) %>%
+#   mutate(licensed = sum(licensed)) %>% 
+#   distinct() %>% 
+#   mutate(row = row_number()) %>%
+#   pivot_wider(names_from=group,values_from=licensed,names_expand=TRUE,values_fill = list(licensed=0)) %>%
+#   select(-row)%>%
+#   group_by(license_year, landings_number)%>%
+#   summarise(across(everything(),sum)) -> shrimpDiag
+# 
+# pre_closure <- shrimpDiag %>%
+#   filter(license_year < 2015) %>%
+#   pivot_longer(cols = 2:20, names_to = "group", values_to = "count") %>%
+#   group_by(group) %>%
+#   summarise(count = mean(count)) %>%
+#   pivot_wider(names_from = group, values_from = count) ### This doesn't work
+#  
+# pre_closure <- participants %>%
+#   filter(license_year <= 2013) %>%
 #   select(!c(landings_number, license_year, participation))
-
-pre_closure <- participants %>% 
-  filter(license_year <= 2013) %>%
-  select(!c(landings_number, license_year, participation))
-
-pre_closure <- crossprod(as.matrix(pre_closure))
-diag(pre_closure) <- 0
+# 
+# pre_closure <- crossprod(as.matrix(pre_closure))
+# diag(pre_closure) <- 0
+# pre_closure <- sqrt(pre_closure)
 
 # pre_closure[row(pre_closure) + col(pre_closure) > nrow(pre_closure) + 1] <- NA
-
-chorddiag(data = as.matrix(pre_closure),
-          type = "directional",
-          showTicks = FALSE,
-          groupPadding = 5,
-          groupColors = palette,
-          chordedgeColor = palette,
-          groupnameFontsize = 12)
+# 
+# chorddiag(data = as.matrix(pre_closure),
+#           type = "directional",
+#           showTicks = FALSE,
+#           groupPadding = 5,
+#           groupColors = palette,
+#           chordedgeColor = palette,
+#           groupnameFontsize = 12)
 ```
 
 ### Post-closure
@@ -684,20 +694,20 @@ chorddiag(data = as.matrix(pre_closure),
 #   ungroup() %>% 
 #   select(!c(landings_number, license_year, participation))
 
-post_closure <- participants %>% 
-  filter(license_year > 2013 & license_year <= 2020) %>%
-  select(!c(landings_number, license_year, participation))
-
-post_closure <- crossprod(as.matrix(post_closure))
-diag(post_closure) <- 0
-
-chorddiag(data = as.matrix(post_closure),
-          type = "directional",
-          showTicks = FALSE,
-          groupPadding = 5,
-          groupColors = palette,
-          chordedgeColor = palette,          
-          groupnameFontsize = 12)
+# post_closure <- participants %>% 
+#   filter(license_year > 2013 & license_year <= 2020) %>%
+#   select(!c(landings_number, license_year, participation))
+# 
+# post_closure <- crossprod(as.matrix(post_closure))
+# diag(post_closure) <- 0
+# 
+# chorddiag(data = as.matrix(post_closure),
+#           type = "directional",
+#           showTicks = FALSE,
+#           groupPadding = 5,
+#           groupColors = palette,
+#           chordedgeColor = palette,          
+#           groupnameFontsize = 12)
 
 
 ```
