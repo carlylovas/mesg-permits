@@ -8,6 +8,7 @@ format:
     self-contained: true
 editor: visual
 ---
+
 Consolidating outputs from various different scripts to compile different iterations of figures intended for objective 1 paper
 
 ```{r}
@@ -64,6 +65,7 @@ license_divisions %>%
 ```
 
 ## Constrained hierarchical clustering
+
 ```{r}
 #| label: clustering
 #| echo: false
@@ -155,6 +157,7 @@ as.dendrogram(cl) %>%
 ```
 
 ## Heatmaps
+
 ```{r}
 #| label: heatmaps
 #| echo: false
@@ -246,8 +249,11 @@ stoll_time_series %>%
 ```
 
 ## Network Metrics
+
 ### Degree centrality
+
 Stoll divisions only
+
 ```{r}
 #| label: degree centrality
 #| echo: false
@@ -295,6 +301,7 @@ ggplot(data = stoll_degree) +
 ```
 
 ### Edge density and modularity
+
 ```{r}
 #| label: density and modularity
 #| echo: false
@@ -338,3 +345,58 @@ ggplot(data = dens_mod, aes(x = license_year, y = modularity, color = level)) +
 
 ```
 
+## Chord diagrams
+#### Pre-closure
+2009-2013
+```{r}
+#| label: preclosure
+#| echo: false
+#| message: false
+#| warning: false
+
+# make co-matrices
+stoll_portfolio %>% 
+  ungroup() %>% 
+  filter(license_year %in% c(2009:2013, 2016:2020)) %>%
+  select(!landings_number) %>% 
+  arrange(license_year) %>%
+  group_by(license_year) %>% 
+  nest() %>% 
+  mutate(co_matrix = map(data, function(x){
+    out <- crossprod(as.matrix(x))
+    diag(out) <- 0
+    return(out)
+  })) %>% 
+  mutate(closure = ifelse(license_year <= 2013, "pre_closure", "post_closure")) -> co_matrices
+
+pre_closure  <- (co_matrices$co_matrix[[1]] + co_matrices$co_matrix[[2]] + co_matrices$co_matrix[[3]] + co_matrices$co_matrix[[4]] + co_matrices$co_matrix[[5]])/5 # there's probably a more efficient way to do this but I'm tired...
+
+post_closure <- (co_matrices$co_matrix[[6]] + co_matrices$co_matrix[[7]] + co_matrices$co_matrix[[8]] + co_matrices$co_matrix[[9]] + co_matrices$co_matrix[[10]])/5
+
+# Chord diagrams
+library(chorddiag)
+palette <- c("#773891", "#535353", "#363b45", "#004966", "#00608a", "#07a3b7", "#057872", "#38431d", "#abb400", "#ebcb27", "#ea4f12", "#b94a40")
+
+chorddiag(data = as.matrix(pre_closure),
+          type = "directional",
+          showTicks = FALSE,
+          groupPadding = 5,
+          groupColors = palette,
+          chordedgeColor = palette,
+          groupnameFontsize = 8)
+```
+#### Post-closure
+2016-2020
+```{r}
+#| label: postclosure
+#| echo: false
+#| message: false
+#| warning: false
+chorddiag(data = as.matrix(post_closure),
+          type = "directional",
+          showTicks = FALSE,
+          groupPadding = 5,
+          groupColors = palette,
+          chordedgeColor = palette,
+          groupnameFontsize = 8)
+```
