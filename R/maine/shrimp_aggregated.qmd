@@ -26,19 +26,27 @@ library(grid)
 library(gt)
 library(gomfish)
 
-portfolio <- read_rds(here("R", "maine","stoll_portfolio.rds")) %>% 
-    filter(license_year >= 2009 & license_year <= 2020 & !license_year %in% c(2014,2015))
+stoll_portfolio <- read_rds(here("Data","stoll_portfolio.rds")) 
+    
+portfolio <- stoll_portfolio %>% 
+  filter(license_year >= 2009 & license_year <= 2020 & !license_year %in% c(2014,2015))
 ```
 
+# Networks
+
+### All harvesters
+
+-   *Pre-closure*: 2009-2013
+-   *Post-closure*: 2016-2020
+
 ```{r}
-#| label:      annual metrics
-#| echo:       false
-#| message:    false
-#| warning:    false
-#| column:     page
-#| fig-width:  9
-#| fig-height: 13
+#| label: all harvesters
+#| echo: false
+#| message: false
+#| warning: false
 #| fig-align: center
+#| fig-width: 13
+#| fig-height: 9
 
 co_matrix <- portfolio %>%
   arrange(license_year) %>%
@@ -54,14 +62,6 @@ co_matrix <- portfolio %>%
   })) %>%
   select(shrimp, co_matrix) 
 
-```
-
-```{r}
-#| label: metrics
-#| echo: false
-#| message: false
-#| warning: false
-
 metrics <- co_matrix %>%
   mutate(graph_obj     = map(co_matrix, function(x){graph_from_adjacency_matrix(x, mode = "undirected", weighted = TRUE)}),
          degree        = map(graph_obj, function(x){degree(x)}),
@@ -72,23 +72,6 @@ metrics <- co_matrix %>%
          membership    = map(community, function(x){membership(x)}),
          evcent        = map(graph_obj, function(x){evcent(x)}))
 
-```
-
-# Networks
-
-### All harvesters
-
--   *Pre-closure*: 2009-2013
--   *Post-closure*: 2016-2020
-
-```{r}
-#| label: plots
-#| echo: false
-#| message: false
-#| warning: false
-#| fig-align: center
-#| fig-width: 13
-#| fig-height: 9
 
 networks <- metrics %>%
   mutate(ggraph = map2(graph_obj, shrimp, function(x, y){
@@ -126,15 +109,6 @@ networks <- metrics %>%
 
 gridExtra::marrangeGrob(networks$ggraph_circular, layout_matrix = matrix(1:2, ncol = 2, nrow = 1, byrow= TRUE), top = NULL)
 
-
-```
-
-```{r}
-#| label: density and modularity
-#| echo: false
-#| message: false
-#| warning: false
-
 metrics %>%
   select(shrimp, density, modularity) %>%
   gt(groupname_col = NULL) %>%
@@ -147,40 +121,38 @@ metrics %>%
 ### Shrimpers
 
 ```{r}
-#| label: shrimpers
+#| label: participation
 #| echo: false
 #| message: false
 #| warning: false
 
 portfolio %>% 
-  select("license_year", "landings_number", "Northern Shrimp") %>%
-  mutate(participation = ifelse(`Northern Shrimp` == 0, "false", "true")) -> shrimp_fishery_participation 
+  # select("license_year", "landings_number", "Northern Shrimp") %>%
+  mutate(participation = ifelse(`Northern Shrimp` == 1, "true", "false")) %>%
+  relocate(participation, .after = landings_number) -> participation  # not using full time span to ensure shrimp licenses were held up until closure
 
-portfolio %>% 
-  right_join(shrimp_fishery_participation) %>% 
-  relocate(participation, .after = landings_number)-> shrimp
-
-shrimp_fishery_participation %>% 
-  filter(participation == "true") %>% 
-  ungroup() %>% 
+participation %>%
+  filter(participation == "true") %>%
+  ungroup() %>%
   select(landings_number) %>%
-  distinct() -> shrimpers 
-
-portfolio %>% 
-  filter(landings_number %in% shrimpers$landings_number)-> shrimp_portfolios
+  distinct() -> shrimpers
 
 ```
 
 ```{r}
-#| label: shrimp networks
+#| label: shrimper networks
 #| echo: false
 #| message: false
 #| warning: false
+#| fig-align: center
+#| fig-width: 13
+#| fig-height: 9
 
-shrimp_matrix <- shrimp_portfolios %>%
+shrimp_matrix <- portfolio %>%  
+  filter(landings_number %in% shrimpers$landings_number) %>% 
   ungroup() %>% 
   arrange(license_year) %>%
-  mutate(closure = ifelse(license_year >= 2016, "post-closure", "pre-closure")) %>%
+  mutate(closure = ifelse(license_year >= 2013, "post-closure", "pre-closure")) %>%
   select(!c(license_year, landings_number)) %>%
   group_by(closure) %>%
   nest() %>% 
@@ -191,14 +163,6 @@ shrimp_matrix <- shrimp_portfolios %>%
   })) %>%
   select(closure, co_matrix) 
 
-```
-
-```{r}
-#| label: shrimp metrics
-#| echo: false
-#| message: false
-#| warning: false
-
 shrimp_metrics <- shrimp_matrix %>%
   mutate(graph_obj     = map(co_matrix, function(x){graph.adjacency(x, mode = "undirected", weighted = TRUE)}),
          degree        = map(graph_obj, function(x){degree(x)}),
@@ -208,17 +172,6 @@ shrimp_metrics <- shrimp_matrix %>%
          modularity    = map(community, function(x){modularity(x)}),
          membership    = map(community, function(x){membership(x)}),
          evcent        = map(graph_obj, function(x){evcent(x)}))
-
-```
-
-```{r}
-#| label: shrimp plots
-#| echo: false
-#| message: false
-#| warning: false
-#| fig-align: center
-#| fig-width: 13
-#| fig-height: 9
 
 shrimp_networks <- shrimp_metrics %>%
   mutate(ggraph = map2(graph_obj, closure, function(x, y){
@@ -255,13 +208,6 @@ shrimp_networks <- shrimp_metrics %>%
 # gridExtra::marrangeGrob(shrimp_networks$ggraph, layout_matrix = matrix(1:2, ncol = 2, nrow = 1, byrow= TRUE), top = NULL)
 
 gridExtra::marrangeGrob(shrimp_networks$ggraph_circular, layout_matrix = matrix(1:2, ncol = 2, nrow = 1, byrow= TRUE), top = NULL)
-```
-
-```{r}
-#| label: shrimp density and modularity
-#| echo: false
-#| message: false
-#| warning: false
 
 shrimp_metrics %>%
   select(closure, density, modularity) %>%
@@ -272,6 +218,7 @@ shrimp_metrics %>%
     modularity = md("**Modularity**"))
 ```
 
+
 ### Non-shrimpers
 
 ```{r}
@@ -281,11 +228,10 @@ shrimp_metrics %>%
 #| fig-align: center
 #| fig-width: 13
 #| fig-height: 9
-#| 
-portfolio %>% 
-  filter(!landings_number %in% shrimpers$landings_number & license_year >= 2009 & !license_year == 2015) -> non_shrimp_portfolios
+#|
 
-non_shrimp_matrix <- non_shrimp_portfolios %>%
+non_shrimp_matrix <- portfolio %>% 
+  filter(!landings_number %in% shrimpers$landings_number) %>% 
   ungroup() %>% 
   arrange(license_year) %>%
   mutate(closure = ifelse(license_year >= 2016, "post-closure", "pre-closure")) %>%
@@ -361,24 +307,28 @@ non_shrimp_metrics %>%
 #| echo: false
 #| message: false
 #| warning: false
+#| fig-align: center
+#| fig-width: 13
+#| fig-height: 9
 
-shrimp_portfolios %>% 
-  ungroup() %>%
-  pivot_longer(3:28, names_to = "license_type", values_to = "count") %>% 
-  filter(!count == 0) %>%
-  mutate(closure = ifelse(license_year <= 2013, "pre-closure", "post-closure")) %>%
-  group_by(license_year, closure, license_type) %>%
-  summarise(count = sum(count)) %>%
-  # filter(closure == "pre-closure") %>%
+portfolio %>% 
+  filter(landings_number %in% shrimpers$landings_number) %>% 
+  ungroup() %>% 
+  select(!landings_number) %>% 
+  group_by(license_year) %>% 
+  summarise(across(everything(),sum)) %>% 
+  pivot_longer(cols = 2:27, names_to = "license_group", values_to = "total_issued") %>%
+  mutate(closure = ifelse(license_year <= 2013, "Pre-closure", "Post-closure")) %>%
   ggplot() +
-  geom_col(aes(x = license_year, y = count, fill = license_type), color = "white") +
-  facet_wrap(~factor(closure, levels = c("pre-closure", "post-closure")), scales = "free_x", ncol = 2) +
+  geom_col(aes(x = license_year, y = total_issued, fill = license_group), color = "white") +
+  facet_wrap(~factor(closure, levels = c("Pre-closure", "Post-closure")), scales = "free_x", ncol = 2) +
+  ggtitle("Shrimper portfolios", subtitle = "All harvesters") + ylab("Total licenses issued") + xlab("Year") +
   guides(fill = guide_legend(ncol = 9)) +
   scale_fill_gmri()+
   theme_gmri(legend.position = "bottom",
              strip.background = element_rect(fill = "transparent"),
-             strip.text = element_text(color = "black")) # try species level -> switch from shrimp to what (if to anything)
-
+             plot.subtitle = element_text(size = 12),
+             strip.text = element_text(color = "black")) 
 ```
 
 ## Entry and exit
@@ -389,35 +339,18 @@ shrimp_portfolios %>%
 #| message: false
 #| warning: false
 
-shrimp_portfolios %>% 
-  ungroup() %>%
-  pivot_longer(3:28, names_to = "license_type", values_to = "count") %>% 
-  filter(!count == 0) %>%
-  mutate(closure = ifelse(license_year <= 2013, "pre-closure", "post-closure")) %>%
-  group_by(license_year, landings_number, closure) %>%  
-  summarise(total_licenses = sum(count)) %>%
-  group_by(landings_number, closure) %>% 
-  summarise(avg_license = mean(total_licenses)) %>% 
-  pivot_wider(names_from = "closure", values_from = "avg_license") %>%
-  relocate("pre-closure", .before = "post-closure") %>% 
-  filter(is.na(`post-closure`)) -> ex_shrimpers
+stoll_portfolio %>% 
+  mutate(participation = ifelse(landings_number %in% shrimpers$landings_number, "shrimper", "non_shrimper")) %>% 
+  filter(license_year >= 2015 & participation == "shrimper") -> continued
 
-# all harvesters before and after shrimp
-portfolio %>% 
-  select(license_year, landings_number) %>% 
-  distinct() %>% 
-  mutate(closure = ifelse(license_year <= 2013, "pre_closure", "post_closure")) %>% 
-  group_by(license_year, closure) %>%
-  nest() %>% 
-  mutate(total_harvesters = map_dbl(data, function(x){nrow(x)})) -> harvesters 
+stoll_portfolio %>% 
+  mutate(participation = ifelse(landings_number %in% shrimpers$landings_number, "shrimper", "non_shrimper")) %>% 
+  filter(participation == "shrimper" & !landings_number %in% continued$landings_number) -> exited
 
-# harvesters %>% 
-#   select(!data) %>% 
-#   group_by(closure) %>% 
-#   summarise(avg_harvesters = mean(total_harvesters)) # more harvesters after closure lol 
-
-# I should re-run the before and after portfolios with only harvests who stayed 
-
+stoll_portfolio %>% 
+  filter(landings_number %in% exited$landings_number) %>% 
+  group_by(landings_number) %>% 
+  summarise(exit_year = max(license_year)) -> exit_year 
 ```
 
 ```{r}
@@ -425,56 +358,65 @@ portfolio %>%
 #| echo: false
 #| message: false
 #| warning: false
+#| fig-align: center
+#| fig-width: 13
+#| fig-height: 9
 
-shrimp_portfolios %>% 
-  filter(!landings_number %in% ex_shrimpers$landings_number) %>% 
-  mutate(participation = "continued") %>% 
-  relocate(participation, .after = landings_number) -> continued
+order <- c("Scallop (Dragger)",
+           "Scallop (Tender)",
+           "Scallop (Hand)",
+           "Lobster Apprentice & Student", 
+           "Lobster Class I",
+           "Lobster Class II",
+           "Lobster Class III",
+           "Green crab",
+           "Marine worm",
+           "Shellfish",
+           "Surf Clam",
+           "Mussel",
+           "Mahogany Clam",
+           "Seaweed",
+           "Sea Urchin (Dragger)",
+           "Sea Urchin (Hand)",
+           "Sea Urchin (Tender)",
+           "Elver",
+           "Eel",
+           "Northern Shrimp",
+           "Sea Cucumber",
+           "Pelagic & Anadromous",
+           "Commercial Fishing",
+           "Aquaculture",
+           "Spat",
+           "Menhaden")
 
-shrimp_portfolios %>% 
-  filter(landings_number %in% ex_shrimpers$landings_number) %>% 
-  mutate(participation = "exited") %>% 
-  relocate(participation, .after = landings_number) %>%
-  full_join(continued) %>% 
-  arrange(landings_number) -> participants
-  # filter(license_year <= 2015) -> pre_closure
 
-participants %>%
+portfolio %>%  
+  filter(landings_number %in% shrimpers$landings_number) %>% 
+  ungroup() %>% 
+  mutate(continuation = ifelse(landings_number %in% continued$landings_number, "continued", "exited"),
+         closure = ifelse(license_year <= 2014, "Pre-closure", "Post-closure")) %>% 
+  select(!landings_number) %>% 
+  group_by(continuation, closure, license_year) %>% 
+  summarise(across(everything(), sum)) %>% 
   pivot_longer(cols = 4:29, names_to = "license_type", values_to = "count") %>%
-  filter(license_year <= 2013) %>%
-  ggplot() +
-  geom_col(aes(x = license_year, y = count, fill = license_type)) +
-  # facet_wrap(~participation, ncol = 2, scales = "free_y") + 
-  facet_wrap(~factor(participation, levels = c("exited", "continued")), scales = "free_y", ncol = 2) +
-  xlab("Year") + ylab("Count") + ggtitle("Pre-closure portfolios") + 
-  guides(fill = guide_legend(ncol = 4)) +
+  # filter(license_year <= 2013) %>%
+  group_by(continuation, license_year) %>%
+  mutate(total = sum(count)) %>% 
+  ungroup() %>% 
+  mutate(freq = count/total) -> proportions
+  
+  
+ggplot(proportions %>% filter(continuation == "continued")) +
+  geom_col(aes(x = license_year, y = freq, fill = factor(license_type, levels = order)), color = "white") +
+  facet_wrap(~factor(closure, levels = c("Pre-closure", "Post-closure")), scales = "free_x", ncol = 2) +
+  xlab("Year") + ylab("Proportion") + ggtitle("Shrimper portfolios", subtitle = "Continuing harvesters") + 
+  guides(fill = guide_legend(ncol = 9)) +
   scale_fill_gmri()+
     theme_gmri(legend.position = "bottom",
                legend.title = element_blank(), 
+               plot.subtitle = element_text(size = 12),
                strip.background = element_rect(fill = "transparent"),
                strip.text = element_text(color = "black"))
-
-participants %>%
-  pivot_longer(cols = 4:29, names_to = "license_type", values_to = "count") %>%
-  filter(license_year > 2013) %>%
-  ggplot() +
-  geom_col(aes(x = license_year, y = count, fill = license_type)) +
-  # facet_wrap(~participation, ncol = 2, scales = "free_y") + 
-  facet_wrap(~factor(participation, levels = c("exited", "continued")), ncol = 2) +
-  xlab("Year") + ylab("Count") + ggtitle("Post-closure portfolios") + 
-  guides(fill = guide_legend(ncol = 4)) +
-  scale_fill_gmri()+
-    theme_gmri(legend.position = "bottom",
-               legend.title = element_blank(), 
-               strip.background = element_rect(fill = "transparent"),
-               strip.text = element_text(color = "black")) # proportions next? 
-
-shrimp_portfolios %>% 
-  pivot_longer(cols = 3:28, names_to = "license_type", values_to = "count") %>%
-  filter(!count == 0) %>%
-  mutate(closure = ifelse(license_year <= 2013, "pre-closure", "post-closure")) %>% 
-  select(closure, license_type) %>%
-  distinct() -> closure_portfolios
 
 ```
 
@@ -490,11 +432,10 @@ Did the closure of the shrimp fishery impact the number of licenses held by harv
 #| message: false
 #| warning: false
 
-portfolio %>% 
+stoll_portfolio %>% 
   pivot_longer(3:28, names_to = "license_type", values_to = "count") %>% 
-  filter(!count == 0) %>%
   mutate(shrimp_harvester = ifelse(landings_number %in% shrimpers$landings_number, 1, 0),
-         closure = ifelse(license_year >= 2016, 1, 0), 
+         closure = ifelse(license_year >= 2014, 1, 0), 
          did = shrimp_harvester*closure) %>% 
   group_by(license_year, landings_number, shrimp_harvester, closure, did) %>% 
   summarise(total = sum(count))-> shrimp_did
@@ -515,10 +456,10 @@ shrimp_did %>%
 ggplot(shrimp_did_avg) + 
   geom_line(aes(x = license_year, y = avg_total, color = as.factor(shrimp_harvester))) +
   geom_smooth(aes(x = license_year, y = avg_total, color = as.factor(shrimp_harvester)), method = "lm", se = FALSE, linetype = 2) +
-  geom_segment(aes(x = 2015, y = 0, yend = 3), alpha = 0.9, color = "darkgrey", linetype = 3) +
+  geom_vline(aes(xintercept = 2014), alpha = 0.9, color = "darkgrey", linetype = 3) +
   ylab("Avg. number of licenses per harvester") + xlab("Year") +
   scale_color_manual(labels = c("No", "Yes"), values = c("#00608A", "#EA4F12")) +
-  ylim(c(0,3)) +
+  ylim(c(1,3)) +
   #scale_color_gmri() +
   guides(color = guide_legend(title = "Shrimp harvester")) +
   theme_gmri() 
@@ -531,82 +472,5 @@ According to the DiD estimator, the closure did negatively impact those shrimper
 
 ## Chord diagrams
 
-### Pre-closure
+*Updated as of Oct 31* See [Manuscript development](https://carlylovas.github.io/mesg-permits/R/maine/fig_development.html)
 
-2009-2013
-
-```{r}
-#| label: chord diagram
-#| echo: false
-#| message: false
-#| warning: false
-#| fig-align: center
-#| fig-width: 7
-#| fig-height: 5
-
-
-participants %>% 
-  select(!participation) %>% 
-  pivot_longer(3:28, names_to = "license", values_to = "count") %>% 
-  filter(!count == 0) %>% 
-  mutate(closure = ifelse(license_year <= 2013, "pre-closure", "post-closure")) %>%
-  group_by(license_year, license, closure) %>%
-  summarise(count = sum(count)) %>%
-  group_by(license, closure) %>%
-  summarise(avg_count = mean(count)) -> averages # this wont work for an adjacency matrix/chord diagram
-
-# average yearly proportion, maybe? 
-
-library(chorddiag)
-
-palette <- c("#773891", "#535353", "#363b45", "#004966", "#00608a", "#07a3b7", "#057872", "#38431d", "#abb400", "#ebcb27", "#ea4f12", "#b94a40")
-
-
-pre_closure <- participants %>%
-  filter(license_year <= 2013) %>%
-  ungroup() %>%
-  select(!c(landings_number, license_year, participation))
-
-pre_closure <- crossprod(as.matrix(pre_closure))
-diag(pre_closure) <- 0
-
-chorddiag(data = as.matrix(pre_closure),
-          type = "directional",
-          showTicks = FALSE,
-          groupPadding = 5,
-          groupColors = palette,
-          chordedgeColor = palette,
-          groupnameFontsize = 12)
-```
-
-### Post-closure
-
-2016-2020
-
-```{r}
-#| label: chord diagram 2
-#| echo: false
-#| message: false
-#| warning: false
-#| fig-align: center
-#| fig-width: 7
-#| fig-height: 5
-
-post_closure <- participants %>% 
-  filter(license_year > 2013 & license_year <= 2020) %>%
-  ungroup() %>%
-  select(!c(landings_number, license_year, participation))
-
-post_closure <- crossprod(as.matrix(post_closure))
-diag(post_closure) <- 0
-
-chorddiag(data = as.matrix(post_closure),
-          type = "directional",
-          showTicks = FALSE,
-          groupPadding = 5,
-          groupColors = palette,
-          chordedgeColor = palette,          
-          groupnameFontsize = 12)
-
-
-```
