@@ -21,5 +21,5 @@ All analyses requiring trawl data will need to install the most recent **gmRi** 
 
 1.  [GARFO Summaries](https://carlylovas.github.io/mesg-permits/R/garfo/garfo_sum_stats.html)
 2.  [GARFO License Movement](https://carlylovas.github.io/mesg-permits/R/garfo/license_movement.html)
-3.  [Black sea bass](https://carlylovas.github.io/mesg-permits/R/blackseabass.html)
+3.  [Black sea bass](https://carlylovas.github.io/mesg-permits/R/garfo/blackseabass.html)
 4.  [z-scores](https://carlylovas.github.io/mesg-permits/R/garfo/z_score.html)
