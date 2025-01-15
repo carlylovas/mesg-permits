@@ -12,6 +12,7 @@ editor: visual
 #| label: read in geocoded garfo data
 #| echo: false
 #| message: false
+#| warning: false
 
 library(tidyverse)
 library(gmRi)
@@ -30,6 +31,7 @@ species_list <- c("Atlantic menhaden", "Black sea bass", "Bluefish", "Clearnose 
 #| label: grouped by target species 
 #| echo: false
 #| message: false
+#| warning: false
 
 garfo_geo <- garfo_geo %>% full_join(ny_nj)
 
@@ -142,7 +144,7 @@ states <- st_as_sf(states50)
 ```
 ### Squid, mackerel, and butterfish
 
-Category 1A-1C: Limited access - Longfin squid moratorium
+#### Category 1A-1C: Limited access - Longfin squid moratorium
 
 ```{r}
 #| label: longfin squid
@@ -227,7 +229,7 @@ Category 1A-1C: Limited access - Longfin squid moratorium
 knitr::include_graphics(here::here("longfin squid_license.gif"))
 knitr::include_graphics(here::here("longfin squid_biomass.gif"))
 ```
-Category 5: Limited access - Northern shortfin squid moratorium
+#### Category 5: Limited access - Northern shortfin squid moratorium
 ```{r}
 #| label: shortfin squid
 #| echo: false
@@ -246,9 +248,8 @@ knitr::include_graphics(here::here("northern shortfin squid_biomass.gif"))
 ```
 
 
-Category 4: Open access - Atlantic Mackerel
-
-Category T1-T3: Limited access - Mackerel tiers 1-3
+#### Category 4: Open access - Atlantic Mackerel
+#### Category T1-T3: Limited access - Mackerel tiers 1-3
 
 ```{r}
 #| label: mackerel
@@ -333,7 +334,7 @@ knitr::include_graphics(here::here("atlantic mackerel_license.gif"))
 knitr::include_graphics(here::here("atlantic mackerel_biomass.gif"))
 ```
 
-Category 6: Limited access - Butterfish moratorium
+#### Category 6: Limited access - Butterfish moratorium
 
 ```{r}
 #| label: butterfish
@@ -419,7 +420,7 @@ knitr::include_graphics(here::here("butterfish_biomass.gif"))
 ```
 
 ### Black sea bass
-Category 1 - Limited access commercial catch
+#### Category 1 - Limited access commercial catch
 
 ```{r}
 #| label: black sea bass 
