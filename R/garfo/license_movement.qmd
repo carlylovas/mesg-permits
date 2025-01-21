@@ -79,6 +79,13 @@ garfo_geo %>%
   left_join(license_list) %>%
   filter(lat >= 30) -> centers 
  
+centers %>% 
+  mutate(lat  = round(lat,  digits = 1),
+         long = round(long, digits = 1)) %>% 
+  group_by(license, AP_YEAR, lat) %>%
+  summarise(count = sum(count)) %>% 
+  group_by(license, AP_YEAR) %>% 
+  mutate(lat_weighted  = weightedMean(lat, count)) -> weighted_lat
 ```
 
 ```{r}
@@ -152,7 +159,7 @@ states <- st_as_sf(states50)
 #| message: false
 #| warning: false
 #| fig-align: center
-#| layout-ncol: 2
+#| layout-ncol: 3
 #| fig-width: 9
 #| fig-height: 9
 
@@ -228,6 +235,27 @@ states <- st_as_sf(states50)
 ## Read back in as GIF 
 knitr::include_graphics(here::here("longfin squid_license.gif"))
 knitr::include_graphics(here::here("longfin squid_biomass.gif"))
+
+# Static plot
+weighted_lat %>% 
+  filter(license %in% c("SQUID_MACK_BUTTER_1", "SQUID_MACK_BUTTER_1A", "SQUID_MACK_BUTTER_1B", "SQUID_MACK_BUTTER_1C")) %>%
+  mutate(comname = "longfin squid") %>%
+  left_join(weighted_data %>% filter(comname == "longfin squid" & est_year >= 1996)) %>%
+  ggplot() + 
+  geom_line(aes(x = est_year, y = avg_lat, color = comname), linetype = 2, linewidth = 1) +
+  geom_line(aes(x = AP_YEAR, y = lat_weighted, color = license), linewidth = 1) +
+  scale_color_manual(labels = c("Biomass", "Category 1", "1A", "1B", "1C"), values = c("#00608a", "#ea4f12", "#057872", "#ebcb27", "#38431d")) + 
+  xlab("Year") + ylab("Latitude") + ggtitle("Center of latitude", subtitle = "1996-2023") +
+  # scale_y_continuous(limits = c(34,46), breaks = c(34, 40, 46)) +  
+  guides(color = guide_legend(override.aes = list(linewidth = 2))) +
+  theme_gmri(legend.title = element_blank(),
+             legend.text = element_text(size = 25),
+             axis.text = element_text(size = 20),
+             axis.title = element_text(size = 20),
+             plot.subtitle = element_text(size =20),
+             plot.title = element_text(size = 25, face = "plain"),
+             panel.border = element_rect(color = "black", linetype = 1))
+
 ```
 #### Category 5: Limited access - Northern shortfin squid moratorium
 ```{r}
@@ -236,15 +264,103 @@ knitr::include_graphics(here::here("longfin squid_biomass.gif"))
 #| message: false
 #| warning: false
 #| fig-align: center
-#| layout-ncol: 2
+#| layout-ncol: 3
 #| fig-width: 9
 #| fig-height: 9
+
+# centers %>% 
+#   filter(license == "SQUID_MACK_BUTTER_5") -> licenses
+# 
+# weighted_data %>% 
+#   filter(comname == "longfin squid" & est_year >= min(licenses$AP_YEAR)) -> biomass
+# 
+# ### License map ###
+# ggplot() +
+#   geom_sf(data = states) +
+#   geom_point(data = licenses, aes(x = long, y = lat, alpha = count), size = 8, color = "#00608a") +
+#   scale_x_continuous(breaks = c(-64, -71, -78)) + scale_y_continuous(breaks = c(34, 40, 46)) +
+#   coord_sf(xlim = c(-64,-78), ylim = c(34,46)) +
+#   theme_gmri(axis.text = element_text(size = 20),
+#              axis.title = element_text(size = 20),
+#              plot.subtitle = element_text(size = 20),
+#              plot.title = element_text(size = 25),
+#              panel.grid.major = element_line(color = "#e9e9e9"),
+#              panel.border = element_rect(color = "black", linetype = 1),
+#              legend.position = "none") -> license_map
+# license_map +
+#   gganimate::transition_states(
+#     AP_YEAR, # Uses each year (est_year in the data) as a state
+#     transition_length = 1,
+#     state_length = 5) +
+#     gganimate::ease_aes('linear') +
+#   labs(
+#     y = "Latitude",
+#     x = "Longitude",
+#     title = "Commercial licenses",
+#     subtitle = 'Year: {closest_state}') -> license_map_animated
+# 
+# ### Distribution map ###
+# ggplot() +
+#   geom_sf(data = states) +
+#   geom_point(data = biomass, aes(x = avg_lon, y = avg_lat, alpha = avg_biomass), size = 8, color = "#ea4f12") +
+#   scale_x_continuous(breaks = c(-64, -71, -78)) + scale_y_continuous(breaks = c(34, 40, 46)) +
+#   coord_sf(xlim = c(-64,-78), ylim = c(34,46)) +
+#   theme_gmri(axis.text = element_text(size = 20),
+#              axis.title = element_text(size = 20),
+#              plot.subtitle = element_text(size =20),
+#              plot.title = element_text(size = 25),
+#              panel.grid.major = element_line(color = "#e9e9e9"),
+#              panel.border = element_rect(color = "black", linetype = 1),
+#              legend.position = "none") -> dist
+# dist +
+#   gganimate::transition_states(
+#     est_year, # Uses each year (est_year in the data) as a state
+#     transition_length = 1,
+#     state_length = 5) +
+#   shadow_mark(alpha = 0.1, size = 12) +
+#   gganimate::ease_aes('linear') +
+#   labs(
+#     y = "Latitude",
+#     x = "Longitude",
+#     title = "Annual center of biomass",
+#     subtitle = 'Year: {closest_state}') -> dist_animated
+# 
+# ## Animate and save out 
+# # license map 
+# gganimate::animate(license_map_animated, fps = 20, width = 600, height = 600) -> license_map
+# gganimate::anim_save(here(paste0(unique(biomass$comname), "_license.gif")), license_map)
+# # dist map
+# gganimate::animate(dist_animated, fps = 20, width = 600, height = 600) -> dist_map
+# gganimate::anim_save(here(paste0(unique(biomass$comname), "_biomass.gif")), dist_map)
+# 
+# rm(list = c("dist_animated", "dist_map", "license_map_animated", "license_map"))
+
 
 # If rendering, command out everything about this line before running. 
 
 ## Read back in as GIF 
 knitr::include_graphics(here::here("northern shortfin squid_license.gif"))
 knitr::include_graphics(here::here("northern shortfin squid_biomass.gif"))
+
+# Static plot
+weighted_lat %>% 
+  filter(license == "SQUID_MACK_BUTTER_5") %>%
+  mutate(comname = "northern shortfin squid") %>%
+  left_join(weighted_data %>% filter(comname == "northern shortfin squid" & est_year >= 1996)) %>%
+  ggplot() + 
+  geom_line(aes(x = est_year, y = avg_lat, color = comname), linetype = 2, linewidth = 1) +
+  geom_line(aes(x = AP_YEAR, y = lat_weighted, color = license), linewidth = 1) +
+  scale_color_manual(labels = c("Biomass", "License"), values = c("#00608a", "#ea4f12")) + 
+  xlab("Year") + ylab("Latitude") + ggtitle("Center of latitude", subtitle = "1996-2023") +
+  # scale_y_continuous(limits = c(34,46), breaks = c(34, 40, 46)) +  
+  guides(color = guide_legend(override.aes = list(linewidth = 2))) +
+  theme_gmri(legend.title = element_blank(),
+             legend.text = element_text(size = 25),
+             axis.text = element_text(size = 20),
+             axis.title = element_text(size = 20),
+             plot.subtitle = element_text(size =20),
+             plot.title = element_text(size = 25, face = "plain"),
+             panel.border = element_rect(color = "black", linetype = 1))
 ```
 
 
@@ -256,7 +372,7 @@ knitr::include_graphics(here::here("northern shortfin squid_biomass.gif"))
 #| echo: false
 #| message: false
 #| warning: false
-#| layout-ncol: 2
+#| layout-ncol: 3
 #| fig-width: 9
 #| fig-height: 9
 
@@ -332,6 +448,27 @@ knitr::include_graphics(here::here("northern shortfin squid_biomass.gif"))
 ## Read back in as GIF 
 knitr::include_graphics(here::here("atlantic mackerel_license.gif"))
 knitr::include_graphics(here::here("atlantic mackerel_biomass.gif"))
+
+# Static plot
+weighted_lat %>% 
+  filter(license %in% c("SQUID_MACK_BUTTER_4", "SQUID_MACK_BUTTER_T1", "SQUID_MACK_BUTTER_T2", "SQUID_MACK_BUTTER_T3")) %>%
+  mutate(comname = "atlantic mackerel") %>%
+  left_join(weighted_data %>% filter(comname == "atlantic mackerel" & est_year >= 1996)) %>%
+  ggplot() + 
+  geom_line(aes(x = est_year, y = avg_lat, color = comname), linetype = 2, linewidth = 1) +
+  geom_line(aes(x = AP_YEAR, y = lat_weighted, color = license), linewidth = 1) +
+  scale_color_manual(labels = c("Biomass", "Category 4", "Tier 1", "Tier 2", "Tier 3"), values = c("#00608a", "#ea4f12", "#057872", "#ebcb27", "#38431d")) + 
+  xlab("Year") + ylab("Latitude") + ggtitle("Center of latitude", subtitle = "1996-2023") +
+  # scale_y_continuous(limits = c(34,46), breaks = c(34, 40, 46)) +  
+  guides(color = guide_legend(override.aes = list(linewidth = 2))) +
+  theme_gmri(legend.title = element_blank(),
+             legend.text = element_text(size = 25),
+             axis.text = element_text(size = 20),
+             axis.title = element_text(size = 20),
+             plot.subtitle = element_text(size =20),
+             plot.title = element_text(size = 25, face = "plain"),
+             panel.border = element_rect(color = "black", linetype = 1))
+
 ```
 
 #### Category 6: Limited access - Butterfish moratorium
@@ -341,7 +478,7 @@ knitr::include_graphics(here::here("atlantic mackerel_biomass.gif"))
 #| echo: false
 #| message: false
 #| warning: false
-#| layout-ncol: 2
+#| layout-ncol: 3
 #| fig-width: 9
 #| fig-height: 9
 
@@ -417,6 +554,27 @@ knitr::include_graphics(here::here("atlantic mackerel_biomass.gif"))
 ## Read back in as GIF 
 knitr::include_graphics(here::here("butterfish_license.gif"))
 knitr::include_graphics(here::here("butterfish_biomass.gif"))
+
+# Static plot
+weighted_lat %>% 
+  filter(license == "SQUID_MACK_BUTTER_6") %>%
+  mutate(comname = "butterfish") %>%
+  left_join(weighted_data %>% filter(comname == "butterfish" & est_year >= 2000)) %>%
+  ggplot() + 
+  geom_line(aes(x = est_year, y = avg_lat, color = comname), linetype = 2, linewidth = 1) +
+  geom_line(aes(x = AP_YEAR, y = lat_weighted, color = license), linewidth = 1) +
+  scale_color_manual(labels = c("Biomass", "License"), values = c("#00608a", "#ea4f12")) + 
+  xlab("Year") + ylab("Latitude") + ggtitle("Center of latitude", subtitle = "2000-2023") +
+  # scale_y_continuous(limits = c(34,46), breaks = c(34, 40, 46)) +  
+  guides(color = guide_legend(override.aes = list(linewidth = 2))) +
+  theme_gmri(legend.title = element_blank(),
+             legend.text = element_text(size = 25),
+             axis.text = element_text(size = 20),
+             axis.title = element_text(size = 20),
+             plot.subtitle = element_text(size =20),
+             plot.title = element_text(size = 25, face = "plain"),
+             panel.border = element_rect(color = "black", linetype = 1))
+
 ```
 
 ### Black sea bass
@@ -427,7 +585,7 @@ knitr::include_graphics(here::here("butterfish_biomass.gif"))
 #| echo: false
 #| message: false
 #| warning: false
-#| layout-ncol: 2
+#| layout-ncol: 3
 #| fig-width: 9
 #| fig-height: 9
 
@@ -504,6 +662,27 @@ knitr::include_graphics(here::here("butterfish_biomass.gif"))
 ## Read back in as GIF 
 knitr::include_graphics(here::here("black sea bass_license.gif"))
 knitr::include_graphics(here::here("black sea bass_biomass.gif"))
+
+# Static plot
+weighted_lat %>% 
+  filter(license == "BLACK_SEA_BASS_1") %>%
+  mutate(comname = "black sea bass") %>%
+  left_join(weighted_data %>% filter(comname == "black sea bass" & est_year >= 1997)) %>%
+  ggplot() + 
+  geom_line(aes(x = est_year, y = avg_lat, color = comname), linetype = 2, linewidth = 1) +
+  geom_line(aes(x = AP_YEAR, y = lat_weighted, color = license), linewidth = 1) +
+  scale_color_manual(labels = c("Biomass", "License"), values = c("#00608a", "#ea4f12")) + 
+  xlab("Year") + ylab("Latitude") + ggtitle("Center of latitude", subtitle = "1997-2023") +
+  # scale_y_continuous(limits = c(34,46), breaks = c(34, 40, 46)) +  
+  guides(color = guide_legend(override.aes = list(linewidth = 2))) +
+  theme_gmri(legend.title = element_blank(),
+             legend.text = element_text(size = 25),
+             axis.text = element_text(size = 20),
+             axis.title = element_text(size = 20),
+             plot.subtitle = element_text(size =20),
+             plot.title = element_text(size = 25, face = "plain"),
+             panel.border = element_rect(color = "black", linetype = 1))
+
 ```
 
 ```{r}
