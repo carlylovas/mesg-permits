@@ -244,7 +244,7 @@ weighted_lat %>%
   ggplot() + 
   geom_line(aes(x = est_year, y = avg_lat, color = comname), linetype = 2, linewidth = 1) +
   geom_line(aes(x = AP_YEAR, y = lat_weighted, color = license), linewidth = 1) +
-  scale_color_manual(labels = c("Biomass", "Category 1", "1A", "1B", "1C"), values = c("#00608a", "#ea4f12", "#057872", "#ebcb27", "#38431d")) + 
+  scale_color_manual(labels = c("Biomass", "Category 1", "1A", "1B", "1C"), values = c("#ea4f12", "#00608a", "#057872", "#ebcb27", "#38431d")) + 
   xlab("Year") + ylab("Latitude") + ggtitle("Center of latitude", subtitle = "1996-2023") +
   # scale_y_continuous(limits = c(34,46), breaks = c(34, 40, 46)) +  
   guides(color = guide_legend(override.aes = list(linewidth = 2))) +
@@ -350,7 +350,7 @@ weighted_lat %>%
   ggplot() + 
   geom_line(aes(x = est_year, y = avg_lat, color = comname), linetype = 2, linewidth = 1) +
   geom_line(aes(x = AP_YEAR, y = lat_weighted, color = license), linewidth = 1) +
-  scale_color_manual(labels = c("Biomass", "License"), values = c("#00608a", "#ea4f12")) + 
+  scale_color_manual(labels = c("Biomass", "License"), values = c("#ea4f12","#00608a")) + 
   xlab("Year") + ylab("Latitude") + ggtitle("Center of latitude", subtitle = "1996-2023") +
   # scale_y_continuous(limits = c(34,46), breaks = c(34, 40, 46)) +  
   guides(color = guide_legend(override.aes = list(linewidth = 2))) +
@@ -457,7 +457,7 @@ weighted_lat %>%
   ggplot() + 
   geom_line(aes(x = est_year, y = avg_lat, color = comname), linetype = 2, linewidth = 1) +
   geom_line(aes(x = AP_YEAR, y = lat_weighted, color = license), linewidth = 1) +
-  scale_color_manual(labels = c("Biomass", "Category 4", "Tier 1", "Tier 2", "Tier 3"), values = c("#00608a", "#ea4f12", "#057872", "#ebcb27", "#38431d")) + 
+  scale_color_manual(labels = c("Biomass", "Category 4", "Tier 1", "Tier 2", "Tier 3"), values = c("#ea4f12", "#00608a", "#057872", "#ebcb27", "#38431d")) + 
   xlab("Year") + ylab("Latitude") + ggtitle("Center of latitude", subtitle = "1996-2023") +
   # scale_y_continuous(limits = c(34,46), breaks = c(34, 40, 46)) +  
   guides(color = guide_legend(override.aes = list(linewidth = 2))) +
@@ -563,7 +563,7 @@ weighted_lat %>%
   ggplot() + 
   geom_line(aes(x = est_year, y = avg_lat, color = comname), linetype = 2, linewidth = 1) +
   geom_line(aes(x = AP_YEAR, y = lat_weighted, color = license), linewidth = 1) +
-  scale_color_manual(labels = c("Biomass", "License"), values = c("#00608a", "#ea4f12")) + 
+  scale_color_manual(labels = c("Biomass", "License"), values = c("#ea4f12","#00608a")) + 
   xlab("Year") + ylab("Latitude") + ggtitle("Center of latitude", subtitle = "2000-2023") +
   # scale_y_continuous(limits = c(34,46), breaks = c(34, 40, 46)) +  
   guides(color = guide_legend(override.aes = list(linewidth = 2))) +
@@ -671,7 +671,7 @@ weighted_lat %>%
   ggplot() + 
   geom_line(aes(x = est_year, y = avg_lat, color = comname), linetype = 2, linewidth = 1) +
   geom_line(aes(x = AP_YEAR, y = lat_weighted, color = license), linewidth = 1) +
-  scale_color_manual(labels = c("Biomass", "License"), values = c("#00608a", "#ea4f12")) + 
+  scale_color_manual(labels = c("Biomass", "License"), values = c("#ea4f12", "#00608a")) + 
   xlab("Year") + ylab("Latitude") + ggtitle("Center of latitude", subtitle = "1997-2023") +
   # scale_y_continuous(limits = c(34,46), breaks = c(34, 40, 46)) +  
   guides(color = guide_legend(override.aes = list(linewidth = 2))) +
