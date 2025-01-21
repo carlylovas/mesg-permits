@@ -130,7 +130,8 @@ grouped_center_bio <- function(clean_survey, ...){
 }
 
 weighted_data <- grouped_center_bio(clean_survey, est_year) %>%
-  mutate(decade = 10*est_year %/% 10)
+  mutate(decade = 10*est_year %/% 10,
+         avg_lat = zoo::rollapplyr(avg_lat, width = 5, FUN = mean, align = "center", partial = T))
 ```
 
 ```{r}
