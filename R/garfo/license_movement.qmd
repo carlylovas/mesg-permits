@@ -582,7 +582,7 @@ weighted_lat %>%
 #### Category 1 - Limited access commercial catch
 
 ```{r}
-#| label: black sea bass 
+#| label: bsb
 #| echo: false
 #| message: false
 #| warning: false
@@ -590,11 +590,10 @@ weighted_lat %>%
 #| fig-width: 9
 #| fig-height: 9
 
-
 # centers %>%
-#   filter(license == "BLACK_SEA_BASS_1") -> licenses 
+#   filter(license == "BLACK SEA BASS_1") -> licenses
 # 
-# weighted_data %>% 
+# weighted_data %>%
 #   filter(comname == "black sea bass" & est_year >= min(licenses$AP_YEAR)) -> biomass
 # 
 # ### License map ###
@@ -648,8 +647,8 @@ weighted_lat %>%
 #     title = "Annual center of biomass",
 #     subtitle = 'Year: {closest_state}') -> dist_animated
 # 
-# ## Animate and save out 
-# # license map 
+# ## Animate and save out
+# # license map
 # gganimate::animate(license_map_animated, fps = 20, width = 600, height = 600) -> license_map
 # gganimate::anim_save(here(paste0(unique(biomass$comname), "_license.gif")), license_map)
 # # dist map
@@ -668,7 +667,7 @@ knitr::include_graphics(here::here("black sea bass_biomass.gif"))
 weighted_lat %>% 
   filter(license == "BLACK_SEA_BASS_1") %>%
   mutate(comname = "black sea bass") %>%
-  left_join(weighted_data %>% filter(comname == "black sea bass" & est_year >= 1997)) %>%
+  left_join(weighted_data %>% filter(comname == "black sea bass" & est_year >= 1996)) %>%
   ggplot() + 
   geom_line(aes(x = est_year, y = avg_lat, color = comname), linetype = 2, linewidth = 1) +
   geom_line(aes(x = AP_YEAR, y = lat_weighted, color = license), linewidth = 1) +
@@ -684,6 +683,111 @@ weighted_lat %>%
              plot.title = element_text(size = 25, face = "plain"),
              panel.border = element_rect(color = "black", linetype = 1))
 
+```
+### Summer flounder
+#### Category 1 - Moratorium commercial catch
+
+```{r}
+#| label: summer flounder
+#| echo: false
+#| message: false
+#| warning: false
+#| layout-ncol: 3
+#| fig-width: 9
+#| fig-height: 9
+
+# centers %>%
+#   filter(license == "SUMMER_FLOUNDER_1") -> licenses
+# 
+# weighted_data %>%
+#   filter(comname == "summer flounder" & est_year >= min(licenses$AP_YEAR)) -> biomass
+# 
+# ### License map ###
+# ggplot() +
+#   geom_sf(data = states) +
+#   geom_point(data = licenses, aes(x = long, y = lat, alpha = count), size = 8, color = "#00608a") +
+#   scale_x_continuous(breaks = c(-64, -71, -78)) + scale_y_continuous(breaks = c(34, 40, 46)) +
+#   coord_sf(xlim = c(-64,-78), ylim = c(34,46)) +
+#   theme_gmri(axis.text = element_text(size = 20),
+#              axis.title = element_text(size = 20),
+#              plot.subtitle = element_text(size = 20),
+#              plot.title = element_text(size = 25),
+#              panel.grid.major = element_line(color = "#e9e9e9"),
+#              panel.border = element_rect(color = "black", linetype = 1),
+#              legend.position = "none") -> license_map
+# license_map +
+#   gganimate::transition_states(
+#     AP_YEAR, # Uses each year (est_year in the data) as a state
+#     transition_length = 1,
+#     state_length = 5) +
+#     gganimate::ease_aes('linear') +
+#   labs(
+#     y = "Latitude",
+#     x = "Longitude",
+#     title = "Commercial licenses",
+#     subtitle = 'Year: {closest_state}') -> license_map_animated
+# 
+# ### Distribution map ###
+# ggplot() +
+#   geom_sf(data = states) +
+#   geom_point(data = biomass, aes(x = avg_lon, y = avg_lat, alpha = avg_biomass), size = 8, color = "#ea4f12") +
+#   scale_x_continuous(breaks = c(-64, -71, -78)) + scale_y_continuous(breaks = c(34, 40, 46)) +
+#   coord_sf(xlim = c(-64,-78), ylim = c(34,46)) +
+#   theme_gmri(axis.text = element_text(size = 20),
+#              axis.title = element_text(size = 20),
+#              plot.subtitle = element_text(size =20),
+#              plot.title = element_text(size = 25),
+#              panel.grid.major = element_line(color = "#e9e9e9"),
+#              panel.border = element_rect(color = "black", linetype = 1),
+#              legend.position = "none") -> dist
+# dist +
+#   gganimate::transition_states(
+#     est_year, # Uses each year (est_year in the data) as a state
+#     transition_length = 1,
+#     state_length = 5) +
+#   shadow_mark(alpha = 0.1, size = 12) +
+#   gganimate::ease_aes('linear') +
+#   labs(
+#     y = "Latitude",
+#     x = "Longitude",
+#     title = "Annual center of biomass",
+#     subtitle = 'Year: {closest_state}') -> dist_animated
+# 
+# ## Animate and save out
+# # license map
+# gganimate::animate(license_map_animated, fps = 20, width = 600, height = 600) -> license_map
+# gganimate::anim_save(here(paste0(unique(biomass$comname), "_license.gif")), license_map)
+# # dist map
+# gganimate::animate(dist_animated, fps = 20, width = 600, height = 600) -> dist_map
+# gganimate::anim_save(here(paste0(unique(biomass$comname), "_biomass.gif")), dist_map)
+# 
+# rm(list = c("dist_animated", "dist_map", "license_map_animated", "license_map"))
+
+# If rendering command out everything above this line
+
+## Read back in as GIF 
+knitr::include_graphics(here::here("summer flounder_license.gif"))
+knitr::include_graphics(here::here("summer flounder_biomass.gif"))
+
+# Static plot
+weighted_lat %>% 
+  filter(license == "SUMMER_FLOUNDER_1") %>%
+  mutate(comname = "summer flounder") %>%
+  left_join(weighted_data %>% filter(comname == "summer flounder" & est_year >= 1996)) %>%
+  ggplot() + 
+  geom_line(aes(x = est_year, y = avg_lat, color = comname), linetype = 2, linewidth = 1) +
+  geom_line(aes(x = AP_YEAR, y = lat_weighted, color = license), linewidth = 1) +
+  scale_color_manual(labels = c("Biomass", "License"), values = c("#ea4f12", "#00608a")) + 
+  xlab("Year") + ylab("Latitude") + ggtitle("Center of latitude", subtitle = "1996-2023") +
+  # scale_y_continuous(limits = c(34,46), breaks = c(34, 40, 46)) +  
+  guides(color = guide_legend(override.aes = list(linewidth = 2))) +
+  theme_gmri(legend.title = element_blank(),
+             legend.text = element_text(size = 25),
+             axis.text = element_text(size = 20),
+             axis.title = element_text(size = 20),
+             plot.subtitle = element_text(size =20),
+             plot.title = element_text(size = 25, face = "plain"),
+             panel.border = element_rect(color = "black", linetype = 1))
 ```
 
 ```{r}
