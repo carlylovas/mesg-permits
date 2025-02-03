@@ -23,7 +23,7 @@ library(ggiraph)
 
 garfo_clean    <- read.csv(here("Data", "all_GARFO_data.csv"))
 garfo_landings <- read.csv(here("Data", "landings.csv"))
-license_list   <- read.csv(here("Data", "garfo_license_list.csv"))
+license_list <- read.csv(file = here("commercial_permits.csv"))
 
 garfo_clean %>%
   pivot_longer(cols = BLACK_SEA_BASS_1:TILEFISH_D, names_to = "PERMIT_TYPE", values_to = "COUNT") %>%
@@ -32,7 +32,8 @@ garfo_clean %>%
   filter(!is.na(COUNT)) %>%
   filter(!COUNT == 0) %>%
   filter(!AP_YEAR == 2009 | !PERMIT_TYPE == "TILEFISH_D") %>%
-  left_join((license_list %>% rename("PERMIT_TYPE" = "license"))) -> garfo_holdings
+  left_join((license_list %>% rename("PERMIT_TYPE" = "license"))) %>% 
+  filter(type == "commercial") -> garfo_holdings
 ```
 
 ```{r}
@@ -135,6 +136,32 @@ z_score_by_state$plot[[11]]
 #| fig-width: 13
 #| fig-height: 9
 
+# totals of license categories issued per year per state
+garfo_holdings %>%
+  group_by(PPST, AP_YEAR, category) %>%
+  summarise(count = sum(COUNT)) -> total 
+
+# by state
+total %>% 
+  group_by(PPST, category) %>% 
+  mutate(z_score = scale(count, center = T, scale = T)) -> z_score 
+
+# manual calculation for comparison (x - xmean / sd)
+
+calc_z <- function(x, x_mean, sd){
+  return((x-x_mean)/sd)
+}
+
+# by state
+total %>%
+  group_by(PPST, category) %>%
+  mutate(z_score_manual = calc_z(count,
+                mean(count),
+                sd(count))) %>% 
+  left_join(z_score) -> z_score
+
+
+
 z_score_by_cat <- z_score %>% 
   group_by(category) %>% 
   nest() %>% 
@@ -173,5 +200,13 @@ z_score_by_cat$plot[[8]]
 z_score_by_cat$plot[[9]]
 z_score_by_cat$plot[[10]]
 z_score_by_cat$plot[[11]]
+z_score_by_cat$plot[[12]]
+z_score_by_cat$plot[[13]]
+z_score_by_cat$plot[[14]]
+z_score_by_cat$plot[[15]]
+z_score_by_cat$plot[[16]]
+z_score_by_cat$plot[[17]]
+z_score_by_cat$plot[[18]]
+
 
 ```
