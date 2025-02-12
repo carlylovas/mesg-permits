@@ -22,7 +22,6 @@ library(matrixStats)
 garfo_geo    <- read.csv(file = here("Outputs", "GARFO_geocoded.csv"))
 ny_nj        <- read.csv(file = here("Outputs", "geo_ny_nj.csv"))
 species_list <- c("Atlantic menhaden", "Black sea bass", "Bluefish", "Clearnose skate", "Horseshoe crab", "Longfin squid", "Rosette skate", "Scup", "Striped bass", "Summer flounder", "Tilefish", "Weakfish")
-
 ```
 
 ## Tracking latitudinal movement of GARFO licenses
@@ -40,7 +39,7 @@ species_list <- as_tibble(species_list) %>% rename("species" = "value")
 license_list <- garfo_geo %>%
   ungroup() %>%
   pivot_longer(cols = BLACK_SEA_BASS_1:TILEFISH_D, names_to = "license", values_to = "count") %>%
-  select(license) %>% 
+  select(license) %>%
   distinct() %>%
   mutate(category = NA)
 
@@ -164,10 +163,14 @@ states <- st_as_sf(states50)
 #| fig-width: 9
 #| fig-height: 9
 
-# centers %>% 
-#   filter(license %in% c("SQUID_MACK_BUTTER_1", "SQUID_MACK_BUTTER_1A", "SQUID_MACK_BUTTER_1B", "SQUID_MACK_BUTTER_1C")) -> licenses
+# centers %>%
+#   filter(license %in% c("SQUID_MACK_BUTTER_1", "SQUID_MACK_BUTTER_1A", "SQUID_MACK_BUTTER_1B", "SQUID_MACK_BUTTER_1C") & AP_YEAR >= 1997) -> licenses
 # 
-# weighted_data %>% 
+# licenses %>%
+#   group_by(AP_YEAR) %>%
+#   summarise(total = sum(count))
+# 
+# weighted_data %>%
 #   filter(comname == "longfin squid" & est_year >= min(licenses$AP_YEAR)) -> biomass
 # 
 # ### License map ###
@@ -192,7 +195,7 @@ states <- st_as_sf(states50)
 #   labs(
 #     y = "Latitude",
 #     x = "Longitude",
-#     title = "Commercial licenses",
+#     title = "Commercial harvest permits",
 #     subtitle = 'Year: {closest_state}') -> license_map_animated
 # 
 # ### Distribution map ###
@@ -218,11 +221,11 @@ states <- st_as_sf(states50)
 #   labs(
 #     y = "Latitude",
 #     x = "Longitude",
-#     title = "Annual center of biomass",
+#     title = "Annual center of Biomass",
 #     subtitle = 'Year: {closest_state}') -> dist_animated
 # 
-# ## Animate and save out 
-# # license map 
+# ## Animate and save out
+# # license map
 # gganimate::animate(license_map_animated, fps = 20, width = 600, height = 600) -> license_map
 # gganimate::anim_save(here(paste0(unique(biomass$comname), "_license.gif")), license_map)
 # # dist map
@@ -239,14 +242,14 @@ knitr::include_graphics(here::here("longfin squid_biomass.gif"))
 
 # Static plot
 weighted_lat %>% 
-  filter(license %in% c("SQUID_MACK_BUTTER_1", "SQUID_MACK_BUTTER_1A", "SQUID_MACK_BUTTER_1B", "SQUID_MACK_BUTTER_1C")) %>%
+  filter(license %in% c("SQUID_MACK_BUTTER_1", "SQUID_MACK_BUTTER_1A", "SQUID_MACK_BUTTER_1B", "SQUID_MACK_BUTTER_1C") & AP_YEAR >= 1997) %>%
   mutate(comname = "longfin squid") %>%
-  left_join(weighted_data %>% filter(comname == "longfin squid" & est_year >= 1996)) %>%
+  left_join(weighted_data %>% filter(comname == "longfin squid" & est_year >= 1997)) %>%
   ggplot() + 
   geom_line(aes(x = est_year, y = avg_lat, color = comname), linetype = 2, linewidth = 1) +
   geom_line(aes(x = AP_YEAR, y = lat_weighted, color = license), linewidth = 1) +
   scale_color_manual(labels = c("Biomass", "Category 1", "1A", "1B", "1C"), values = c("#ea4f12", "#00608a", "#057872", "#ebcb27", "#38431d")) + 
-  xlab("Year") + ylab("Latitude") + ggtitle("Center of latitude", subtitle = "1996-2023") +
+  xlab("Year") + ylab("Latitude") + ggtitle("Center of latitude", subtitle = "1997-2023") +
   # scale_y_continuous(limits = c(34,46), breaks = c(34, 40, 46)) +  
   guides(color = guide_legend(override.aes = list(linewidth = 2))) +
   theme_gmri(legend.title = element_blank(),
@@ -259,6 +262,7 @@ weighted_lat %>%
 
 ```
 #### Category 5: Limited access - Northern shortfin squid moratorium
+
 ```{r}
 #| label: shortfin squid
 #| echo: false
@@ -269,11 +273,11 @@ weighted_lat %>%
 #| fig-width: 9
 #| fig-height: 9
 
-# centers %>% 
+# centers %>%
 #   filter(license == "SQUID_MACK_BUTTER_5") -> licenses
 # 
-# weighted_data %>% 
-#   filter(comname == "longfin squid" & est_year >= min(licenses$AP_YEAR)) -> biomass
+# weighted_data %>%
+#   filter(comname == "northern shortfin squid" & est_year >= min(licenses$AP_YEAR)) -> biomass
 # 
 # ### License map ###
 # ggplot() +
@@ -297,7 +301,7 @@ weighted_lat %>%
 #   labs(
 #     y = "Latitude",
 #     x = "Longitude",
-#     title = "Commercial licenses",
+#     title = "Commercial harvest permits",
 #     subtitle = 'Year: {closest_state}') -> license_map_animated
 # 
 # ### Distribution map ###
@@ -323,11 +327,11 @@ weighted_lat %>%
 #   labs(
 #     y = "Latitude",
 #     x = "Longitude",
-#     title = "Annual center of biomass",
+#     title = "Annual center of Biomass",
 #     subtitle = 'Year: {closest_state}') -> dist_animated
 # 
-# ## Animate and save out 
-# # license map 
+# ## Animate and save out
+# # license map
 # gganimate::animate(license_map_animated, fps = 20, width = 600, height = 600) -> license_map
 # gganimate::anim_save(here(paste0(unique(biomass$comname), "_license.gif")), license_map)
 # # dist map
@@ -337,7 +341,7 @@ weighted_lat %>%
 # rm(list = c("dist_animated", "dist_map", "license_map_animated", "license_map"))
 
 
-# If rendering, command out everything about this line before running. 
+# If rendering, command out everything about this line before running.
 
 ## Read back in as GIF 
 knitr::include_graphics(here::here("northern shortfin squid_license.gif"))
@@ -345,14 +349,14 @@ knitr::include_graphics(here::here("northern shortfin squid_biomass.gif"))
 
 # Static plot
 weighted_lat %>% 
-  filter(license == "SQUID_MACK_BUTTER_5") %>%
+  filter(license == "SQUID_MACK_BUTTER_5" & AP_YEAR >= 1997) %>%
   mutate(comname = "northern shortfin squid") %>%
-  left_join(weighted_data %>% filter(comname == "northern shortfin squid" & est_year >= 1996)) %>%
+  left_join(weighted_data %>% filter(comname == "northern shortfin squid" & est_year >= 1997)) %>%
   ggplot() + 
   geom_line(aes(x = est_year, y = avg_lat, color = comname), linetype = 2, linewidth = 1) +
   geom_line(aes(x = AP_YEAR, y = lat_weighted, color = license), linewidth = 1) +
   scale_color_manual(labels = c("Biomass", "License"), values = c("#ea4f12","#00608a")) + 
-  xlab("Year") + ylab("Latitude") + ggtitle("Center of latitude", subtitle = "1996-2023") +
+  xlab("Year") + ylab("Latitude") + ggtitle("Center of latitude", subtitle = "1997-2023") +
   # scale_y_continuous(limits = c(34,46), breaks = c(34, 40, 46)) +  
   guides(color = guide_legend(override.aes = list(linewidth = 2))) +
   theme_gmri(legend.title = element_blank(),
@@ -363,7 +367,6 @@ weighted_lat %>%
              plot.title = element_text(size = 25, face = "plain"),
              panel.border = element_rect(color = "black", linetype = 1))
 ```
-
 
 #### Category 4: Open access - Atlantic Mackerel
 #### Category T1-T3: Limited access - Mackerel tiers 1-3
@@ -377,11 +380,11 @@ weighted_lat %>%
 #| fig-width: 9
 #| fig-height: 9
 
-# centers %>% 
+# centers %>%
 #   filter(license %in% c("SQUID_MACK_BUTTER_4", "SQUID_MACK_BUTTER_T1", "SQUID_MACK_BUTTER_T2", "SQUID_MACK_BUTTER_T3")) -> licenses
 # 
-# weighted_data %>% 
-#   filter(comname == "atlantic mackerel" & est_year >= min(licenses$AP_YEAR)) -> biomass # chub mackerel too? 
+# weighted_data %>%
+#   filter(comname == "atlantic mackerel" & est_year >= min(licenses$AP_YEAR)) -> biomass # chub mackerel too?
 # 
 # ### License map ###
 # ggplot() +
@@ -405,7 +408,7 @@ weighted_lat %>%
 #   labs(
 #     y = "Latitude",
 #     x = "Longitude",
-#     title = "Commercial licenses",
+#     title = "Commercial harvest permits",
 #     subtitle = 'Year: {closest_state}') -> license_map_animated
 # 
 # ### Distribution map ###
@@ -431,11 +434,11 @@ weighted_lat %>%
 #   labs(
 #     y = "Latitude",
 #     x = "Longitude",
-#     title = "Annual center of biomass",
+#     title = "Annual center of Biomass",
 #     subtitle = 'Year: {closest_state}') -> dist_animated
 # 
-# ## Animate and save out 
-# # license map 
+# ## Animate and save out
+# # license map
 # gganimate::animate(license_map_animated, fps = 20, width = 600, height = 600) -> license_map
 # gganimate::anim_save(here(paste0(unique(biomass$comname), "_license.gif")), license_map)
 # # dist map
@@ -483,11 +486,11 @@ weighted_lat %>%
 #| fig-width: 9
 #| fig-height: 9
 
-# centers %>% 
+# centers %>%
 #   filter(license == "SQUID_MACK_BUTTER_6") -> licenses
 # 
-# weighted_data %>% 
-#   filter(comname == "butterfish" & est_year >= min(licenses$AP_YEAR)) -> biomass
+# weighted_data %>%
+#   filter(comname == "butterfish" & est_year >= 1996) -> biomass
 # 
 # ### License map ###
 # ggplot() +
@@ -511,7 +514,7 @@ weighted_lat %>%
 #   labs(
 #     y = "Latitude",
 #     x = "Longitude",
-#     title = "Commercial licenses",
+#     title = "Commercial harvest permits",
 #     subtitle = 'Year: {closest_state}') -> license_map_animated
 # 
 # ### Distribution map ###
@@ -537,11 +540,11 @@ weighted_lat %>%
 #   labs(
 #     y = "Latitude",
 #     x = "Longitude",
-#     title = "Annual center of biomass",
+#     title = "Annual center of Biomass",
 #     subtitle = 'Year: {closest_state}') -> dist_animated
 # 
-# ## Animate and save out 
-# # license map 
+# ## Animate and save out
+# # license map
 # gganimate::animate(license_map_animated, fps = 20, width = 600, height = 600) -> license_map
 # gganimate::anim_save(here(paste0(unique(biomass$comname), "_license.gif")), license_map)
 # # dist map
@@ -579,7 +582,7 @@ weighted_lat %>%
 ```
 
 ### Black sea bass
-#### Category 1 - Limited access commercial catch
+#### Category 1 - Limited access 
 
 ```{r}
 #| label: bsb
@@ -591,7 +594,7 @@ weighted_lat %>%
 #| fig-height: 9
 
 # centers %>%
-#   filter(license == "BLACK SEA BASS_1") -> licenses
+#   filter(license == "BLACK_SEA_BASS_1") -> licenses
 # 
 # weighted_data %>%
 #   filter(comname == "black sea bass" & est_year >= min(licenses$AP_YEAR)) -> biomass
@@ -609,6 +612,7 @@ weighted_lat %>%
 #              panel.grid.major = element_line(color = "#e9e9e9"),
 #              panel.border = element_rect(color = "black", linetype = 1),
 #              legend.position = "none") -> license_map
+# 
 # license_map +
 #   gganimate::transition_states(
 #     AP_YEAR, # Uses each year (est_year in the data) as a state
@@ -618,7 +622,7 @@ weighted_lat %>%
 #   labs(
 #     y = "Latitude",
 #     x = "Longitude",
-#     title = "Commercial licenses",
+#     title = "Commercial harvest permits",
 #     subtitle = 'Year: {closest_state}') -> license_map_animated
 # 
 # ### Distribution map ###
@@ -644,7 +648,7 @@ weighted_lat %>%
 #   labs(
 #     y = "Latitude",
 #     x = "Longitude",
-#     title = "Annual center of biomass",
+#     title = "Annual center of Biomass",
 #     subtitle = 'Year: {closest_state}') -> dist_animated
 # 
 # ## Animate and save out
@@ -654,8 +658,8 @@ weighted_lat %>%
 # # dist map
 # gganimate::animate(dist_animated, fps = 20, width = 600, height = 600) -> dist_map
 # gganimate::anim_save(here(paste0(unique(biomass$comname), "_biomass.gif")), dist_map)
-# 
-# rm(list = c("dist_animated", "dist_map", "license_map_animated", "license_map"))
+
+rm(list = c("dist_animated", "dist_map", "license_map_animated", "license_map"))
 
 # If rendering command out everything above this line
 
@@ -685,7 +689,7 @@ weighted_lat %>%
 
 ```
 ### Summer flounder
-#### Category 1 - Moratorium commercial catch
+#### Category 1 - Moratorium
 
 ```{r}
 #| label: summer flounder
@@ -724,7 +728,7 @@ weighted_lat %>%
 #   labs(
 #     y = "Latitude",
 #     x = "Longitude",
-#     title = "Commercial licenses",
+#     title = "Commercial harvest permits",
 #     subtitle = 'Year: {closest_state}') -> license_map_animated
 # 
 # ### Distribution map ###
@@ -743,16 +747,16 @@ weighted_lat %>%
 # dist +
 #   gganimate::transition_states(
 #     est_year, # Uses each year (est_year in the data) as a state
-#     transition_length = 1,
-#     state_length = 5) +
+#     transition_length = 5,
+#     state_length = 1) + # change to 5 if slower transitions is desired
 #   shadow_mark(alpha = 0.1, size = 12) +
 #   gganimate::ease_aes('linear') +
 #   labs(
 #     y = "Latitude",
 #     x = "Longitude",
-#     title = "Annual center of biomass",
+#     title = "Annual center of Biomass",
 #     subtitle = 'Year: {closest_state}') -> dist_animated
-# 
+
 # ## Animate and save out
 # # license map
 # gganimate::animate(license_map_animated, fps = 20, width = 600, height = 600) -> license_map
@@ -791,33 +795,80 @@ weighted_lat %>%
 ```
 
 ```{r}
-#| label: garfo lats
+#| label: all permits
 #| echo: false
 #| message: false
+#| warning: false
+#| fig-width: 7
+#| fig-height: 5
 
-# garfo_geo %>%
-#   ungroup() %>%
-#   pivot_longer(cols = BLACK_SEA_BASS_1:TILEFISH_D, names_to = "license", values_to = "count") %>%
-#   filter(!count == 0) %>%
-#   left_join(license_list) %>%
-#   group_by(VP_NUM, category) %>%
-#   mutate(lat = round(lat, digits = 1),
-#          long = round(long, digits = 1)) %>%
-#   filter(lat %in% seq(30,48)) %>% 
-#   group_by(AP_YEAR, lat, category) %>% 
-#   summarise(count = sum(count)) -> garfo_lats
+garfo_geo %>%
+  ungroup() %>%
+  pivot_longer(cols = BLACK_SEA_BASS_1:TILEFISH_D, names_to = "license", values_to = "count") %>%
+  filter(!count == 0 & AP_YEAR >= 1997) %>%
+  group_by(AP_YEAR, license) %>% 
+  summarise(annual_count = sum(count)) %>% 
+  left_join(license_list) %>%
+  mutate(license = str_to_sentence(license)) -> all_permits 
+  
+ggplot(all_permits) + 
+  # geom_line(aes(x = AP_YEAR, y = annual_count, group = license, color = category)) +
+  geom_col(aes(x = annual_count, y = fct_rev(category), group = category, fill = category), position = "stack") +
+  xlab("Count") +
+  scale_fill_gmri() +
+  # scale_x_continuous(limits = c(0, 3000), breaks = c(0,1000,2000,3000)) +
+  theme_gmri(axis.text = element_text(size = 20),
+             axis.title.x = element_text(size = 20),
+             axis.title.y = element_blank(),
+             plot.subtitle = element_text(size =20),
+             plot.title = element_text(size = 25),
+             panel.grid.major = element_line(color = "#535353"),
+             panel.border = element_rect(color = "black", linetype = 1),
+             legend.position = "none") # -> count
+
+# count +
+#   gganimate::transition_states(
+#     AP_YEAR, # Uses each year (est_year in the data) as a state
+#     transition_length = 1,
+#     state_length = 20) + # increase if slower transitions is desired
+#   gganimate::ease_aes('linear') +
+#   labs(
+#     x = "Count",
+#     title = "Permits by category",
+#     subtitle = 'Year: {closest_state}')  -> counts_animated
 # 
-# garfo_lats %>% 
-#   group_by(category) %>%
-#   nest() %>% 
-#   mutate(plot = map2(data, category, function(x,y){
-#     ggplot(data = x)+
-#       geom_point(aes(x = AP_YEAR, y = lat, size = count, alpha = count), color = "#00608A") +
-#       ggtitle(category) + xlab("Year") + ylab("Latitude") +
-#       ylim(c(30,45)) +
-#       theme_gmri() 
-#   })) -> garfo_lats
+# animate(counts_animated, fps = 5, width = 600, height = 600)  -> counts_plot
+# anim_save(here("permit_counts.gif"), counts_plot)
+
+## Read back in as GIF 
+knitr::include_graphics(here("permit_counts.gif"))
+
+#### other plots
+# all_permits %>% 
+#   group_by(AP_YEAR) %>% 
+#   summarise(total = sum(annual_count)) %>% 
+#   ggplot() +
+#   geom_line(aes(x = AP_YEAR, y = total))
 # 
-# gridExtra::marrangeGrob(garfo_lats$plot, layout_matrix = matrix(1:1, ncol = 1, nrow = 1, byrow = TRUE), top = NULL)
+# all_permits %>%
+#   group_by(AP_YEAR, category) %>%
+#   summarise(annual_count = sum(annual_count)) %>% 
+#   ggplot() +
+#   geom_col(aes(x = AP_YEAR, y = annual_count, group = category, fill = category)) +
+#   scale_fill_gmri() + 
+#   theme_gmri()
+# 
+# 
+# tilefish <- garfo_clean %>% 
+#   select(AP_YEAR, TILEFISH_1:TILEFISH_D)%>%
+#   pivot_longer(cols = TILEFISH_1:TILEFISH_D, names_to = "permit", values_to = "count") %>% 
+#   filter(count == 1)
+# 
+# unique(herring_1$AP_YEAR)
+# 
+# tilefish %>% 
+#   filter(permit == "TILEFISH_D") %>% 
+#   select(AP_YEAR) %>% 
+#   distinct()
 
 ```

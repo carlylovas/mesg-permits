@@ -31,7 +31,7 @@ garfo_clean %>%
   filter(PPST %in% c("ME", "NH", "MA", "RI", "CT", "NY", "NJ", "DE", "MD", "VA", "NC")) %>%
   filter(!is.na(COUNT)) %>%
   filter(!COUNT == 0) %>%
-  filter(!AP_YEAR == 2009 | !PERMIT_TYPE == "TILEFISH_D") %>%
+  filter(!AP_YEAR == 2009 | !PERMIT_TYPE == "TILEFISH_D") %>% # I suppose there's a reason why I did this...
   left_join((license_list %>% rename("PERMIT_TYPE" = "license"))) %>% 
   filter(type == "commercial") -> garfo_holdings
 ```
@@ -111,17 +111,17 @@ z_score_by_state <- z_score %>%
     }))
  
 # please forgive the following; neither loop nor a function could get these damn things to print
-z_score_by_state$plot[[1]]
-z_score_by_state$plot[[2]]
-z_score_by_state$plot[[3]]
-z_score_by_state$plot[[4]]
-z_score_by_state$plot[[5]]
-z_score_by_state$plot[[6]]
-z_score_by_state$plot[[7]]
-z_score_by_state$plot[[8]]
-z_score_by_state$plot[[9]]
-z_score_by_state$plot[[10]]
-z_score_by_state$plot[[11]]
+# z_score_by_state$plot[[1]]
+# z_score_by_state$plot[[2]]
+# z_score_by_state$plot[[3]]
+# z_score_by_state$plot[[4]]
+# z_score_by_state$plot[[5]]
+# z_score_by_state$plot[[6]]
+# z_score_by_state$plot[[7]]
+# z_score_by_state$plot[[8]]
+# z_score_by_state$plot[[9]]
+# z_score_by_state$plot[[10]]
+# z_score_by_state$plot[[11]]
 
 ```
 
@@ -160,8 +160,6 @@ total %>%
                 sd(count))) %>% 
   left_join(z_score) -> z_score
 
-
-
 z_score_by_cat <- z_score %>% 
   group_by(category) %>% 
   nest() %>% 
@@ -189,24 +187,52 @@ z_score_by_cat <- z_score %>%
     }))
  
 # print
-z_score_by_cat$plot[[1]]
-z_score_by_cat$plot[[2]]
-z_score_by_cat$plot[[3]]
-z_score_by_cat$plot[[4]]
-z_score_by_cat$plot[[5]]
-z_score_by_cat$plot[[6]]
-z_score_by_cat$plot[[7]]
-z_score_by_cat$plot[[8]]
-z_score_by_cat$plot[[9]]
-z_score_by_cat$plot[[10]]
-z_score_by_cat$plot[[11]]
-z_score_by_cat$plot[[12]]
-z_score_by_cat$plot[[13]]
-z_score_by_cat$plot[[14]]
-z_score_by_cat$plot[[15]]
-z_score_by_cat$plot[[16]]
-z_score_by_cat$plot[[17]]
-z_score_by_cat$plot[[18]]
+# z_score_by_cat$plot[[1]]
+# z_score_by_cat$plot[[2]]
+# z_score_by_cat$plot[[3]]
+# z_score_by_cat$plot[[4]]
+# z_score_by_cat$plot[[5]]
+# z_score_by_cat$plot[[6]]
+# z_score_by_cat$plot[[7]]
+# z_score_by_cat$plot[[8]]
+# z_score_by_cat$plot[[9]]
+# z_score_by_cat$plot[[10]]
+# z_score_by_cat$plot[[11]]
+# z_score_by_cat$plot[[12]]
+# z_score_by_cat$plot[[13]]
+# z_score_by_cat$plot[[14]]
+# z_score_by_cat$plot[[15]]
+# z_score_by_cat$plot[[16]]
+# z_score_by_cat$plot[[17]]
+# z_score_by_cat$plot[[18]]
 
 
 ```
+```{r}
+#| label: plots for presentation
+#| echo: false
+#| message: false
+
+bsb <- z_score %>% 
+  filter(category == "Black sea bass" & PPST %in% c("NY", "RI", "NH", "ME"))
+
+ggplot(data = bsb) +
+  geom_hline(yintercept = 0) +
+  geom_line(aes(x = AP_YEAR, y = z_score_manual, color = PPST), linewidth = 1) + 
+  scale_color_gmri() + 
+  guides(color = guide_legend(title = "State")) + 
+  ylim(c(-2,2)) +
+  ggtitle("z-scores") + 
+  xlab("Year") + ylab("z score") +
+  theme_gmri() +
+  # max licence counts
+  geom_label(data = bsb %>% group_by(PPST) %>% filter(z_score_manual %in% max(z_score_manual) & PPST %in% c("NH", "ME")),
+            aes(x = AP_YEAR, y = z_score_manual, color = PPST, label = count)) +
+  # max license count for overlapping maximum values (in NY & RI)
+  ggrepel::geom_label_repel(data = bsb %>% group_by(PPST) %>% filter(z_score_manual %in% max(z_score_manual) & PPST %in% c("NY","RI")),
+            aes(x = AP_YEAR, y = z_score_manual, color = PPST, label = count)) 
+
+ggsave(here("Outputs", "zscore_opt2.png"), opt_2, width = 7, height = 5, units = "in", bg = "white")
+
+```
+
