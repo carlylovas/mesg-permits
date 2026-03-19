@@ -229,7 +229,7 @@ licenses %>%
   ylab("License category") + xlab("Year") +
   ggtitle("Species level grouping") +
   guides(alpha = guide_legend(title = "Total number issued")) +
-  geom_vline(aes(xintercept = 1994), linetype = 1, color = "#07a3b7") +
+  geom_vline(aes(xintercept = 1995), linetype = 1, color = "#07a3b7") +
   geom_vline(aes(xintercept = 2007), linetype = 1, color = "#ea4f12") +
   theme_gmri(panel.grid.major = element_blank(),
              axis.line = element_blank()) 
@@ -242,7 +242,7 @@ stoll_time_series %>%
   ylab("License category") + xlab("Year") +
   ggtitle("Stoll et al divisions [revised]") +
   guides(alpha = guide_legend(title = "Total number issued")) +
-  geom_vline(aes(xintercept = 1999), linetype = 1, color = "#07a3b7") +
+  geom_vline(aes(xintercept = 2000), linetype = 1, color = "#07a3b7") +
   geom_vline(aes(xintercept = 2011), linetype = 1, color = "#ea4f12") +
   theme_gmri(panel.grid.major = element_blank(),
              axis.line = element_blank()) 
@@ -375,6 +375,13 @@ stoll_portfolio %>%
 pre_closure  <- (co_matrices$co_matrix[[1]] + co_matrices$co_matrix[[2]] + co_matrices$co_matrix[[3]] + co_matrices$co_matrix[[4]] + co_matrices$co_matrix[[5]])/5 # there's probably a more efficient way to do this but I'm tired...
 
 post_closure <- (co_matrices$co_matrix[[6]] + co_matrices$co_matrix[[7]] + co_matrices$co_matrix[[8]] + co_matrices$co_matrix[[9]] + co_matrices$co_matrix[[10]])/5
+
+# pre closure tallies
+# pre_counts <- as.data.frame(pre_closure) %>% 
+#   select("Northern Shrimp") %>% 
+#   rowid_to_column() %>%
+#   mutate(total = sum(`Northern Shrimp`)) %>% 
+#   mutate(freq = (`Northern Shrimp`/total)*100)
 
 # Chord diagrams
 library(chorddiag)

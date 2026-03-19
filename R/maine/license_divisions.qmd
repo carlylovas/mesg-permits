@@ -87,7 +87,7 @@ license_types %>%
 
 ind_lic_portfolio %>%
   select(license_year,landings_number, license_types$license_type) %>%
-  pivot_longer(cols = 3:51, names_to = "license_type", values_to = "licensed") %>%
+  pivot_longer(cols = 3:51, names_to = "license_type", values_to = "licensed") |>
   filter(!licensed == 0) %>%
   left_join(license_types %>% arrange(divisions)) %>%
   mutate(row = row_number()) %>%
@@ -103,7 +103,8 @@ license_types %>% arrange(divisions) %>% select(license_group) %>%
 species_portfolio %>% 
   select(landings_number, license_year, license_order$license_group) -> species_portfolio
 
-# write_rds(species_portfolio, here("Data","stoll_portfolio.rds") # needed for fig_development.qmd
+write_rds(species_portfolio, here("Data","stoll_portfolio.rds")) # needed for fig_development.qmd
+          
 ```
 
 ```{r}
@@ -166,9 +167,9 @@ species_portfolio %>%
   group_by(license_group) %>%
   nest() %>%
   left_join(license_divisions %>% select(divisions, license_group) %>% distinct()) %>% 
-arrange(divisions)-> license_time_series
+arrange(divisions) -> license_time_series
 
-# write_rds(license_time_series, here("Data","stoll_time_series.rds") # needed for fig_development.qmd
+write_rds(license_time_series, here("Data","stoll_time_series.rds")) # needed for fig_development.qmd
 
 # plot
 license_time_series %>% 
@@ -237,7 +238,7 @@ annual_metrics <- annual_co_matrix %>%
          evcent        = map(graph_obj, function(x){evcent(x)})) %>%
   arrange(license_year)
 
-# write_rds(annual_metrics, file = here("Data","stoll_metrics_series.rds") # needed for fig_development.qmd
+write_rds(annual_metrics, file = here("Data","stoll_metrics_series.rds")) # needed for fig_development.qmd
 
 metrics_series <- annual_metrics %>% 
   select(license_year, degree) %>% 
@@ -570,7 +571,5 @@ dendrogram %>%
   set("labels_col", value = c("#07a3b7", "#ea4f12", "#767676"), k=3) %>%
   set("branches_k_color",value = c("#07a3b7", "#ea4f12", "#767676"), k=3) %>%
   plot(main = "Constrained hierarchical clustering", xlab = "Year", ylab = "Sum of squares")
-
-heatmap
 
 ```
