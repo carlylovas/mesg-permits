@@ -83,6 +83,40 @@ summary(MASS::polr(factor(class) ~ shrimp_w_lobster+closure+did, data = lob_did)
 
 # Category 1 --> 2 ----
 
+### This is me over-complicating things by trying to filter out anyone who might've jumped from class 1 to class 3.
+# cat1_subpop <- portfolio |>
+#   select(license_year, landings_number, lc1, lco, lc2, lc2o, lc3, lc3o) |> 
+#   pivot_longer(lc1:lc3o, names_to = "lobster_class", values_to = "count") |>
+#   filter(!count == 0 & license_year %in% c(2014,2016)) |>
+#   select(!count) |>
+#   pivot_wider(names_from = license_year, values_from = lobster_class, values_fn = list) |>
+#   filter(`2014` %in% c("lc1", "lco")) |>
+#   filter(!`2016` %in% c("lc3", "lc3o", "NULL")) |> # This then removes people who potentially exited 
+#   select(landings_number) |>
+#   distinct()
 
+cat1_subpop <- portfolio |>
+  select(license_year, landings_number, lc1, lco, lc2, lc2o, lc3, lc3o) |>
+  pivot_longer(lc1:lc3o, names_to = "lobster_class", values_to = "count") |>
+  filter(!count == 0 & license_year == 2014 & lobster_class %in% c("lc1", "lco")) |>
+  select(!count & landings_number) |>
+  distinct() 
 
+portfolio |>
+  select(license_year, landings_number, lc1, lco, lc2, lc2o, lc3, lc3o) |> 
+  filter(landings_number %in% cat1_subpop$landings_number) |> # harvesters with class 1 licenses in 2014
+  pivot_longer(lc1:lc3o, names_to = "lobster_class", values_to = "count") |>
+  filter(!count == 0) |>
+  mutate(class = case_when(
+    lobster_class %in% c("lco", "lc1")  ~ 1,
+    lobster_class %in% c("lc2", "lc2o") ~ 2, 
+    lobster_class %in% c("lc3", "lc3o") ~ 3
+  )) |>
+  select(!count) |> 
+  mutate(shrimp_w_lobster = ifelse(landings_number %in% shrimp_w_lobster$landings_number, 1, 0),
+         closure = ifelse(license_year >= 2016, 1, 0),
+         did = shrimp_w_lobster*closure) -> cat1_did
 
+summary(MASS::polr(factor(class) ~ shrimp_w_lobster+closure+did, data = cat1_did))
+
+# summary(lm(class ~ shrimp_w_lobster+closure+did, data = cat1_did))
