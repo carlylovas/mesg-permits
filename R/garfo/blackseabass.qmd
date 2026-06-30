@@ -519,7 +519,9 @@ fed_license %>%
 # While it seems the overall number of commercial black sea bass licenses has declined, the relative proportions of state holdings doesn't seem to change all that dramatically. The majority of licenses are held/attached to vessels landing in NY/NJ with comparable numbers in MA/RI. This is validated by calculating the z-score of the mean numbers of licenses held in each state compared to the annual mean number of licenses issued across all states. NY, NJ, RI, and MA are all 1-2 standard deviations above the mean: VA and NC hug the mean while ME, NH, CT, DE, MD hover below.
 
 ```
+
 ## Maps
+
 ```{r}
 #| label: gradients 
 #| echo: false

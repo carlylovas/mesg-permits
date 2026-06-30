@@ -28,7 +28,19 @@ library(gomfish)
 
 portfolio <- read_rds(here("Data", "clean_portfolio.rds"))
 
-ind_lic_portfolio
+?ind_lic_portfolio
+
+portfolio %>% 
+  select(license_year, csc, css) %>% 
+  filter(license_year >= 2000 & license_year < 2015) %>% 
+  group_by(license_year) %>% 
+  summarise(across(everything(),sum)) -> count
+
+count %>% 
+  group_by(license_year) %>%
+  summarise(total = csc+css) -> count_totals
+
+(min(count_totals$total)-max(count_totals$total))/max(count_totals$total)*100
 
 ```
 

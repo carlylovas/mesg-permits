@@ -30,6 +30,9 @@ stoll_portfolio <- read_rds(here("Data","stoll_portfolio.rds"))
     
 portfolio <- stoll_portfolio %>% 
   filter(license_year >= 2009 & license_year <= 2020 & !license_year %in% c(2014,2015))
+
+View(ind_lic_portfolio)
+
 ```
 
 # Networks
@@ -132,7 +135,7 @@ portfolio %>%
   relocate(participation, .after = landings_number) -> participation  # not using full time span to ensure shrimp licenses were held up until closure
 
 participation %>%
-  filter(participation == "true") %>%
+  filter(participation == "true" & n_distinct(`Northern Shrimp`) >= 2) %>%
   ungroup() %>%
   select(landings_number) %>%
   distinct() -> shrimpers
@@ -217,7 +220,6 @@ shrimp_metrics %>%
     density = md("**Density**"),
     modularity = md("**Modularity**"))
 ```
-
 
 ### Non-shrimpers
 
@@ -322,7 +324,7 @@ portfolio %>%
   ggplot() +
   geom_col(aes(x = license_year, y = total_issued, fill = license_group), color = "white") +
   facet_wrap(~factor(closure, levels = c("Pre-closure", "Post-closure")), scales = "free_x", ncol = 2) +
-  ggtitle("Shrimper portfolios", subtitle = "All harvesters") + ylab("Total licenses issued") + xlab("Year") +
+  ggtitle("Shrimper portfolios", subtitle = "Includes the 42 shrimpers who left all state fisheries in years leading up to the Northern shrimp closure") + ylab("Total licenses issued") + xlab("Year") +
   guides(fill = guide_legend(ncol = 9)) +
   scale_fill_gmri()+
   theme_gmri(legend.position = "bottom",
@@ -389,23 +391,58 @@ order <- c("Scallop (Dragger)",
            "Spat",
            "Menhaden")
 
+# View(portfolio %>% 
+#        filter(landings_number %in% shrimpers$landings_number) %>% 
+#        group_by(license_year) %>% 
+#        mutate(n_harvesters = n_distinct(landings_number)) %>%
+#        group_by(license_year, n_harvesters) %>% 
+#        summarise(across(c(`Scallop (Dragger)`:`Menhaden`), sum)))
 
-portfolio %>%  
-  filter(landings_number %in% shrimpers$landings_number) %>% 
-  ungroup() %>% 
+# portfolio %>%
+#   filter(landings_number %in% shrimpers$landings_number) %>%
+#   pivot_longer(3:28, names_to = "license_type", values_to = "count") %>% 
+#   group_by(landings_number, license_year) %>%
+#   summarise(count = sum(count)) -> count
+#   
+# unique(count$count)  
+
+# mutate(n_harvesters = n_distinct(landings_number))
+
+# NOTE TO SELF: use the co-matrix?
+# pre_closure <- as.data.frame(shrimp_matrix$co_matrix[[1]]) %>% 
+#   select("Northern Shrimp")
+
+portfolio %>%
+  filter(landings_number %in% shrimpers$landings_number) %>%
+  ungroup() %>%
   mutate(continuation = ifelse(landings_number %in% continued$landings_number, "continued", "exited"),
-         closure = ifelse(license_year <= 2014, "Pre-closure", "Post-closure")) %>% 
-  select(!landings_number) %>% 
-  group_by(continuation, closure, license_year) %>% 
-  summarise(across(everything(), sum)) %>% 
+         closure = ifelse(license_year <= 2014, "Pre-closure", "Post-closure")) %>%
+  select(!landings_number) %>%
+  group_by(continuation, closure, license_year) %>%
+  summarise(across(everything(), sum)) %>%
   pivot_longer(cols = 4:29, names_to = "license_type", values_to = "count") %>%
   # filter(license_year <= 2013) %>%
   group_by(continuation, license_year) %>%
-  mutate(total = sum(count)) %>% 
-  ungroup() %>% 
-  mutate(freq = count/total) -> proportions
-  
-  
+  mutate(total = sum(count),
+            freq = (count/total)) -> proportions
+
+portfolio %>%
+  filter(landings_number %in% shrimpers$landings_number) %>%
+  ungroup() %>%
+  mutate(closure = ifelse(license_year <= 2014, "Pre-closure", "Post-closure")) %>%
+  select(!c(landings_number, license_year)) %>%
+  group_by(closure) %>%
+  summarise(across(everything(), sum)) %>%
+  pivot_longer(cols = 2:27, names_to = "license_type", values_to = "count") %>%
+  filter(!license_type == "Northern Shrimp") %>%
+  group_by(closure) %>%
+  mutate(total = sum(count),
+         freq  = (count/total)*100) %>%
+  select(license_type, closure, freq) %>%
+  pivot_wider(names_from = "closure", values_from = "freq") %>%
+  mutate(increase = ifelse(`Pre-closure` < `Post-closure`, T, F)) -> all_proportions
+
+
 ggplot(proportions %>% filter(continuation == "continued")) +
   geom_col(aes(x = license_year, y = freq, fill = factor(license_type, levels = order)), color = "white") +
   facet_wrap(~factor(closure, levels = c("Pre-closure", "Post-closure")), scales = "free_x", ncol = 2) +
@@ -473,4 +510,3 @@ According to the DiD estimator, the closure did negatively impact those shrimper
 ## Chord diagrams
 
 *Updated as of Oct 31* See [Manuscript development](https://carlylovas.github.io/mesg-permits/R/maine/fig_development.html)
-

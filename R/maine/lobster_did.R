@@ -78,8 +78,7 @@ portfolio |>
 
 # Categorical dependent variable ----
 ## Did the lobster class type switch after the closure of the shrimp fishery? 
-summary(MASS::polr(factor(class) ~ shrimp_w_lobster+closure+did, data = lob_did))
-
+summary(MASS::polr(factor(class) ~ shrimp_w_lobster+closure+did+license_year, data = lob_did))
 
 # Category 1 --> 2 ----
 
@@ -117,6 +116,28 @@ portfolio |>
          closure = ifelse(license_year >= 2016, 1, 0),
          did = shrimp_w_lobster*closure) -> cat1_did
 
-summary(MASS::polr(factor(class) ~ shrimp_w_lobster+closure+did, data = cat1_did))
+summary(MASS::polr(factor(class) ~ shrimp_w_lobster+closure+did+license_year, data = cat1_did, method = "probit"))
 
 # summary(lm(class ~ shrimp_w_lobster+closure+did, data = cat1_did))
+
+## Cat 2&3 combined ----
+portfolio |>
+  select(license_year, landings_number, lc1, lco, lc2, lc2o, lc3, lc3o) |> 
+  filter(landings_number %in% cat1_subpop$landings_number) |> # harvesters with class 1 licenses in 2014
+  pivot_longer(lc1:lc3o, names_to = "lobster_class", values_to = "count") |>
+  filter(!count == 0) |>
+  mutate(class = case_when(
+    lobster_class %in% c("lco", "lc1")  ~ 0,
+    lobster_class %in% c("lc2", "lc2o") ~ 1, 
+    lobster_class %in% c("lc3", "lc3o") ~ 1
+  )) |>
+  select(!count) |> 
+  mutate(shrimp_w_lobster = ifelse(landings_number %in% shrimp_w_lobster$landings_number, 1, 0),
+         closure = ifelse(license_year >= 2016, 1, 0),
+         did = shrimp_w_lobster*closure) -> cat2_3
+
+summary(MASS::polr(factor(class) ~ shrimp_w_lobster+closure+did+license_year, data = cat2_3, method = "probit"))
+## Error: repsonse must have 3 or more levels
+
+summary(lm(class ~ shrimp_w_lobster+closure+did+license_year, data = cat2_3))
+

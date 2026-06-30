@@ -28,12 +28,15 @@ license_list <- read.csv(file = here("commercial_permits.csv"))
 garfo_clean %>%
   pivot_longer(cols = BLACK_SEA_BASS_1:TILEFISH_D, names_to = "PERMIT_TYPE", values_to = "COUNT") %>%
   select(PPORT, PPST, AP_NUM, AP_YEAR, VP_NUM, PERMIT_TYPE, COUNT) %>%
-  filter(PPST %in% c("ME", "NH", "MA", "RI", "CT", "NY", "NJ", "DE", "MD", "VA", "NC")) %>%
+  filter(PPST %in% c("ME", "NH", "MA", "RI", "CT", "NY", "NJ", "DE", "MD", "VA", "NC") & AP_YEAR >= 1997) %>%
   filter(!is.na(COUNT)) %>%
   filter(!COUNT == 0) %>%
   filter(!AP_YEAR == 2009 | !PERMIT_TYPE == "TILEFISH_D") %>% # I suppose there's a reason why I did this...
   left_join((license_list %>% rename("PERMIT_TYPE" = "license"))) %>% 
   filter(type == "commercial") -> garfo_holdings
+
+garfo_holdings$category[garfo_holdings$PERMIT_TYPE %in% c("SQUID_MACK_BUTTER_1", "SQUID_MACK_BUTTER_1A", "SQUID_MACK_BUTTER_1B", "SQUID_MACK_BUTTER_1C")] = "Mackerel" # parsing out mackerel only permits
+
 ```
 
 ```{r}
@@ -47,12 +50,12 @@ garfo_clean %>%
 
 # totals of license categories issued per year per state
 garfo_holdings %>%
-  group_by(PPST, AP_YEAR, category) %>%
+  group_by(PPST, AP_YEAR, category) %>% # sub category
   summarise(count = sum(COUNT)) -> total 
 
 # by state
 total %>% 
-  group_by(PPST, category) %>% 
+  group_by(PPST, category) %>% # sub category
   mutate(z_score = scale(count, center = T, scale = T)) -> z_score 
 
 # manual calculation for comparison (x - xmean / sd)
@@ -208,6 +211,7 @@ z_score_by_cat <- z_score %>%
 
 
 ```
+
 ```{r}
 #| label: plots for presentation
 #| echo: false
@@ -216,23 +220,46 @@ z_score_by_cat <- z_score %>%
 bsb <- z_score %>% 
   filter(category == "Black sea bass" & PPST %in% c("NY", "RI", "NH", "ME"))
 
+bsb %>% 
+  group_by(PPST) %>%
+  filter(z_score_manual %in% max(z_score_manual))
+
 ggplot(data = bsb) +
   geom_hline(yintercept = 0) +
   geom_line(aes(x = AP_YEAR, y = z_score_manual, color = PPST), linewidth = 1) + 
   scale_color_gmri() + 
   guides(color = guide_legend(title = "State")) + 
   ylim(c(-2,2)) +
-  ggtitle("z-scores") + 
-  xlab("Year") + ylab("z score") +
-  theme_gmri() +
+  ggtitle("Standardized scores", subtitle = "Z-scores") + 
+  xlab("Year") + ylab("Distance from mean") +
+  theme_gmri() -> plot1
   # max licence counts
-  geom_label(data = bsb %>% group_by(PPST) %>% filter(z_score_manual %in% max(z_score_manual) & PPST %in% c("NH", "ME")),
-            aes(x = AP_YEAR, y = z_score_manual, color = PPST, label = count)) +
+  # geom_label(data = bsb %>% group_by(PPST) %>% filter(z_score_manual %in% max(z_score_manual) & PPST %in% c("NH", "ME")),
+            # aes(x = AP_YEAR, y = z_score_manual, color = PPST, label = count)) 
   # max license count for overlapping maximum values (in NY & RI)
-  ggrepel::geom_label_repel(data = bsb %>% group_by(PPST) %>% filter(z_score_manual %in% max(z_score_manual) & PPST %in% c("NY","RI")),
-            aes(x = AP_YEAR, y = z_score_manual, color = PPST, label = count)) 
+  # ggrepel::geom_label_repel(data = bsb %>% group_by(PPST) %>% filter(z_score_manual %in% max(z_score_manual) & PPST %in% c("NY","RI")),
+            #aes(x = AP_YEAR, y = z_score_manual, color = PPST, label = count)) 
 
-ggsave(here("Outputs", "zscore_opt2.png"), opt_2, width = 7, height = 5, units = "in", bg = "white")
+ggsave(here("Outputs", "zscore_bsb.png"), plot1, width = 7, height = 5, units = "in", bg = "white")
+
+
+mack <- z_score %>% 
+  filter(category == "Mackerel" & PPST %in% c("NY", "RI", "NH", "ME"))
+
+mack %>% group_by(PPST) %>%
+  filter(z_score_manual %in% max(z_score_manual))
+
+ggplot(data = mack) +
+  geom_hline(yintercept = 0) +
+  geom_line(aes(x = AP_YEAR, y = z_score_manual, color = PPST), linewidth = 1) + 
+  scale_color_gmri() + 
+  guides(color = guide_legend(title = "State")) + 
+  # ylim(c(-2,2)) +
+  ggtitle("Standardized scores", subtitle = "Z-scores") + 
+  xlab("Year") + ylab("Distance from mean") +
+  theme_gmri() -> plot2
+
+ggsave(here("Outputs", "zscore_mack.png"), plot2, width = 7, height = 5, units = "in", bg = "white")
 
 ```
 
